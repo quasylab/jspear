@@ -29,10 +29,9 @@ import it.unicam.quasylab.jspear.controller.ExecController;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpressionLeq;
 import it.unicam.quasylab.jspear.distance.DistanceExpression;
 import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
-import it.unicam.quasylab.jspear.ds.DataState;
-import it.unicam.quasylab.jspear.ds.DataStateExpression;
-import it.unicam.quasylab.jspear.ds.DataStateUpdate;
-import it.unicam.quasylab.jspear.ds.RelationOperator;
+import it.unicam.quasylab.jspear.distl.DoubleSemanticsVisitor;
+import it.unicam.quasylab.jspear.distl.TargetDisTLFormula;
+import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.AtomicPerturbation;
 import it.unicam.quasylab.jspear.perturbation.IterativePerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
@@ -48,7 +47,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class AIMutipleLanes {
+public class AIMultipleLanes {
 
     private static final double RESPONSE_TIME = 1;
 
@@ -64,8 +63,8 @@ public class AIMutipleLanes {
 
     // PERTURBATION PARAMETERS
     private static final int STARTING_STEP = 1;
-    private static final int FREQUENCY = 1;
-    private static final int TIMES_TO_APPLY = 20;
+    private static final int FREQUENCY = 2;
+    private static final int TIMES_TO_APPLY = 14;
 
     private final double sensorPerturbationOffset;
     private final double invisibleCarChance;
@@ -74,10 +73,13 @@ public class AIMutipleLanes {
     private static final double ETA_CRASH = 0.01; // Maximum acceptable risk of collision
     private static final double ETA_SAFETY_GAP_VIOLATION = 0.01; // Maximum acceptable risk of violating safety gap
 
-    private static final int EVOLUTION_SEQUENCE_SIZE = 25;
+    private static final int EVOLUTION_SEQUENCE_SIZE = 20;
     private static final int PERTURBATION_SCALE = 20;
     private static final int STEPS_TO_SAMPLE = 30;
+
     private static final Connector AI = new Connector("http://127.0.0.1:6000");
+    private String experimentName;
+    private String resultsFolder;
 
     // DATASTATE INDEXES
     private int[] presence;
@@ -90,120 +92,149 @@ public class AIMutipleLanes {
     private int[] ySpeed;
     private int[] pyPosition;
     private int[] pySpeed;
+    private int crashes;
 
     private int observedCarCount;
 
-
-    public AIMutipleLanes(double sensorPerturbationOffset, double invisibleCarChance){
+    public AIMultipleLanes(double sensorPerturbationOffset, double invisibleCarChance) {
         this.sensorPerturbationOffset = sensorPerturbationOffset;
         this.invisibleCarChance = invisibleCarChance;
-        AiState initialAiState = AI.getInitialState();
-        DataState state =  initialAiState.getDataState();
-        updateDataStateIndexes(initialAiState);
-        ControlledSystem system = new ControlledSystem(getController(), this::getEnvironmentUpdates, state);
-        EvolutionSequence sequence = new EvolutionSequence(new SilentMonitor("AIMultipleLanes"), new DefaultRandomGenerator(), rg -> system, EVOLUTION_SEQUENCE_SIZE);
+        run();
+    }
 
-        String experimentFolder ="./ABZ_2025_experiments/AIMultipleLane/";
-        String experimentName = "off"+sensorPerturbationOffset+"_cha"+invisibleCarChance+"es"+EVOLUTION_SEQUENCE_SIZE+"ps"+PERTURBATION_SCALE+"s"+STEPS_TO_SAMPLE;
+    private void run() {
+        EvolutionSequence sequence = new EvolutionSequence(new SilentMonitor("AIMultipleLanes"), new DefaultRandomGenerator(), rg -> getInitialSystemState(), EVOLUTION_SEQUENCE_SIZE);
+        printSummary(sequence, STEPS_TO_SAMPLE, "UNPERTURBED", System.out);
+        resultsFolder = "./ABZ_2025_experiments/AIMultipleLane/";
+        experimentName = "off" + sensorPerturbationOffset + "_cha" + invisibleCarChance + "es" + EVOLUTION_SEQUENCE_SIZE + "ps" + PERTURBATION_SCALE + "s" + STEPS_TO_SAMPLE;
 
-        double[][] atomicDistances = new double[6][STEPS_TO_SAMPLE];
         AtomicDistanceExpressionLeq crashPenalty = new AtomicDistanceExpressionLeq(getCrashPenalty());
         AtomicDistanceExpressionLeq sgViolationPenalty = new AtomicDistanceExpressionLeq(getSafetyGapViolationPenaltyFn());
 
 
+        runSensorPerturbationExperiments(sensorPerturbationOffset, sequence, crashPenalty, sgViolationPenalty);
+
+        runInvisibilityPerturbationExperiments(sensorPerturbationOffset, invisibleCarChance, sequence, crashPenalty, sgViolationPenalty);
+
+        runSpeedPerturbationExperiments(sensorPerturbationOffset, sequence, crashPenalty, sgViolationPenalty);
+
+        runDisTLExperiments(sequence, 0.0);
+    }
+
+    private void runDisTLExperiments(EvolutionSequence sequence, double threshold) {
+
+        DataStateFunction mu = (rg, ds) -> {
+            List<DataStateUpdate> updates = new LinkedList<>();
+            updates.add(new DataStateUpdate(crashes, 0.0));
+            return ds.apply(updates);
+        };
+
+        TargetDisTLFormula phi = new TargetDisTLFormula(mu, getCrashPenalty(), threshold);
+
+        double[] distances = new double[STEPS_TO_SAMPLE];
+
+        for (int i = 0; i < STEPS_TO_SAMPLE; i++) {
+            distances[i] = new DoubleSemanticsVisitor().eval(phi).eval(EVOLUTION_SEQUENCE_SIZE, i, sequence);
+        }
+        System.out.println("Robustness oqf the vehicle phi " + Arrays.toString(distances));
+        try (OutputStream fileOutputStream = new FileOutputStream(resultsFolder + "distl_" + experimentName + ".txt", true)) {
+            printDistanceArray(fileOutputStream, "Robustness of vehicle: ", distances);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runSpeedPerturbationExperiments(double sensorPerturbationOffset, EvolutionSequence sequence, AtomicDistanceExpressionLeq crashPenalty, AtomicDistanceExpressionLeq sgViolationPenalty) {
+        // SPEED PERTURBATION
+        double[] crashDistances = new double[STEPS_TO_SAMPLE];
+        double[] sgDistances = new double[STEPS_TO_SAMPLE];
+        Perturbation speedPerturbation = getSpeedPerturbation(TIMES_TO_APPLY, FREQUENCY);
+        EvolutionSequence speedPerturbedSequence = sequence.apply(speedPerturbation, STARTING_STEP, PERTURBATION_SCALE);
+
+        for (int i = 0; i < STEPS_TO_SAMPLE; i++) {
+            crashDistances[i] = crashPenalty.compute(i, sequence, speedPerturbedSequence);
+            sgDistances[i] = sgViolationPenalty.compute(i, sequence, speedPerturbedSequence);
+        }
+
+        System.out.print("Crash distance for Speed pert. ");
+        System.out.println(Arrays.toString(crashDistances));
+        System.out.print("SG Violation distance for Speed pert. ");
+        System.out.println(Arrays.toString(sgDistances));
+
+
+        try (OutputStream fileOutputStream = new FileOutputStream(resultsFolder + "summary_" + experimentName + ".txt", true)) {
+            printSummary(speedPerturbedSequence, STEPS_TO_SAMPLE, "SPEED PERTURBATION Offset: " + sensorPerturbationOffset, fileOutputStream);
+
+            printDistanceArray(fileOutputStream, "Crash distance for speed pert. offset " + sensorPerturbationOffset, crashDistances);
+            printDistanceArray(fileOutputStream, "SG violation distance for speed pert. offset " + sensorPerturbationOffset, sgDistances);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void runInvisibilityPerturbationExperiments(double sensorPerturbationOffset, double invisibleCarChance, EvolutionSequence sequence, AtomicDistanceExpressionLeq crashPenalty, AtomicDistanceExpressionLeq sgViolationPenalty) {
+        // INVISIBILITY PERTURBATION
+        double[] crashDistances = new double[STEPS_TO_SAMPLE];
+        double[] sgDistances = new double[STEPS_TO_SAMPLE];
+        Perturbation invisibility = getInvisibleCarPerturbation(TIMES_TO_APPLY, FREQUENCY);
+        EvolutionSequence invisibilitySequence = sequence.apply(invisibility, STARTING_STEP, PERTURBATION_SCALE);
+
+        for (int i = 0; i < STEPS_TO_SAMPLE; i++){
+            crashDistances[i] = crashPenalty.compute(i, sequence, invisibilitySequence);
+            sgDistances[i] = sgViolationPenalty.compute(i, sequence, invisibilitySequence);
+        }
+
+        System.out.print("Crash distance for invisibility pert. " + invisibleCarChance);
+        System.out.println(Arrays.toString(crashDistances));
+
+        System.out.print("SG Violation distance for invisibility pert. " + invisibleCarChance);
+        System.out.println(Arrays.toString(sgDistances));
+
+        try (OutputStream fileOutputStream = new FileOutputStream(resultsFolder + "summary_" + experimentName + ".txt", true)) {
+            printSummary(invisibilitySequence, STEPS_TO_SAMPLE, "INVISIBLE CAR Chance:"+ invisibleCarChance, fileOutputStream);
+
+            printDistanceArray(fileOutputStream, "Crash distance for invisibility pert. offset " + sensorPerturbationOffset, crashDistances);
+            printDistanceArray(fileOutputStream, "SG violation distance for invisibility pert. " + sensorPerturbationOffset, sgDistances);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void runSensorPerturbationExperiments(double sensorPerturbationOffset, EvolutionSequence sequence, AtomicDistanceExpressionLeq crashPenalty, AtomicDistanceExpressionLeq sgViolationPenalty) {
+        double[] crashDistances = new double[STEPS_TO_SAMPLE];
+        double[] sgDistances = new double[STEPS_TO_SAMPLE];
         // SENSOR PERTURBATION
         Perturbation sensor = getSensorPerturbation(TIMES_TO_APPLY, FREQUENCY);
         EvolutionSequence sensorPerturbedSequence = sequence.apply(sensor, STARTING_STEP, PERTURBATION_SCALE);
 
         for (int i = 0; i < STEPS_TO_SAMPLE; i++){
-            atomicDistances[1][i] = crashPenalty.compute(i, sequence, sensorPerturbedSequence);
-            atomicDistances[2][i] = sgViolationPenalty.compute(i, sequence, sensorPerturbedSequence);
+            crashDistances[i] = crashPenalty.compute(i, sequence, sensorPerturbedSequence);
+            sgDistances[i] = sgViolationPenalty.compute(i, sequence, sensorPerturbedSequence);
         }
 
-        System.out.print("Crash distance for Sensor pert. "+sensorPerturbationOffset+" ");
-        System.out.println(Arrays.toString(atomicDistances[1]));
-        System.out.print("SG Violation distance for Sensor pert. "+sensorPerturbationOffset+" ");
-        System.out.println(Arrays.toString(atomicDistances[2]));
+        System.out.print("Crash distance for Sensor pert. " + sensorPerturbationOffset + " ");
+        System.out.println(Arrays.toString(crashDistances));
+        System.out.print("SG Violation distance for Sensor pert. " + sensorPerturbationOffset + " ");
+        System.out.println(Arrays.toString(sgDistances));
 
-        try (OutputStream fileOutputStream = new FileOutputStream(experimentFolder+"summary_"+experimentName+".txt", true)) {
-            printSummary(sensorPerturbedSequence, STEPS_TO_SAMPLE, "SENSOR PERTURBATION Offset: "+ sensorPerturbationOffset, fileOutputStream);
+        try (OutputStream fileOutputStream = new FileOutputStream(resultsFolder + "summary_" + experimentName + ".txt", true)) {
+            printSummary(sensorPerturbedSequence, STEPS_TO_SAMPLE, "SENSOR PERTURBATION Offset: " + sensorPerturbationOffset, fileOutputStream);
             printSummary(sequence, STEPS_TO_SAMPLE, "UNPERTURBED", fileOutputStream);
 
-            printAtomicDistances(fileOutputStream, "Crash distance for Sensor pert. offset "+sensorPerturbationOffset, atomicDistances[1]);
-            printAtomicDistances(fileOutputStream, "SG violation distance for Sensor pert. offset "+sensorPerturbationOffset, atomicDistances[2]);
+            printDistanceArray(fileOutputStream, "Crash distance for Sensor pert. offset " + sensorPerturbationOffset, crashDistances);
+            printDistanceArray(fileOutputStream, "SG violation distance for Sensor pert. offset " + sensorPerturbationOffset, sgDistances);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+    }
 
-        // INVISIBILITY PERTURBATION
-        Perturbation invisibility = getInvisibleCarPerturbation(TIMES_TO_APPLY, FREQUENCY);
-        EvolutionSequence invisibilitySequence = sequence.apply(invisibility, STARTING_STEP, PERTURBATION_SCALE);
-
-        for (int i = 0; i < STEPS_TO_SAMPLE; i++){
-            atomicDistances[0][i] = crashPenalty.compute(i, sequence, invisibilitySequence);
-            atomicDistances[3][i] = sgViolationPenalty.compute(i, sequence, invisibilitySequence);
-        }
-
-        System.out.print("Crash distance for invisibility pert. "+invisibleCarChance);
-        System.out.println(Arrays.toString(atomicDistances[0]));
-
-        System.out.print("SG Violation distance for invisibility pert. "+invisibleCarChance);
-        System.out.println(Arrays.toString(atomicDistances[3]));
-
-        try (OutputStream fileOutputStream = new FileOutputStream(experimentFolder+"summary_"+experimentName+".txt", true)) {
-            printSummary(invisibilitySequence, STEPS_TO_SAMPLE, "INVISIBLE CAR Chance:"+ invisibleCarChance, fileOutputStream);
-
-            printAtomicDistances(fileOutputStream, "Crash distance for invisibility pert. offset "+sensorPerturbationOffset, atomicDistances[0]);
-            printAtomicDistances(fileOutputStream, "SG violation distance for invisibility pert. "+sensorPerturbationOffset, atomicDistances[3]);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        // SPEED PERTURBATION
-        Perturbation speedPerturbation = getSpeedPerturbation(TIMES_TO_APPLY, FREQUENCY);
-        EvolutionSequence speedPerturbedSequence = sequence.apply(speedPerturbation, STARTING_STEP, PERTURBATION_SCALE);
-
-
-        //RobustnessFormula PHINoPerturbation = getMaxIntervalCrashFormula(new NonePerturbation());
-        //RobustnessFormula PHISensor = getMaxIntervalCrashFormula(sensor);
-
-
-        for (int i = 0; i < STEPS_TO_SAMPLE; i++){
-            atomicDistances[4][i] = crashPenalty.compute(i, sequence, speedPerturbedSequence);
-            atomicDistances[5][i] = sgViolationPenalty.compute(i, sequence, speedPerturbedSequence);
-        }
-
-        //printSummary(sequence, STEPS_TO_SAMPLE, "UNPERTURBED", System.out);
-//        printSummary(speedPerturbedSequence, STEPS_TO_SAMPLE, "SPEED PERTURBATION", System.out);
-//        printSummary(sensorPerturbedSequence, STEPS_TO_SAMPLE, "SENSOR PERTURBATION", System.out);
-//        printSummary(invisibilitySequence, STEPS_TO_SAMPLE, "INVISIBLE CAR", System.out);
-//
-
-        System.out.print("Crash distance for Speed pert. ");
-        System.out.println(Arrays.toString(atomicDistances[4]));
-        System.out.print("SG Violation distance for Speed pert. ");
-        System.out.println(Arrays.toString(atomicDistances[5]));
-
-
-
-        try (OutputStream fileOutputStream = new FileOutputStream(experimentFolder+"summary_"+experimentName+".txt", true)) {
-            printSummary(speedPerturbedSequence, STEPS_TO_SAMPLE, "SPEED PERTURBATION Offset: "+ sensorPerturbationOffset, fileOutputStream);
-
-            printAtomicDistances(fileOutputStream, "Crash distance for speed pert. offset "+sensorPerturbationOffset, atomicDistances[4]);
-            printAtomicDistances(fileOutputStream, "SG violation distance for speed pert. offset "+sensorPerturbationOffset, atomicDistances[5]);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-//        for(int testStep = 0; testStep < 100; testStep++){
-//            System.out.print("Step " + testStep + ":  ");
-//            System.out.print("PHISensor "  + new BooleanSemanticsVisitor().eval(PHISensor).eval(100, testStep, sequence));
-//            System.out.print(" PHINoPerturbation "  + new BooleanSemanticsVisitor().eval(PHINoPerturbation).eval(100, testStep, sequence));
-//            System.out.println();
-//        }
+    private SystemState getInitialSystemState() {
+        AiState initialAiState = AI.getInitialState();
+        DataState state = initialAiState.getDataState();
+        updateDataStateIndexes(initialAiState);
+        return new ControlledSystem(getController(), this::getEnvironmentUpdates, state);
     }
 
     private void updateDataStateIndexes(AiState aiState) {
@@ -218,6 +249,8 @@ public class AIMutipleLanes {
         yPosition = aiState.getRealDataStateYPositionIndexes();
         pySpeed = aiState.getPerturbedDataStateYSpeedIndexes();
         pyPosition = aiState.getPerturbedDataStateYPositionIndexes();
+
+        crashes = aiState.getCrashesIndex();
         observedCarCount = aiState.getCarCount();
     }
 
@@ -225,13 +258,14 @@ public class AIMutipleLanes {
         int colw = 6;
         PrintWriter writer = new PrintWriter(outputStream);
         try {
-            writer.printf("%s%n" + ("%" + colw + "s, ").repeat(16) + "%n", title, "i", "p0", "x0", "v0", "p1", "x1", "v1", "p2", "x2", "v2", "p3", "x3", "v3", "p4", "x4", "v4");
+            writer.printf("%s%n" + ("%" + colw + "s, ").repeat(17) + "%n", title, "i", "crash", "p0", "x0", "v0", "p1", "x1", "v1", "p2", "x2", "v2", "p3", "x3", "v3", "p4", "x4", "v4");
 
             for (int i = 0; i < stepsToPrint; i++) {
                 SampleSet<SystemState> dss = sequence.get(i);
                 ArrayList<String> s = new ArrayList<>();
                 s.add(String.format("%" + colw + "d,", i));
-
+                OptionalDouble c = Arrays.stream(dss.evalPenaltyFunction(ds -> ds.get(crashes))).average();
+                s.add(String.format("%" + colw + ".2f,", c.orElse(Double.NaN)));
                 for (int j = 0; j < observedCarCount; j++) {
                     int finalJ = j;
                     OptionalDouble p = Arrays.stream(dss.evalPenaltyFunction(ds -> ds.get(pPresence[finalJ]))).average();
@@ -250,7 +284,7 @@ public class AIMutipleLanes {
         }
     }
 
-    public void printAtomicDistances(OutputStream outputStream, String title, double[] distances) {
+    public void printDistanceArray(OutputStream outputStream, String title, double[] distances) {
         PrintWriter writer = new PrintWriter(outputStream);
         writer.println(title); // Write the provided text
 
@@ -266,19 +300,7 @@ public class AIMutipleLanes {
 
     private DataStateExpression getCrashPenalty() {
         // Penalizes when the controlled car crashes with the vehicle in front or behind
-//        int controlledVehicle = aiState.getControlledVehicleIndex();
-//        DataStateExpression penaltyFunction = (ds) -> {
-//            for (int other = 0; other < observedCarCount; other++) {
-//                double controlledVehiclePosition =  ds.get(position[controlledVehicle]);
-//                double otherPosition = ds.get(position[other]);
-//                if (other != controlledVehicle && Math.abs(controlledVehiclePosition - otherPosition) <= VEHICLE_LENGTH){
-//                   return 1.0;
-//                }
-//            }
-//            return 0.0;
-//        };
-        // get the corresponding aiState via connector
-        return (ds) -> AI.getAiStateFromHistory(ds).getCrashes() > 0 ? 1.0 : 0.0;
+        return (ds) -> ds.get(crashes) > 0.0 ? 1.0 : 0.0;
     }
 
 
@@ -388,7 +410,6 @@ public class AIMutipleLanes {
         for (int i = 0; i < observedCarCount; i++) {
             if(i != controlledVehicleIndex) {
                 double perturbedSpeed = (1-(2*rg.nextDouble()-1)* sensorPerturbationOffset)*state.get(xSpeed[i]);
-                //System.out.println("pos["+i+"] original: "+ state.get(position[i]) + " perturbed: " + perturbedSpeed);
                 updates.add(new DataStateUpdate(pxSpeed[i], perturbedSpeed));
             }
         }

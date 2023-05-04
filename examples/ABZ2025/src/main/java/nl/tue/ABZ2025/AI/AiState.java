@@ -42,9 +42,11 @@ public class AiState {
 
     private int originalValuesCount = -1; // includes non car values
 
-    private static final int NUMBER_OF_NON_CAR_VALUES = 1;
-
     protected static final int DATASTATE_INDEX_FOR_HISTORY_INDEX = 0;
+    protected static final int DATASTATE_INDEX_FOR_CRASHES = 1;
+
+    private static final int NUMBER_OF_NON_CAR_VALUES = 2;
+
     private final int historyIndex;
 
     protected final JSONObject state;
@@ -66,12 +68,16 @@ public class AiState {
         return this.getCarState().length();
     }
 
-    public int getCrashes(){
+    protected int getCrashes() {
         return state.getInt("crashes");
     }
 
     public JSONArray getFeatures(){
         return state.getJSONArray("features");
+    }
+
+    public int getCrashesIndex() {
+        return DATASTATE_INDEX_FOR_CRASHES;
     }
 
     public int[] getRealDataStatePresenceIndexes(){
@@ -174,25 +180,26 @@ public class AiState {
     public DataState getDataState(){
         JSONArray carState = this.getCarState();
         int carCount = carState.length();
-        int colCount = this.getFeatures().length();
+        int featureCount = this.getFeatures().length();
 
         Map<Integer, Double> values = new HashMap<>();
 
         values.put(DATASTATE_INDEX_FOR_HISTORY_INDEX, (double) this.historyIndex);
+        values.put(DATASTATE_INDEX_FOR_CRASHES, (double) getCrashes());
 
         for (int i = 0; i < carCount; i++) {
             JSONArray row = carState.getJSONArray(i);
-            if (row.length() != colCount){
+            if (row.length() != featureCount) {
                 System.out.println("AIServer: Rows of different sizes in the received observation");
             }
-            for (int j = 0; j < colCount; j++) {
+            for (int j = 0; j < featureCount; j++) {
                 double value;
                 if (j < row.length()){
                     value = row.getDouble(j);
                 } else {
                     value = Double.NaN;
                 }
-                values.put(NUMBER_OF_NON_CAR_VALUES + (i * colCount) + j, value);
+                values.put(NUMBER_OF_NON_CAR_VALUES + (i * featureCount) + j, value);
             }
         }
         // create a duplicate of all car values to be perturbed
