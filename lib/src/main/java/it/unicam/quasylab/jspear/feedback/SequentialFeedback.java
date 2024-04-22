@@ -20,22 +20,22 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.perturbation;
+package it.unicam.quasylab.jspear.feedback;
 
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 
 import java.util.Optional;
 
 /**
- * Defines the sequential composition of two perturbations that must be applied one after the other.
+ * Defines the sequential composition of two feedback that must be applied one after the other.
  *
- * @param first first perturbation to be applied.
- * @param second second perturbation to be applied.
+ * @param first first feedback to be applied.
+ * @param second second feedback to be applied.
  */
-public record SequentialPerturbation(Perturbation first, Perturbation second) implements Perturbation {
+public record SequentialFeedback(Feedback first, Feedback second) implements Feedback {
 
     /**
-     * The second perturbation is applied only once the first one has terminated.
+     * The second feedback is applied only once the first one has terminated.
      *
      * @return the effect of <code>second</code> if <code>first</code> has terminated.
      * The effect of <code>first</code> otherwise.
@@ -50,25 +50,25 @@ public record SequentialPerturbation(Perturbation first, Perturbation second) im
     }
 
     /**
-     * The perturbation follows the evolution of the first perturbation until it terminates.
-     * Afterward, it follows the evolution of the second perturbation.
+     * The feedback follows the evolution of the first feedback until it terminates.
+     * Afterward, it follows the evolution of the second feedback.
      *
      * @return the evolution of <code>second</code> if <code>first</code> has terminated.
      * The sequential composition of the evolution of <code>first</code> with <code>second</code> otherwise.
      */
     @Override
-    public Perturbation step() {
+    public Feedback next() {
         if (first().isDone()) {
-            return second.step();
+            return second.next();
         } else {
-            return new SequentialPerturbation(first.step(), second);
+            return new SequentialFeedback(first.next(), second);
         }
     }
 
     /**
-     * The perturbation terminates only once both perturbation terminate.
+     * The feedback terminates only once both feedback terminate.
      *
-     * @return <code>true</code> if both perturbations have terminated.
+     * @return <code>true</code> if both feedback have terminated.
      * <code>false</code> otherwise.
      */
     @Override
