@@ -35,6 +35,8 @@ public class DataState {
     private final double[] data;
     private final DataRange[] dataRanges;
 
+    private int step = 0;
+
     /**
      * Creates a new data state with the given number of cells.
      * By default, all the values are set to 0.0.
@@ -59,6 +61,18 @@ public class DataState {
     }
 
     /**
+     * Creates a new data state with the given values, including time variables. All the cells in the data state can assume values
+     * in the interval [{@link Double#NEGATIVE_INFINITY}, {@link Double#POSITIVE_INFINITY}].
+     *
+     * @param data values in the data state;
+     * @param Tstep initial time step value.
+     */
+    public DataState(double[] data, int Tstep) {
+        this(IntStream.range(0, data.length).mapToObj(i -> new DataRange()).toArray(DataRange[]::new), data);
+        this.step = Tstep;
+    }
+
+    /**
      * Creates a new data state with the given number of cells.
      * Values in the data state are initialised by assigning to the cell in position <code>i</code> the value <code>initFunction.applyAsDouble(i)</code>.
      * All the cells in the data state can assume values in the interval
@@ -72,6 +86,22 @@ public class DataState {
     }
 
     /**
+     * Creates a new data state with the given number of cells. Values in the data state are initialised by
+     * assigning to the cell in position <code>i</code> the value <code>initFunction.applyAsDouble(i)</code>.
+     * Time variables are initialised individually.
+     * All the cells in the data state can assume values in the interval
+     * [{@link Double#NEGATIVE_INFINITY}, {@link Double#POSITIVE_INFINITY}].
+     *
+     * @param size number of cells in the data state.
+     * @param initFunction function used to initialise the values.
+     * @param Tstep initial time step value.
+     */
+    public DataState(int size, IntToDoubleFunction initFunction, int Tstep) {
+        this(DataRange.getDefaultRangeArray(size), initFunction);
+        this.step = Tstep;
+    }
+
+    /**
      * Creates a new data state with the <code>dataRanges.length</code> cells.
      * Values in the data state are initialised by assigning to the cell in position <code>i</code> the value <code>initFunction.applyAsDouble(i)</code>.
      * The cell in position <code>i</code> can assume values in the interval <code>dataRanges[i]</code>.
@@ -81,6 +111,21 @@ public class DataState {
      */
     public DataState(DataRange[] dataRanges, IntToDoubleFunction initFunction) {
         this(dataRanges, IntStream.range(0, dataRanges.length).mapToDouble(initFunction).toArray());
+    }
+
+    /**
+     * Creates a new data state with the <code>dataRanges.length</code> cells. Values in the data state are initialised by
+     * assigning to the cell in position <code>i</code> the value <code>initFunction.applyAsDouble(i)</code>.
+     * The cell in position <code>i</code> can assume values in the interval <code>dataRanges[i]</code>.
+     * Time variables are initialised individually.
+     *
+     * @param initFunction function used to initialise the values.
+     * @param dataRanges data ranges of the cells.
+     * @param Tstep initial time step value.
+     */
+    public DataState(DataRange[] dataRanges, IntToDoubleFunction initFunction, int Tstep) {
+        this(dataRanges, IntStream.range(0, dataRanges.length).mapToDouble(initFunction).toArray());
+        this.step = Tstep;
     }
 
     /**
@@ -99,6 +144,25 @@ public class DataState {
         }
         this.data = DataRange.apply(dataRanges, data);
         this.dataRanges = dataRanges;
+    }
+
+    /**
+     * Creates a new data state with <code>dataRanges.length</code> cells that are initialised with the given
+     * values <code>data</code>. For any <code>i</code>, <code>dataRanges[i]</code> is the data range for the
+     * cell in position <code>i</code>.
+     *
+     * @param dataRanges data ranges for the cells in the created data state.
+     * @param data data state values.
+     * @param Tstep initial time step value.
+     * @throws IllegalArgumentException if <code>dataRanges.length != data.length</code>.
+     */
+    public DataState(DataRange[] dataRanges, double[] data, int Tstep) {
+        if (dataRanges.length != data.length) {
+            throw new IllegalArgumentException();
+        }
+        this.data = DataRange.apply(dataRanges, data);
+        this.dataRanges = dataRanges;
+        this.step = Tstep;
     }
 
     /**
@@ -203,6 +267,15 @@ public class DataState {
     }
 
     /**
+     * Get the value of the current time step.
+     * @return parameter <code>step</code>.
+     */
+
+    public int getStep(){
+        return this.step;
+    }
+
+    /**
      * Sets the value in position i to the value <code>getDataRange(i).apply(v)</code>.
      *
      * @param i index of cell to set.
@@ -210,6 +283,16 @@ public class DataState {
      */
     public void set(int i, double v) {
         this.data[i] = this.dataRanges[i].apply(v);
+    }
+
+    /**
+     * Set the value of the current time step.
+     *
+     * @param newStep new value of the current time step.
+     */
+
+    public void setStep(int newStep){
+        this.step = newStep;
     }
 
     /**
@@ -232,6 +315,7 @@ public class DataState {
     public DataState apply(List<DataStateUpdate> updates) {
         DataState newDataState = new DataState(this.dataRanges, data);
         updates.forEach(newDataState::apply);
+        newDataState.setStep(this.getStep());
         return newDataState;
     }
 

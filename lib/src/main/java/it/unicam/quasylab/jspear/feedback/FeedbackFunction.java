@@ -22,46 +22,26 @@
 
 package it.unicam.quasylab.jspear.feedback;
 
-import it.unicam.quasylab.jspear.DefaultRandomGenerator;
 import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
+import it.unicam.quasylab.jspear.ds.DataStateUpdate;
+import org.apache.commons.math3.random.RandomGenerator;
 
-import java.util.ArrayList;
-import java.util.Optional;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.util.List;
+import java.util.function.BiFunction;
 
 /**
- * Class NoneFeedback implements a feedback that has no effects.
+ * Instances of this interface are used to represent a random function from data states to data states.
  */
-public final class NoneFeedback implements Feedback {
+@FunctionalInterface
+public interface FeedbackFunction {
 
-    /**
-     * The feedback has no effects.
-     *
-     * @return the empty effect.
-     */
-    @Override
-    public Optional<DataStateFunction> effect() {
-        return Optional.empty();
-    }
 
-    /**
-     * The feedback never changes its behaviour.
-     *
-     * @return the feedback itself.
-     */
-    @Override
-    public Feedback next() {
-        return this;
-    }
+    DataStateFunction apply(int[][] varW, EvolutionSequence sequence);
 
-    /**
-     * Since it has no effects at any time step, the feedback has terminated.
-     *
-     * @return true
-     */
-    @Override
-    public boolean isDone() {
-        return true;
-    }
+
+
 
 }

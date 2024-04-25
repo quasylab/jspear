@@ -23,6 +23,7 @@
 package it.unicam.quasylab.jspear.feedback;
 
 
+import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 
 import java.util.Optional;
@@ -35,7 +36,7 @@ import java.util.Optional;
  *             the actual length of the time-out is of <code>from+1</code> steps.
  * @param changes function with the effects of the feedback to be applied to the data state.
  */
-public record AtomicFeedback(int from, DataStateFunction changes) implements Feedback {
+public record AtomicFeedback(int from, int[][] varW, EvolutionSequence sequence, FeedbackFunction changes) implements Feedback {
 
     /**
      * If the initial time-out has passed, the feedback function is applied.
@@ -48,7 +49,7 @@ public record AtomicFeedback(int from, DataStateFunction changes) implements Fee
     @Override
     public Optional<DataStateFunction> effect() {
         if (from <= 0) {
-            return Optional.of(changes);
+            return Optional.of(changes.apply(varW,sequence));
         } else {
             return Optional.empty();
         }
@@ -71,7 +72,7 @@ public record AtomicFeedback(int from, DataStateFunction changes) implements Fee
         if (from <= 0) {
             return Feedback.NONE;
         } else {
-            return new AtomicFeedback(from-1, changes);
+            return new AtomicFeedback(from-1,varW,sequence,changes);
         }
     }
 

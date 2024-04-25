@@ -22,6 +22,7 @@
 
 package it.unicam.quasylab.jspear.feedback;
 
+import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 
 import java.util.Optional;
@@ -77,4 +78,5 @@ public final class DelayedFeedback implements Feedback {
     public boolean isDone() {
         return false;
     }
+
 }

@@ -22,6 +22,7 @@
 
 package it.unicam.quasylab.jspear.feedback;
 
+import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.FeedbackSystem;
 import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.DataState;
@@ -59,6 +60,7 @@ public sealed interface Feedback permits
      * @return true if this feedback has terminated its effects.
      */
     boolean isDone();
+
 
     /**
      * Applies the effect of this feedback, if present, to the current data state.
