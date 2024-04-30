@@ -46,13 +46,13 @@ public class Main {
     public static final double MAX_STEER_ANGLE = 0.5;
     public static final double MAX_DIR_ANGLE = Math.PI;
     public static final double MIN_DIR_ANGLE = -Math.PI;
-    public static final double MIN_SPEED = -2;
+    public static final double MIN_SPEED = 0;
     public static final double MAX_SPEED = 3;
     public static final double MIN_ACC = 2;
     public static final double MAX_ACC = 1;
     public static final int TIME_OUT = 1;
-    public static final double DIST_EPS = 4;
-    public static final double DIR_EPS = 0.05;
+    public static final double DIST_EPS = 2;
+    public static final double DIR_EPS = 0.0;
 
     private static final int posX = 0;
     private static final int posY = 1;
@@ -77,7 +77,7 @@ public class Main {
     private static final double INIT_SPEED = 0.0;
     private static final double INIT_ACC = 0.0;
     private static final double FINAL_POSX = 100.0;
-    private static final double FINAL_POSY = 10.0;
+    private static final double FINAL_POSY = 0.0;
     private static final double FINAL_DIRANGLE = 0;
     private static final double FINAL_STEERANGLE = 0.0;
     private static final double FINAL_SPEED = 0.0;
@@ -136,27 +136,22 @@ public class Main {
                 Controller.ifThenElse(
                         DataState.greaterThan(sensedSpeed,0),
                         Controller.ifThenElse(
-                                DataState.greaterThan(distance, DIST_EPS),
+                                DataState.greaterThan(distance, DIST_EPS).and(DataState.greaterThan(diffAngle,DIR_EPS)),
+                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,MAX_ACC), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Idle")),
                                 Controller.ifThenElse(
-                                        DataState.lessThan(diffAngle, DIR_EPS),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,MAX_ACC), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Idle")),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,MAX_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Idle"))
-                                ),
-                                Controller.ifThenElse(
-                                        DataState.lessThan(diffAngle, DIR_EPS),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-MIN_ACC), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Stop")),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-MIN_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Idle"))
+                                        DataState.greaterThan(distance,DIST_EPS).and(DataState.lessOrEqualThan(diffAngle,DIR_EPS)),
+                                        Controller.doAction((rg,ds)->List.of( new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Idle")),
+                                        Controller.ifThenElse(
+                                                DataState.lessOrEqualThan(distance,DIST_EPS).and(DataState.greaterThan(diffAngle, DIR_EPS)),
+                                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-ds.get(acc)), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Idle")),
+                                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-MIN_ACC), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Stop"))
+                                        )
                                 )
-
                         ),
                         Controller.ifThenElse(
-                                DataState.greaterThan(distance,DIST_EPS),
-                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,MAX_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Idle")),
-                                Controller.ifThenElse(
-                                        DataState.lessThan(diffAngle, DIR_EPS),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,0), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Stop")),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-MIN_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Idle"))
-                                )
+                                DataState.greaterThan(distance,DIST_EPS).or(DataState.greaterThan(diffAngle,DIR_EPS)),
+                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,MAX_ACC/4), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Idle")),
+                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,0), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Stop"))
                         )
                 )
         );
@@ -172,13 +167,9 @@ public class Main {
                         DataState.greaterThan(timer, 0),
                         Controller.doTick(registry.reference("Stop")),
                         Controller.ifThenElse(
-                                DataState.greaterThan(distance,DIST_EPS),
-                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(acc, MAX_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer, TIME_OUT)),registry.reference("Idle")),
-                                Controller.ifThenElse(
-                                        DataState.lessThan(diffAngle, DIR_EPS),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,0), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Stop")),
-                                        Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,-MIN_ACC/2), new DataStateUpdate(steerAngle,ds.get(steerAngleErr)), new DataStateUpdate(timer,TIME_OUT)),registry.reference("Idle"))
-                                )
+                                DataState.greaterThan(sensedSpeed,0),
+                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc, -MAX_ACC), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer, TIME_OUT)),registry.reference("Stop")),
+                                Controller.doAction((rg,ds)->List.of(new DataStateUpdate(acc,0), new DataStateUpdate(steerAngle,0), new DataStateUpdate(timer,TIME_OUT)), registry.reference("Stop"))
                         )
                 )
         );
@@ -197,8 +188,10 @@ public class Main {
         double newX = x + v*Math.cos(theta);
         double newY = y + v*Math.sin(theta);
         double newTheta = Math.min(MAX_DIR_ANGLE, Math.max(MIN_DIR_ANGLE, theta + Math.tan(delta)*v/L));
-        double newDelta = Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(FINAL_DIRANGLE-newTheta) + Kp*(FINAL_POSY-newY)/(FINAL_POSX-newX)));
-        double newDist = Math.sqrt((FINAL_POSX-newX)*(FINAL_POSX-x) + (FINAL_POSY-newY)*(FINAL_POSY-newY)); // - (v * v + (MAX_ACC + MIN_ACC) * (MAX_ACC * TIME_OUT * TIME_OUT + 2 * Math.abs(v) * TIME_OUT)) / (2 * MIN_ACC);
+        //double newDelta = Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(FINAL_DIRANGLE-newTheta) + Kp*(FINAL_POSY-newY)/(FINAL_POSX-newX)));
+        double newDelta = Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(-newTheta) + Kp*(-newY)));
+        //double newDist = Math.sqrt((FINAL_POSX-newX)*(FINAL_POSX-x) + (FINAL_POSY-newY)*(FINAL_POSY-newY)); // - (v * v + (MAX_ACC + MIN_ACC) * (MAX_ACC * TIME_OUT * TIME_OUT + 2 * Math.abs(v) * TIME_OUT)) / (2 * MIN_ACC);
+        double newDist = Math.abs(FINAL_POSY-newY);
         updates.add(new DataStateUpdate(posX, newX));
         updates.add(new DataStateUpdate(posY, newY));
         updates.add(new DataStateUpdate(dirAngle, newTheta));
@@ -220,8 +213,10 @@ public class Main {
         values.put(speed, v);
         values.put(acc, a);
         values.put(sensedSpeed,v);
-        values.put(steerAngleErr, Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(FINAL_DIRANGLE-theta) + Kp*(FINAL_POSY-y)/(FINAL_POSX - x))));
-        values.put(distance, Math.sqrt((FINAL_POSX-INIT_POSX)*(FINAL_POSX-INIT_POSX) + (FINAL_POSY-INIT_POSY)*(FINAL_POSY-INIT_POSY)));
+        //values.put(steerAngleErr, Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(FINAL_DIRANGLE-theta) + Kp*(FINAL_POSY-y)/(FINAL_POSX - x))));
+        values.put(steerAngleErr, Math.min(MAX_STEER_ANGLE, Math.max(-MAX_STEER_ANGLE, Kt*(-theta) + Kp*(-y))));
+        //values.put(distance, Math.sqrt((FINAL_POSX-INIT_POSX)*(FINAL_POSX-INIT_POSX) + (FINAL_POSY-INIT_POSY)*(FINAL_POSY-INIT_POSY)));
+        values.put(distance, Math.abs(FINAL_POSY-INIT_POSY));
         values.put(diffAngle, Math.abs(FINAL_DIRANGLE - INIT_DIRANGLE));
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, 0.0),0);
     }
