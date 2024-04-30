@@ -15,4 +15,6 @@ include('examples:engine')
 include('examples:vehicle')
 include('speclang')
 include('cli')
+include 'examples:agriculturalDT'
+findProject(':examples:agriculturalDT')?.name = 'agriculturalDT'
 
