@@ -93,8 +93,6 @@ public class Main {
             F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
             F.add(ds->ds.get(p_distance));
-            F.add(ds->Math.cos(ds.get(theta)));
-            F.add(ds->Math.sin(ds.get(theta)));
 
             printLData(rand,L,F,system,500,1);
 
@@ -185,7 +183,8 @@ public class Main {
                                 DataState.equalsTo(currentWP,WPx.length-1),
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(timer_V, TIMER)),
                                         registry.reference("Stop")),
-                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),new DataStateUpdate(theta, Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
+                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),
+                                                new DataStateUpdate(theta, ((WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
                                         registry.reference("Ctrl"))
                         )
                 )
@@ -268,8 +267,8 @@ public class Main {
         }
         //double token = rg.nextDouble();
         double new_s_speed = new_p_speed;
-        double newX = state.get(x) + Math.signum(theta)*Math.cos(state.get(theta))*new_p_speed;
-        double newY = state.get(y) + Math.signum(theta)*Math.sin(state.get(theta))*new_p_speed;
+        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed;
+        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed;
         //if (token < 0.5){
         //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
         //} else {
