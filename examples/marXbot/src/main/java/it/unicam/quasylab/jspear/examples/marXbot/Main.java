@@ -48,8 +48,10 @@ public class Main {
     public final static double INIT_X = 0.0;
     public final static double INIT_Y = 0.0;
     public final static double INIT_THETA = Math.PI/2;
-    public final static double FINAL_X = 7.0;
-    public final static double FINAL_Y = 19.0;
+    public final static double FINAL_X = 50.0;
+    public final static double FINAL_Y = 30.0;
+    public final static double[] WPx = {1,13,7,FINAL_X};
+    public final static double[] WPy = {3,3,7,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow(FINAL_X-INIT_X,2) + Math.pow(FINAL_Y-INIT_Y,2));
     private static final int H = 350;
 
@@ -62,17 +64,40 @@ public class Main {
     private static final int accel = 6;
     private static final int timer_V = 7;
     private static final int gap = 8;
+    private static final int currentWP = 9;
 
-    private static final int NUMBER_OF_VARIABLES = 9;
+    private static final int NUMBER_OF_VARIABLES = 10;
 
 
 
     public static void main(String[] args) throws IOException {
         try {
+
+            RandomGenerator rand = new DefaultRandomGenerator();
+
             Controller vehicle = getController();
             DataState state = getInitialState();
             ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
-            EvolutionSequence sequence = new EvolutionSequence(new DefaultRandomGenerator(), rg -> system, 100);
+            //EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
+
+            ArrayList<String> L = new ArrayList<>();
+            L.add("x");
+            L.add("y");
+            L.add("theta");
+            L.add("speed");
+            L.add("distance");
+
+            ArrayList<DataStateExpression> F = new ArrayList<>();
+            F.add(ds->ds.get(x));
+            F.add(ds->ds.get(y));
+            F.add(ds->ds.get(theta));
+            F.add(ds->ds.get(p_speed));
+            F.add(ds->ds.get(p_distance));
+            F.add(ds->Math.cos(ds.get(theta)));
+            F.add(ds->Math.sin(ds.get(theta)));
+
+            printLData(rand,L,F,system,500,1);
+
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -149,11 +174,28 @@ public class Main {
 
         ControllerRegistry registry = new ControllerRegistry();
 
+        registry.set("SetDir",
+                Controller.ifThenElse(
+                      DataState.greaterThan(gap,0),
+                        Controller.doAction(
+                                (rg, ds) -> List.of(new DataStateUpdate(theta, Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
+                                registry.reference("Ctrl")
+                        ),
+                        Controller.ifThenElse(
+                                DataState.equalsTo(currentWP,WPx.length-1),
+                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(timer_V, TIMER)),
+                                        registry.reference("Stop")),
+                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),new DataStateUpdate(theta, Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
+                                        registry.reference("Ctrl"))
+                        )
+                )
+        );
+
         registry.set("Ctrl",
                 Controller.ifThenElse(
                         DataState.greaterThan(s_speed, 0),
                         Controller.ifThenElse(
-                                DataState.greaterThan(gap, 0 ),
+                                DataState.greaterThan(gap, 0),
                                 Controller.doAction(
                                         (rg, ds) -> List.of(new DataStateUpdate(accel, ACCELERATION),
                                                 new DataStateUpdate(timer_V, TIMER)),
@@ -174,7 +216,7 @@ public class Main {
                                 Controller.doAction(
                                         (rg,ds)-> List.of(new DataStateUpdate(accel,NEUTRAL),
                                                 new DataStateUpdate(timer_V, TIMER)),
-                                        registry.reference("Stop")
+                                        registry.reference("SetDir")
                                 )
                         )
                 )
@@ -208,7 +250,7 @@ public class Main {
 
 
 
-        return registry.reference("Ctrl");
+        return registry.reference("SetDir");
 
     }
 
@@ -224,16 +266,16 @@ public class Main {
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
-        double token = rg.nextDouble();
+        //double token = rg.nextDouble();
         double new_s_speed = new_p_speed;
-        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed;
-        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed;
+        double newX = state.get(x) + Math.signum(theta)*Math.cos(state.get(theta))*new_p_speed;
+        double newY = state.get(y) + Math.signum(theta)*Math.sin(state.get(theta))*new_p_speed;
         //if (token < 0.5){
         //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
         //} else {
         //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
         //}
-        double new_p_distance = Math.sqrt(Math.pow(FINAL_X-newX,2) + Math.pow(FINAL_Y-newY,2));
+        double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
@@ -252,7 +294,7 @@ public class Main {
     public static DataState getInitialState( ) {
         Map<Integer, Double> values = new HashMap<>();
 
-        values.put(timer_V, (double) 0);
+        values.put(timer_V, 0.0);
         values.put(x, INIT_X);
         values.put(y, INIT_Y);
         values.put(theta, INIT_THETA);
@@ -263,6 +305,7 @@ public class Main {
         double init_braking_distance = (Math.pow(INIT_SPEED,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) + 2 * INIT_SPEED * TIMER))/(2 * BRAKE);
         double init_gap = INIT_DISTANCE - init_braking_distance;
         values.put(gap, init_gap);
+        values.put(currentWP,0.0);
 
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
