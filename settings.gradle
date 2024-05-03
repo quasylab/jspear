@@ -17,4 +17,6 @@ include('speclang')
 include('cli')
 include 'examples:agriculturalDT'
 findProject(':examples:agriculturalDT')?.name = 'agriculturalDT'
+include 'examples:marXbot'
+findProject(':examples:marXbot')?.name = 'marXbot'
 

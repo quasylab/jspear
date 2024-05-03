@@ -176,7 +176,7 @@ public class Main {
                 Controller.ifThenElse(
                       DataState.greaterThan(gap,0),
                         Controller.doAction(
-                                (rg, ds) -> List.of(new DataStateUpdate(theta, Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
+                                (rg, ds) -> List.of(new DataStateUpdate(theta, (WPx[(int)ds.get(currentWP)]==ds.get(x))?0:((WPx[(int)ds.get(currentWP)]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
                                 registry.reference("Ctrl")
                         ),
                         Controller.ifThenElse(
@@ -184,7 +184,7 @@ public class Main {
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(timer_V, TIMER)),
                                         registry.reference("Stop")),
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),
-                                                new DataStateUpdate(theta, ((WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
+                                                new DataStateUpdate(theta, (WPx[(int)ds.get(currentWP)+1]==ds.get(x))?0:((WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
                                         registry.reference("Ctrl"))
                         )
                 )
