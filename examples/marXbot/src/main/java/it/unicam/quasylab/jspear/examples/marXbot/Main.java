@@ -55,16 +55,16 @@ public class Main {
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow(FINAL_X-INIT_X,2) + Math.pow(FINAL_Y-INIT_Y,2));
     private static final int H = 350;
 
-    private static final int x = 0;
-    private static final int y = 1;
-    private static final int theta = 2;
-    private static final int p_speed = 3;
-    private static final int s_speed = 4;
-    private static final int p_distance = 5;
-    private static final int accel = 6;
-    private static final int timer_V = 7;
-    private static final int gap = 8;
-    private static final int currentWP = 9;
+    private static final int x = 0; // current position, first coordinate
+    private static final int y = 1; // current position, second coordinate
+    private static final int theta = 2; // current direction
+    private static final int p_speed = 3; // physical speed
+    private static final int s_speed = 4; // sensed speed
+    private static final int p_distance = 5; // physical distance from the current target
+    private static final int accel = 6; // acceleration
+    private static final int timer_V = 7; // timer
+    private static final int gap = 8; // difference between p_distance and the space required to stop when braking
+    private static final int currentWP = 9; // current w point
 
     private static final int NUMBER_OF_VARIABLES = 10;
 
@@ -258,29 +258,33 @@ public class Main {
 
     public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double new_timer_V = state.get(timer_V) - 1;
+        double new_timer_V = state.get(timer_V) - 1; // timer is simply decremented
         double new_p_speed;
         if (state.get(accel) == NEUTRAL) {
+            // the speed is updated according to acceleration
             new_p_speed = Math.max(0.0,state.get(p_speed)-ACCELERATION);
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
         //double token = rg.nextDouble();
-        double new_s_speed = new_p_speed;
-        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed;
-        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed;
+        double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
+        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
+        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
         //if (token < 0.5){
         //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
         //} else {
         //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
         //}
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
+        // the distance from the target is updated taking into account the new position
+
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
         updates.add(new DataStateUpdate(p_speed, new_p_speed));
         updates.add(new DataStateUpdate(p_distance, new_p_distance));
         double new_braking_distance = (Math.pow(new_s_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) + 2 * new_s_speed * TIMER)) / (2 * BRAKE);
+        // the braking distance is computed according to the uniformly accelerated motion law
         double new_gap = new_p_distance - new_braking_distance;
         updates.add(new DataStateUpdate(s_speed, new_s_speed));
         updates.add(new DataStateUpdate(gap, new_gap));
