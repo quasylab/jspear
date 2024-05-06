@@ -23,6 +23,8 @@
 package it.unicam.quasylab.jspear.feedback;
 
 import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.SampleSet;
+import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
@@ -36,12 +38,25 @@ import java.util.function.BiFunction;
  * Instances of this interface are used to represent a random function from data states to data states.
  */
 @FunctionalInterface
-public interface FeedbackFunction {
+public interface FeedbackFunction<R,D,S,L>{
 
 
-    DataStateFunction apply(int[][] varW, EvolutionSequence sequence);
+    static DataStateFunction apply(int[][] varW, EvolutionSequence sequence) {
+        return (rg,ds) -> {
+          int step = ds.getStep();
+            SampleSet<SystemState> systemStateSampleSet = sequence.get(step);
+            ds.get(varW[0][0]);
+            systemStateSampleSet.mean(d -> d.getDataState().get(varW[0][0]));
+
+            return null;
+
+        };
+    }
 
 
+    FeedbackFunction<RandomGenerator, DataState, EvolutionSequence, List<DataStateUpdate>> TICK_FUNCTION = (rg, ds, sequence) -> List.of();
+
+    DataState apply(RandomGenerator rg, DataState ds, EvolutionSequence sequence);
 
 
 }

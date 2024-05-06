@@ -362,4 +362,8 @@ public class SampleSet<T extends SystemState> {
                 this.stream().flatMap(e -> IntStream.range(0, k).mapToObj(i -> e)).toList()
         );
     }
+
+    public double mean(ToDoubleFunction<T> function){
+        return this.stream().mapToDouble(function).average().orElse(0.0);
+    }
 }
