@@ -45,6 +45,7 @@ public class Main {
     public final static int TIMER = 2;
     public final static double INIT_SPEED = 0.0;
     public final static double MAX_SPEED = 3.0;
+    public final static double MAX_SPEED_OFFSET = 1.0;
     public final static double INIT_X = 0.0;
     public final static double INIT_Y = 0.0;
     public final static double INIT_THETA = Math.PI/2;
@@ -52,19 +53,20 @@ public class Main {
     public final static double FINAL_Y = 30.0;
     public final static double[] WPx = {1,13,7,FINAL_X};
     public final static double[] WPy = {3,3,7,FINAL_Y};
-    public final static double INIT_DISTANCE = Math.sqrt(Math.pow(FINAL_X-INIT_X,2) + Math.pow(FINAL_Y-INIT_Y,2));
+    public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
+
     private static final int H = 350;
 
-    private static final int x = 0;
-    private static final int y = 1;
-    private static final int theta = 2;
-    private static final int p_speed = 3;
-    private static final int s_speed = 4;
-    private static final int p_distance = 5;
-    private static final int accel = 6;
-    private static final int timer_V = 7;
-    private static final int gap = 8;
-    private static final int currentWP = 9;
+    private static final int x = 0; // current position, first coordinate
+    private static final int y = 1; // current position, second coordinate
+    private static final int theta = 2; // current direction
+    private static final int p_speed = 3; // physical speed
+    private static final int s_speed = 4; // sensed speed
+    private static final int p_distance = 5; // physical distance from the current target
+    private static final int accel = 6; // acceleration
+    private static final int timer_V = 7; // timer
+    private static final int gap = 8; // difference between p_distance and the space required to stop when braking
+    private static final int currentWP = 9; // current w point
 
     private static final int NUMBER_OF_VARIABLES = 10;
 
@@ -78,24 +80,33 @@ public class Main {
             Controller vehicle = getController();
             DataState state = getInitialState();
             ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+
             //EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
 
             ArrayList<String> L = new ArrayList<>();
-            L.add("x");
-            L.add("y");
-            L.add("theta");
-            L.add("speed");
-            L.add("distance");
+            L.add("        x");
+            L.add("        y");
+            L.add("     theta");
+            L.add("    p_speed");
+            L.add("    s_speed");
+            L.add("   distance");
+            L.add("    gap ");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
             F.add(ds->ds.get(y));
             F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
+            F.add(ds->ds.get(s_speed));
             F.add(ds->ds.get(p_distance));
+            F.add(ds->ds.get(gap));
+            F.add(ds->ds.get(currentWP));
 
-            printLData(rand,L,F,system,500,1);
-
+            //printLData(rand,L,F,system,100,1);
+            System.out.println(" ");
+            System.out.println(" ");
+            //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
+            printLDataPar(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -139,6 +150,22 @@ public class Main {
                 System.out.printf("%f   ", data[i][j]);
             }
             System.out.printf("%f\n", data[i][data[i].length -1]);
+        }
+    }
+
+    private static void printLDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
+        System.out.println(label);
+        double[][] data = SystemState.sample(rg, F, s, steps, size);
+        double[][] datap = SystemState.sample(rg, F, p, s, steps, size);
+        for (int i = 0; i < data.length; i++) {
+            System.out.printf("%d>  ", i);
+            for (int j = 0; j < data[i].length-1; j++) {
+                System.out.printf("%f  ", data[i][j]);
+                System.out.printf("%f  ", datap[i][j]);
+            }
+            System.out.printf("%f  ", data[i][datap[i].length -1]);
+            System.out.printf("%f\n", datap[i][datap[i].length -1]);
+
         }
     }
 
@@ -258,34 +285,40 @@ public class Main {
 
     public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double new_timer_V = state.get(timer_V) - 1;
+        double new_timer_V = state.get(timer_V) - 1; // timer is simply decremented
         double new_p_speed;
         if (state.get(accel) == NEUTRAL) {
+            // the speed is updated according to acceleration
             new_p_speed = Math.max(0.0,state.get(p_speed)-ACCELERATION);
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
         //double token = rg.nextDouble();
-        double new_s_speed = new_p_speed;
-        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed;
-        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed;
+        double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
+        double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
+        double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
         //if (token < 0.5){
         //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
         //} else {
         //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
         //}
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
+        // the distance from the target is updated taking into account the new position
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
         updates.add(new DataStateUpdate(p_speed, new_p_speed));
         updates.add(new DataStateUpdate(p_distance, new_p_distance));
         double new_braking_distance = (Math.pow(new_s_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) + 2 * new_s_speed * TIMER)) / (2 * BRAKE);
+        // the braking distance is computed according to the uniformly accelerated motion law
         double new_gap = new_p_distance - new_braking_distance;
         updates.add(new DataStateUpdate(s_speed, new_s_speed));
         updates.add(new DataStateUpdate(gap, new_gap));
         return updates;
     }
+
+
+
 
 
     // INITIALISATION OF DATA STATE
@@ -307,6 +340,25 @@ public class Main {
         values.put(currentWP,0.0);
 
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
+    }
+
+
+    // PERTURBATIONS
+
+    private static  Perturbation getIteratedSlowerPerturbation() {
+        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(TIMER - 2, Main::slowerPerturbation)));
+    }
+
+    private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
+        List<DataStateUpdate> updates = new LinkedList<>();
+        double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
+        double fake_speed = Math.max(0, state.get(p_speed) - offset);
+        double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
+                2 * fake_speed * TIMER)) / (2 * BRAKE);
+        double fake_gap = p_distance - fake_braking_distance;
+        updates.add(new DataStateUpdate(s_speed, fake_speed));
+        updates.add(new DataStateUpdate(gap, fake_gap));
+        return state.apply(updates);
     }
 
 }
