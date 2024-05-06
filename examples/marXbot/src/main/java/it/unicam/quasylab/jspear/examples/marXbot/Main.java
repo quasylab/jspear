@@ -45,6 +45,7 @@ public class Main {
     public final static int TIMER = 2;
     public final static double INIT_SPEED = 0.0;
     public final static double MAX_SPEED = 3.0;
+    public final static double MAX_SPEED_OFFSET = 1.0;
     public final static double INIT_X = 0.0;
     public final static double INIT_Y = 0.0;
     public final static double INIT_THETA = Math.PI/2;
@@ -52,7 +53,8 @@ public class Main {
     public final static double FINAL_Y = 30.0;
     public final static double[] WPx = {1,13,7,FINAL_X};
     public final static double[] WPy = {3,3,7,FINAL_Y};
-    public final static double INIT_DISTANCE = Math.sqrt(Math.pow(FINAL_X-INIT_X,2) + Math.pow(FINAL_Y-INIT_Y,2));
+    public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
+
     private static final int H = 350;
 
     private static final int x = 0; // current position, first coordinate
@@ -78,24 +80,33 @@ public class Main {
             Controller vehicle = getController();
             DataState state = getInitialState();
             ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+
             //EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
 
             ArrayList<String> L = new ArrayList<>();
-            L.add("x");
-            L.add("y");
-            L.add("theta");
-            L.add("speed");
-            L.add("distance");
+            L.add("        x");
+            L.add("        y");
+            L.add("     theta");
+            L.add("    p_speed");
+            L.add("    s_speed");
+            L.add("   distance");
+            L.add("    gap ");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
             F.add(ds->ds.get(y));
             F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
+            F.add(ds->ds.get(s_speed));
             F.add(ds->ds.get(p_distance));
+            F.add(ds->ds.get(gap));
+            F.add(ds->ds.get(currentWP));
 
-            printLData(rand,L,F,system,500,1);
-
+            //printLData(rand,L,F,system,100,1);
+            System.out.println(" ");
+            System.out.println(" ");
+            //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
+            printLDataPar(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -139,6 +150,22 @@ public class Main {
                 System.out.printf("%f   ", data[i][j]);
             }
             System.out.printf("%f\n", data[i][data[i].length -1]);
+        }
+    }
+
+    private static void printLDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
+        System.out.println(label);
+        double[][] data = SystemState.sample(rg, F, s, steps, size);
+        double[][] datap = SystemState.sample(rg, F, p, s, steps, size);
+        for (int i = 0; i < data.length; i++) {
+            System.out.printf("%d>  ", i);
+            for (int j = 0; j < data[i].length-1; j++) {
+                System.out.printf("%f  ", data[i][j]);
+                System.out.printf("%f  ", datap[i][j]);
+            }
+            System.out.printf("%f  ", data[i][datap[i].length -1]);
+            System.out.printf("%f\n", datap[i][datap[i].length -1]);
+
         }
     }
 
@@ -277,7 +304,6 @@ public class Main {
         //}
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
         // the distance from the target is updated taking into account the new position
-
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
@@ -290,6 +316,9 @@ public class Main {
         updates.add(new DataStateUpdate(gap, new_gap));
         return updates;
     }
+
+
+
 
 
     // INITIALISATION OF DATA STATE
@@ -311,6 +340,25 @@ public class Main {
         values.put(currentWP,0.0);
 
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
+    }
+
+
+    // PERTURBATIONS
+
+    private static  Perturbation getIteratedSlowerPerturbation() {
+        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(TIMER - 2, Main::slowerPerturbation)));
+    }
+
+    private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
+        List<DataStateUpdate> updates = new LinkedList<>();
+        double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
+        double fake_speed = Math.max(0, state.get(p_speed) - offset);
+        double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
+                2 * fake_speed * TIMER)) / (2 * BRAKE);
+        double fake_gap = p_distance - fake_braking_distance;
+        updates.add(new DataStateUpdate(s_speed, fake_speed));
+        updates.add(new DataStateUpdate(gap, fake_gap));
+        return state.apply(updates);
     }
 
 }
