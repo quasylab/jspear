@@ -69,7 +69,7 @@ public class Main {
     private static final int currentWP = 9; // current w point
 
     private static final int NUMBER_OF_VARIABLES = 10;
-    private static final double SPEED_DIFFERENCE = 0.2;
+    private static final double SPEED_DIFFERENCE = 0.02;
 
 
     public static void main(String[] args) throws IOException {
@@ -77,24 +77,25 @@ public class Main {
 
             RandomGenerator rand = new DefaultRandomGenerator();
 
-            Controller vehicle = getController();
+            Controller robot = getController();
             DataState state = getInitialState();
 
-            ControlledSystem r_system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
-            ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+            ControlledSystem r_system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+            ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> r_system, 100);
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> r_system, 1);
 
             Feedback feedback = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackFunction));
-            Feedback feedback2 = new IterativeFeedback(100,new AtomicFeedback(0, sequence, Main::feedbackFunction));
 
-            FeedbackSystem feedbackSystem = new FeedbackSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedback);
+            FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedback);
 
             Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
 
+            PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
+
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
 
-            PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
+
 
 
             ArrayList<String> L = new ArrayList<>();
@@ -110,18 +111,19 @@ public class Main {
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
             F.add(ds->ds.get(y));
-            F.add(ds->ds.get(theta));
+            //F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
-            F.add(ds->ds.get(s_speed));
-            F.add(ds->ds.get(p_distance));
+            //F.add(ds->ds.get(s_speed));
+            //F.add(ds->ds.get(p_distance));
             F.add(ds->ds.get(gap));
             F.add(ds->ds.get(currentWP));
 
 
-            printDataPar(rand,L,F,system,feedbackSystem,200,1);
+            //printDataPar(rand,L,F,r_system,feedbackSystem,200,1);
             //printLData(rand,L,F,system,200,1);
             System.out.println(" ");
             System.out.println(" ");
+            printDataPar(rand,L,F,r_system,perturbedSystem,perturbedFeedbackSystem,200,1);
             //printLData(rand,L,F,feedbackSystem,200,1);
             //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
 
@@ -144,6 +146,8 @@ public class Main {
         }
         return List.of();
     }
+
+
 
     private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
         System.out.println(label);
@@ -197,6 +201,25 @@ public class Main {
             }
             System.out.printf("%f ", data[i][datap[i].length -1]);
             System.out.printf("%f\n", datap[i][datap[i].length -1]);
+
+        }
+    }
+
+    private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, SystemState s3, int steps, int size) {
+
+        double[][] data1 = SystemState.sample(rg, F, s1, steps, size);
+        double[][] data2 = SystemState.sample(rg, F, s2, steps, size);
+        double[][] data3 = SystemState.sample(rg, F, s3, steps, size);
+        for (int i = 0; i < data1.length; i++) {
+            System.out.printf("%d>  ", i);
+            for (int j = 0; j < data1[i].length-1; j++) {
+                System.out.printf("%f ", data1[i][j]);
+                System.out.printf("%f ", data2[i][j]);
+                System.out.printf("%f ", data3[i][j]);
+            }
+            System.out.printf("%f ", data1[i][data1[i].length -1]);
+            System.out.printf("%f ", data2[i][data2[i].length -1]);
+            System.out.printf("%f\n", data3[i][data3[i].length -1]);
 
         }
     }
