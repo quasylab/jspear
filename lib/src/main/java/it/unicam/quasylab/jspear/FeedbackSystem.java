@@ -59,9 +59,17 @@ public class FeedbackSystem implements SystemState {
     }
 
     @Override
+    //public SystemState sampleNext(RandomGenerator rg) {
+    //    EffectStep<Controller> step = controller.next(rg, state);
+    //    return new FeedbackSystem(step.next(), environment, environment.apply(rg, feedback.apply(rg,state.apply(step.effect()))), feedback.next());
+    //}
+
     public SystemState sampleNext(RandomGenerator rg) {
         EffectStep<Controller> step = controller.next(rg, state);
-        return new FeedbackSystem(step.next(), environment, environment.apply(rg, feedback.apply(rg,state.apply(step.effect()))), feedback.next());
+        int c_step = state.getStep();
+        DataState newState = environment.apply(rg, feedback.apply(rg,state.apply(step.effect())));
+        newState.setStep(c_step +1);
+        return new FeedbackSystem(step.next(), environment, newState, feedback.next());
     }
 
     @Override

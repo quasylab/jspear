@@ -39,13 +39,13 @@ public class Main {
             new String[]{"p_speed", "s_speed", "p_distance", "accel", "timer_V", "braking_distance", "gap"
             };
 
-    public final static double ACCELERATION = 0.25;
-    public final static double BRAKE = 0.5;
+    public final static double ACCELERATION = 0.05;
+    public final static double BRAKE = 0.40;
     public final static double NEUTRAL = 0.0;
-    public final static int TIMER = 2;
+    public final static int TIMER = 1;
     public final static double INIT_SPEED = 0.0;
     public final static double MAX_SPEED = 3.0;
-    public final static double MAX_SPEED_OFFSET = 1.0;
+    public final static double MAX_SPEED_OFFSET = 0.1;
     public final static double INIT_X = 0.0;
     public final static double INIT_Y = 0.0;
     public final static double INIT_THETA = Math.PI/2;
@@ -79,14 +79,21 @@ public class Main {
 
             Controller vehicle = getController();
             DataState state = getInitialState();
+
+            ControlledSystem r_system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
             ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> r_system, 100);
 
             Feedback feedback = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackFunction));
+            Feedback feedback2 = new IterativeFeedback(100,new AtomicFeedback(0, sequence, Main::feedbackFunction));
+
             FeedbackSystem feedbackSystem = new FeedbackSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedback);
+
             Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
+
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
+
             PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
 
 
@@ -94,10 +101,11 @@ public class Main {
             L.add("        x");
             L.add("        y");
             L.add("     theta");
-            L.add("    p_speed");
-            L.add("    s_speed");
-            L.add("   distance");
-            L.add("    gap ");
+            L.add("   p_speed");
+            L.add("   s_speed");
+            L.add("  distance");
+            L.add("  gap ");
+            L.add("  waypoint ");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
@@ -109,11 +117,16 @@ public class Main {
             F.add(ds->ds.get(gap));
             F.add(ds->ds.get(currentWP));
 
-            //printLData(rand,L,F,system,100,1);
+
+            printDataPar(rand,L,F,system,feedbackSystem,200,1);
+            //printLData(rand,L,F,system,200,1);
             System.out.println(" ");
             System.out.println(" ");
+            //printLData(rand,L,F,feedbackSystem,200,1);
             //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
-            printLDataPar(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
+
+
+            //printLDataPar(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -122,11 +135,11 @@ public class Main {
 
     private static List<DataStateUpdate> feedbackFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
         int step = dataState.getStep();
-        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(s_speed));
-        if (meanSpeed+SPEED_DIFFERENCE<dataState.get(s_speed)) {
-            return List.of(new DataStateUpdate(accel, BRAKE));
+        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
+        if (meanSpeed  + SPEED_DIFFERENCE < dataState.get(p_speed)) {
+            return List.of(new DataStateUpdate(accel, -BRAKE));
         }
-        if (meanSpeed-SPEED_DIFFERENCE>dataState.get(s_speed)) {
+        if (meanSpeed - SPEED_DIFFERENCE > dataState.get(p_speed)) {
             return List.of(new DataStateUpdate(accel, ACCELERATION));
         }
         return List.of();
@@ -172,17 +185,33 @@ public class Main {
         }
     }
 
+    private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, int steps, int size) {
+
+        double[][] data = SystemState.sample(rg, F, s1, steps, size);
+        double[][] datap = SystemState.sample(rg, F, s2, steps, size);
+        for (int i = 0; i < data.length; i++) {
+            System.out.printf("%d>  ", i);
+            for (int j = 0; j < data[i].length-1; j++) {
+                System.out.printf("%f ", data[i][j]);
+                System.out.printf("%f ", datap[i][j]);
+            }
+            System.out.printf("%f ", data[i][datap[i].length -1]);
+            System.out.printf("%f\n", datap[i][datap[i].length -1]);
+
+        }
+    }
+
     private static void printLDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
+        //System.out.println(label);
         double[][] data = SystemState.sample(rg, F, s, steps, size);
         double[][] datap = SystemState.sample(rg, F, p, s, steps, size);
         for (int i = 0; i < data.length; i++) {
             System.out.printf("%d>  ", i);
             for (int j = 0; j < data[i].length-1; j++) {
-                System.out.printf("%f  ", data[i][j]);
-                System.out.printf("%f  ", datap[i][j]);
+                System.out.printf("%f ", data[i][j]);
+                System.out.printf("%f ", datap[i][j]);
             }
-            System.out.printf("%f  ", data[i][datap[i].length -1]);
+            System.out.printf("%f ", data[i][datap[i].length -1]);
             System.out.printf("%f\n", datap[i][datap[i].length -1]);
 
         }
@@ -365,16 +394,17 @@ public class Main {
     // PERTURBATIONS
 
     private static  Perturbation getIteratedSlowerPerturbation() {
-        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(TIMER - 2, Main::slowerPerturbation)));
+        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Main::slowerPerturbation)));
     }
 
     private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
+        double offset = MAX_SPEED_OFFSET;
+        // double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
         double fake_speed = Math.max(0, state.get(p_speed) - offset);
         double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
                 2 * fake_speed * TIMER)) / (2 * BRAKE);
-        double fake_gap = p_distance - fake_braking_distance;
+        double fake_gap = state.get(p_distance) - fake_braking_distance;
         updates.add(new DataStateUpdate(s_speed, fake_speed));
         updates.add(new DataStateUpdate(gap, fake_gap));
         return state.apply(updates);
