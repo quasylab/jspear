@@ -38,7 +38,8 @@ public sealed interface Perturbation permits
         AtomicPerturbation,
         IterativePerturbation,
         NonePerturbation,
-        SequentialPerturbation {
+        SequentialPerturbation,
+        PersistentPerturbation {
 
     Perturbation NONE = new NonePerturbation();
 

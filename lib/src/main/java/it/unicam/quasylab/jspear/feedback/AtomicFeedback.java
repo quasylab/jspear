@@ -36,7 +36,7 @@ import java.util.Optional;
  *             the actual length of the time-out is of <code>from+1</code> steps.
  * @param changes function with the effects of the feedback to be applied to the data state.
  */
-public record AtomicFeedback(int from, int[][] varW, EvolutionSequence sequence, FeedbackFunction changes) implements Feedback {
+public record AtomicFeedback(int from, EvolutionSequence sequence, FeedbackFunction changes) implements Feedback {
 
     /**
      * If the initial time-out has passed, the feedback function is applied.
@@ -49,7 +49,7 @@ public record AtomicFeedback(int from, int[][] varW, EvolutionSequence sequence,
     @Override
     public Optional<DataStateFunction> effect() {
         if (from <= 0) {
-            return Optional.of(changes.apply(varW,sequence));
+            return Optional.of((rg, ds) -> ds.apply(changes.apply(rg, ds, sequence)));
         } else {
             return Optional.empty();
         }
@@ -72,7 +72,7 @@ public record AtomicFeedback(int from, int[][] varW, EvolutionSequence sequence,
         if (from <= 0) {
             return Feedback.NONE;
         } else {
-            return new AtomicFeedback(from-1,varW,sequence,changes);
+            return new AtomicFeedback(from-1,sequence,changes);
         }
     }
 

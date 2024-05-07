@@ -69,7 +69,7 @@ public class Main {
     private static final int currentWP = 9; // current w point
 
     private static final int NUMBER_OF_VARIABLES = 10;
-
+    private static final double SPEED_DIFFERENCE = 0.2;
 
 
     public static void main(String[] args) throws IOException {
@@ -81,7 +81,14 @@ public class Main {
             DataState state = getInitialState();
             ControlledSystem system = new ControlledSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            //EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
+
+            Feedback feedback = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackFunction));
+            FeedbackSystem feedbackSystem = new FeedbackSystem(vehicle, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedback);
+            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
+            PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
+            PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
+
 
             ArrayList<String> L = new ArrayList<>();
             L.add("        x");
@@ -111,6 +118,18 @@ public class Main {
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
+    }
+
+    private static List<DataStateUpdate> feedbackFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
+        int step = dataState.getStep();
+        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(s_speed));
+        if (meanSpeed+SPEED_DIFFERENCE<dataState.get(s_speed)) {
+            return List.of(new DataStateUpdate(accel, BRAKE));
+        }
+        if (meanSpeed-SPEED_DIFFERENCE>dataState.get(s_speed)) {
+            return List.of(new DataStateUpdate(accel, ACCELERATION));
+        }
+        return List.of();
     }
 
     private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {

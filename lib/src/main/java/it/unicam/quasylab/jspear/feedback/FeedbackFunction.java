@@ -38,9 +38,11 @@ import java.util.function.BiFunction;
  * Instances of this interface are used to represent a random function from data states to data states.
  */
 @FunctionalInterface
-public interface FeedbackFunction<R,D,S,L>{
+public interface FeedbackFunction {
 
+    List<DataStateUpdate> apply(RandomGenerator rg, DataState ds, EvolutionSequence sequence);
 
+    /*
     static DataStateFunction apply(int[][] varW, EvolutionSequence sequence) {
         return (rg,ds) -> {
           int step = ds.getStep();
@@ -57,6 +59,6 @@ public interface FeedbackFunction<R,D,S,L>{
     FeedbackFunction<RandomGenerator, DataState, EvolutionSequence, List<DataStateUpdate>> TICK_FUNCTION = (rg, ds, sequence) -> List.of();
 
     DataState apply(RandomGenerator rg, DataState ds, EvolutionSequence sequence);
-
+    */
 
 }

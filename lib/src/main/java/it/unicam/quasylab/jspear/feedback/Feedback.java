@@ -36,7 +36,8 @@ public sealed interface Feedback permits
         DelayedFeedback,
         IterativeFeedback,
         NoneFeedback,
-        SequentialFeedback {
+        SequentialFeedback,
+        PersistentFeedback {
 
     Feedback NONE = new NoneFeedback();
 
