@@ -25,6 +25,7 @@ package it.unicam.quasylab.jspear.examples.marXbot;
 import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
+import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
 import it.unicam.quasylab.jspear.feedback.*;
@@ -55,6 +56,8 @@ public class Main {
     public final static double[] WPy = {3,3,7,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
+    public final static double maxD = Math.sqrt(Math.pow(50.0,2)+Math.pow(30.0 , 2));
+
     private static final int H = 350;
 
     private static final int x = 0; // current position, first coordinate
@@ -69,7 +72,7 @@ public class Main {
     private static final int currentWP = 9; // current w point
 
     private static final int NUMBER_OF_VARIABLES = 10;
-    private static final double SPEED_DIFFERENCE = 0.02;
+    private static final double SPEED_DIFFERENCE = 0.0001;
 
 
     public static void main(String[] args) throws IOException {
@@ -80,21 +83,20 @@ public class Main {
             Controller robot = getController();
             DataState state = getInitialState();
 
-            ControlledSystem r_system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+            //ControlledSystem r_system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
             ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> r_system, 1);
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 1);
 
-            Feedback feedback = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackFunction));
+            //Feedback feedbackSpeed = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackSpeedFunction));
+            Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackSpeedAndDirFunction));
 
-            FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedback);
+            FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackSpeedAndDir);
+            EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, 1);
 
             Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
-
             PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
-
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
-
 
 
 
@@ -111,10 +113,10 @@ public class Main {
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
             F.add(ds->ds.get(y));
-            //F.add(ds->ds.get(theta));
+            F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
-            //F.add(ds->ds.get(s_speed));
-            //F.add(ds->ds.get(p_distance));
+            F.add(ds->ds.get(s_speed));
+            F.add(ds->ds.get(p_distance));
             F.add(ds->ds.get(gap));
             F.add(ds->ds.get(currentWP));
 
@@ -123,19 +125,71 @@ public class Main {
             //printLData(rand,L,F,system,200,1);
             System.out.println(" ");
             System.out.println(" ");
-            printDataPar(rand,L,F,r_system,perturbedSystem,perturbedFeedbackSystem,200,1);
+            printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,200,10);
             //printLData(rand,L,F,feedbackSystem,200,1);
             //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
 
+            int N = 200;
+            int size = 5;
+            System.out.println("");
+            System.out.println("Simulation of nominal system - Data maximal values:");
+            double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
+            System.out.println("");
+            System.out.println("Simulation of perturbed system - Data maximal values:");
+            System.out.println("");
+            double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
 
-            //printLDataPar(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
+            double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
+
+            double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
+
+            double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
+
+
+            int scale=5;
+            EvolutionSequence perturbedSequence = sequence.apply(perturbation,0,scale);
+            EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
+            AtomicDistanceExpression distP2P = new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
+
+            int leftBound = 0;
+            int rightBound = 200;
+
+            double[][] direct_evaluation_atomic_distP2P = new double[rightBound-leftBound][1];
+
+            for (int i = 0; i<(rightBound-leftBound); i++){
+                direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedSequence);
+            }
+
+            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
+
+            System.out.println("ciao");
+
+            for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
+                System.out.println(direct_evaluation_atomic_distP2P[i][0]);
+
+            }
+
+            for (int i = 0; i<(rightBound-leftBound); i++){
+                direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedFeedbackSequence);
+            }
+
+            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
+
+            System.out.println("ciao");
+
+            for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
+                System.out.println(direct_evaluation_atomic_distP2P[i][0]);
+
+            }
+
+
 
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
     }
 
-    private static List<DataStateUpdate> feedbackFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
+    private static List<DataStateUpdate> feedbackSpeedFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
         int step = dataState.getStep();
         double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
         if (meanSpeed  + SPEED_DIFFERENCE < dataState.get(p_speed)) {
@@ -147,6 +201,31 @@ public class Main {
         return List.of();
     }
 
+    /*
+    The following feedback works as follows.
+    The present status of the PT is compared with the status that the DT reached at the same instant. Then:
+    1. If the sensed speed of the PT is much higher than the speed of the DT, then braking is activated.
+    2. If the sensed speed of the PT is much lower than the speed of the DT, then acceleration is activated.
+    3. If the waypoint of the PT is not the waypoint of the DT, then the waypoint of the PT is corrected. Contextually,
+    also the direction of the PT is corrected.
+     */
+    private static List<DataStateUpdate> feedbackSpeedAndDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
+        int step = dataState.getStep();
+        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
+        double meanWP = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(currentWP));
+        List<DataStateUpdate> upd = new ArrayList<>();
+        if (meanSpeed  + SPEED_DIFFERENCE < dataState.get(s_speed)) {
+            upd.add(new DataStateUpdate(accel, -BRAKE));
+        }
+        if (meanSpeed - SPEED_DIFFERENCE > dataState.get(s_speed)) {
+            upd.add(new DataStateUpdate(accel, ACCELERATION));
+        }
+        if( dataState.get(s_speed) == 0 & dataState.get(currentWP) < meanWP){
+            upd.add(new DataStateUpdate(currentWP, dataState.get(currentWP)+1));
+            upd.add(new DataStateUpdate(theta, (WPx[(int)dataState.get(currentWP)+1]==dataState.get(x))?0:((WPx[(int)dataState.get(currentWP)+1]<dataState.get(x))?Math.PI:0)+Math.atan((WPy[(int)dataState.get(currentWP)+1]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)+1]-dataState.get(x)))));
+        }
+        return upd;
+    }
 
 
     private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
@@ -263,6 +342,85 @@ public class Main {
             System.out.printf("%f\n", data[i][data[i].length -1]);
         }
     }
+
+    private static double[] printMaxData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
+
+        /*
+        The following instruction creates an evolution sequence consisting in a sequence of <code>steps</code> sample
+        sets of cardinality <size>.
+        The first sample set contains <code>size</code> copies of configuration <code>s</code>.
+        The subsequent sample sets are derived by simulating the dynamics.
+        Finally, for each step from 1 to <code>steps</code> and for each variable, the maximal value taken by the
+        variable in the elements of the sample set is stored.
+         */
+        double[][] data_max = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
+        double[] max = new double[F.size()];
+        Arrays.fill(max, Double.NEGATIVE_INFINITY);
+        for (int i = 0; i < data_max.length; i++) {
+            //System.out.printf("%d>   ", i);
+            for (int j = 0; j < data_max[i].length -1 ; j++) {
+                //System.out.printf("%f   ", data_max[i][j]);
+                if (leftbound <= i & i <= rightbound) {
+                    if (max[j] < data_max[i][j]) {
+                        max[j] = data_max[i][j];
+                    }
+                }
+            }
+            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
+            if (leftbound <= i & i <= rightbound) {
+                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
+                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
+                }
+            }
+        }
+        System.out.println(" ");
+        //System.out.println("Maximal values taken by variables by the non perturbed system:");
+        System.out.println(label);
+        for(int j=0; j<max.length-1; j++){
+            System.out.printf("%f ", max[j]);
+        }
+        System.out.printf("%f\n", max[max.length-1]);
+        System.out.println("");
+        System.out.println("");
+        return max;
+    }
+
+    private static double[] printMaxDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
+
+        double[] max = new double[F.size()];
+
+        double[][] data_max = SystemState.sample_max(rg, F, perturbation, s, steps, size);
+        Arrays.fill(max, Double.NEGATIVE_INFINITY);
+        for (int i = 0; i < data_max.length; i++) {
+            //System.out.printf("%d>   ", i);
+            for (int j = 0; j < data_max[i].length -1 ; j++) {
+                //System.out.printf("%f   ", data_max[i][j]);
+                if (leftbound <= i & i <= rightbound) {
+                    if (max[j] < data_max[i][j]) {
+                        max[j] = data_max[i][j];
+                    }
+                }
+            }
+            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
+            if (leftbound <= i & i <= rightbound) {
+                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
+                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
+                }
+            }
+        }
+        //System.out.println("");
+        //System.out.println("Maximal values taken by variables in steps by the perturbed system:");
+        System.out.println(label);
+        for(int j=0; j<max.length-1; j++){
+            System.out.printf("%f ", max[j]);
+        }
+        System.out.printf("%f\n", max[max.length-1]);
+        System.out.println("");
+        return max;
+    }
+
+
+
 
     // CONTROLLER OF VEHICLE
 
