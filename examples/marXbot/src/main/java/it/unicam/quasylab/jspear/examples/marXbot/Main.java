@@ -56,8 +56,6 @@ public class Main {
     public final static double[] WPy = {3,3,7,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
-    public final static double maxD = Math.sqrt(Math.pow(50.0,2)+Math.pow(30.0 , 2));
-
     private static final int H = 350;
 
     private static final int x = 0; // current position, first coordinate
@@ -80,25 +78,102 @@ public class Main {
 
             RandomGenerator rand = new DefaultRandomGenerator();
 
+            /*
+
+            INITIAL CONFIGURATION
+
+            In order to perform simulations/analysis/model checking for a particular system, we need to create its
+            initial configuration, which is an instance of <code>ControlledSystem>/code>
+
+            */
+
+
+            /*
+            One of the elements of a system configuration is the "controller", i.e. an instance of <code>Controller</code>.
+            Here, the controller named <code>robot</code> is returned by static method <code>getController</code>.
+             */
+
             Controller robot = getController();
+
+            /*
+            Another element of a system configuration is the "data state", i.e. an instance of <code>DataState</code>,
+            which models the state of the data.
+            Instances of <code>DataState</code> contains values for variables representing the quantities of the
+            system.
+            The initial state <code>state</code> is constructed by exploiting the static method
+            <code>getInitialState</code>, which will be defined later and assigns the initial value to all
+            variables defined above.
+             */
             DataState state = getInitialState();
 
-            //ControlledSystem r_system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+
+            /*
+            We define the <code>ControlledSystem</code> <code>system</code>, which will be the starting configuration from
+            which the evolution sequence will be constructed.
+            This configuration consists of 3 elements:
+            - the controller <code>robot</code> defined above,
+            - a random function over data states, which implements interface <code>DataStateFunction</code> and maps a
+            random generator <code>rg</code> and a data state <code>ds</code> to a new data state,
+            - the data state <code>state</state> defined above.
+             */
+
             ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 1);
 
-            //Feedback feedbackSpeed = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackSpeedFunction));
+
+/*
+            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to obtain the evolution
+            sequence.
+            More in detail, an evolution sequence, modelled by class <code>EvolutionSequence</code>, is a sequence of
+            sample sets of system configurations, where configurations are modelled by class <code>ControlledSystem</code>
+            and sample sets by class <code>SampleSet</code>.
+            In this context, <code>sizeNominalSequence</code> is the cardinality of those sample sets.
+            */
+            int sizeNominalSequence = 10;
+
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
+
+            /*
+            Below we define a feedback, namely an element of <code>Feedback</code>.
+            In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
+            evolution step its body is applied, where the body is the <code>AtomicFeedback</code>
+            <code>feedbackSpeedAndDir</code>, which is drived by the evolution sequence <code>sequence</code> and applies
+            at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
+             */
             Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackSpeedAndDirFunction));
 
+            /*
+            Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
+            is a version of <code>system</code> equipped by feedback <code>feedbackSpeedAndDir</code>.
+             */
             FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackSpeedAndDir);
-            EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, 1);
 
+            /*
+            Below we define an evolution sequence starting from <code>feedbackSystem</code>.
+            This evolution sequence, named <code>feedbackSequence</code> has the same size of <code>sequence</code>.
+             */
+            EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, sizeNominalSequence);
+
+
+            /*
+            Below we define a <code>Perturbation</code>.
+            In this case, <code>perturbationr</code> is a <code>PersistentPerturbation</code>, namely at each
+            evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
+            which perturbs the data states by applying the </code>DataStateFunction</code> returned by
+            static method <code>slowerPerturbation</code>.
+             */
             Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
+
+            /*
+            The systems <code>perturbedSystem</code> and <code>perturbedFeedbackSystem</code> defined below
+            are the perturbed versions of <code>system</code> and <code>feedbackSystem</code>, respectively.
+              */
             PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
 
-
+            /*
+            USING THE SIMULATOR
+             */
 
             ArrayList<String> L = new ArrayList<>();
             L.add("        x");
@@ -120,16 +195,25 @@ public class Main {
             F.add(ds->ds.get(gap));
             F.add(ds->ds.get(currentWP));
 
-
-            //printDataPar(rand,L,F,r_system,feedbackSystem,200,1);
-            //printLData(rand,L,F,system,200,1);
-            System.out.println(" ");
-            System.out.println(" ");
-            printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,200,10);
-            //printLData(rand,L,F,feedbackSystem,200,1);
-            //printLData(rand,L,F,getIteratedSlowerPerturbation(),system,100,1);
+            /*
+            We start with generating three evolution sequences of length <code>N</code> of sample sets of cardinality
+            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in <code>size</code>
+            copies of <code>system</code>, <code>perturbedSystem</code> or <code>perturbedFeedbackSystem</code>.
+            For each evolution sequence and step in [0,N-1], and for each variable, we print
+            the average value that the variable assumes in the <code>size</code> configurations in the sample set
+            obtained at that step.
+            The simulator, which is offered by method <code>sample</code> of <code>SystemState</code>,
+            is called by method <code>printDataPar</code>.
+            */
 
             int N = 200;
+            printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
+
+
+
+
+
+
             int size = 5;
             System.out.println("");
             System.out.println("Simulation of nominal system - Data maximal values:");
