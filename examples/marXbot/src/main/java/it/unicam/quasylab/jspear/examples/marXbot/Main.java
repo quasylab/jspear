@@ -176,14 +176,30 @@ public class Main {
              */
 
             ArrayList<String> L = new ArrayList<>();
-            L.add("        x");
-            L.add("        y");
-            L.add("     theta");
-            L.add("   p_speed");
-            L.add("   s_speed");
+            L.add("      x   ");
+            L.add("   y   ");
+            L.add(" theta");
+            L.add(" p_speed");
+            L.add("s_speed");
+            L.add("distance");
+            L.add("gap ");
+            L.add(" waypoint");
+            L.add("    x   ");
+            L.add(" y   ");
+            L.add("  theta");
+            L.add("  p_speed");
+            L.add("  s_speed");
             L.add("  distance");
-            L.add("  gap ");
+            L.add("  gap");
             L.add("  waypoint ");
+            L.add("  x  ");
+            L.add("  y  ");
+            L.add("  theta");
+            L.add("  p_speed");
+            L.add("  s_speed");
+            L.add(" distance");
+            L.add(" gap ");
+            L.add(" waypoint ");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
@@ -207,10 +223,12 @@ public class Main {
             */
 
             int N = 200;
+            System.out.println("Simulation of " + N + " steps of a nominal, a perturbed and a perturbed with feedback system");
+            System.out.println("");
+            System.out.println(L);
             printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
-
-
-
+            System.out.println("");
+            System.out.println("");
 
 
 
