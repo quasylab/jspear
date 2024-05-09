@@ -24,8 +24,6 @@ plt.savefig("xy_nf.png")
 plt.show()
 
 
-
-
 distance = numpy.genfromtxt("atomic_speed_nf.csv", names=["s"])
 
 distancef = numpy.genfromtxt("atomic_theta_nf.csv", names=["t"])
