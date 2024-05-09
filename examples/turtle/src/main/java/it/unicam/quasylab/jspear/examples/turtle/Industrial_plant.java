@@ -27,6 +27,7 @@ import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.distance.DistanceExpression;
+import it.unicam.quasylab.jspear.distance.MaxDistanceExpression;
 import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
@@ -243,7 +244,7 @@ public class Industrial_plant {
              */
 
             double[][] plot_system = new double[N][2];
-            double[][] plot_perturbed_system = new double[N][2];
+            double[][] plot_perturbed_system = new double[100][2];
             double[][] plot_perturbed_feedback_system = new double[N][2];
 
 
@@ -255,8 +256,8 @@ public class Industrial_plant {
             Util.writeToCSV("./Fnew_plotxy.csv",plot_system);
 
 
-            double[][] pdata = SystemState.sample(rand, F, perturbation, system, N, 5);
-            for (int i = 0; i<N; i++){
+            double[][] pdata = SystemState.sample(rand, F, perturbation, system, 100, 5);
+            for (int i = 0; i<100; i++){
                 plot_perturbed_system[i][0] = pdata[i][0];
                 plot_perturbed_system[i][1] = pdata[i][1];
             }
@@ -306,17 +307,20 @@ public class Industrial_plant {
             int size = 5;
             System.out.println("");
             System.out.println("Simulation of nominal system - Data maximal values:");
-            double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
+            //double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
+            double dataMax = printMaxDataWP(rand, L, F, system, N, size, 0,2*N);
             System.out.println("");
             System.out.println("Simulation of perturbed system - Data maximal values:");
             System.out.println("");
-            double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
+            //double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
+            double dataMax_p = printMaxDataWPPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
+            double normalisationF = Math.max(dataMax,dataMax_p);
 
-            double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
+            //double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
 
-            double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
+            //double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
 
-            double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
+            //double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
 
             /*
             The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
@@ -348,7 +352,19 @@ public class Industrial_plant {
             This distance will be lifted to two sample sets of configurations, those obtained from the compared
             sequences at the same step.
             */
-            AtomicDistanceExpression distP2P = new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
+            /*
+            DistanceExpression distP2P = new MaxDistanceExpression(
+
+                    new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1)),
+                    new MaxDistanceExpression(
+                     new AtomicDistanceExpression(ds->ds.get(x)/normalisationX, (v1, v2) -> Math.abs(v2-v1)),
+                     new AtomicDistanceExpression(ds->ds.get(y)/normalisationY, (v1, v2) -> Math.abs(v2-v1))
+                    )
+            );
+            */
+
+            DistanceExpression distP2P =  new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow((ds.get(x)-WPx[(int)ds.get(currentWP)]),2)+Math.pow((ds.get(y)-WPy[(int)ds.get(currentWP)]),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
+
 
             int leftBound = 0;
             int rightBound = 200;
@@ -438,7 +454,7 @@ public class Industrial_plant {
             double thresholdB = 1;
             for(int i = 0; i < 20 ; i++){
                 double threshold = thresholdB + i;
-                threshold = threshold / 1000;
+                threshold = threshold / 100;
                 robustF = new AtomicRobustnessFormula(
                         perturbation,
                         intP2PMax,
@@ -655,6 +671,33 @@ public class Industrial_plant {
         System.out.printf("%f\n", max[max.length-1]);
         System.out.println("");
         System.out.println("");
+        return max;
+    }
+
+
+    private static double printMaxDataWP(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
+        double[][] data_max = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
+        double[] data_euc = new double[steps];
+        double max = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i<data_euc.length;i++){
+            data_euc[i] = Math.sqrt( (Math.pow((data_max[i][0] - WPx[(int)data_max[i][7]]) , 2)) + (Math.pow((data_max[i][1] - WPy[(int)data_max[i][7]]),2)) );
+            if(data_euc[i] > max){
+                max = data_euc[i];
+            }
+        }
+        return max;
+    }
+
+    private static double printMaxDataWPPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation p){
+        double[][] data_max = SystemState.sample_max(rg, F, p, s, steps, size);
+        double[] data_euc = new double[steps];
+        double max = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i<data_euc.length;i++){
+            data_euc[i] = Math.sqrt( (Math.pow((data_max[i][0] - WPx[(int)data_max[i][7]]) , 2)) + (Math.pow((data_max[i][1] - WPy[(int)data_max[i][7]]),2)) );
+            if(data_euc[i] > max){
+                max = data_euc[i];
+            }
+        }
         return max;
     }
 
