@@ -267,7 +267,6 @@ public class Smart_hospital {
 
             Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
 
-            System.out.println("ciao");
 
             for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
                 System.out.println(direct_evaluation_atomic_distP2P[i][0]);
@@ -280,7 +279,6 @@ public class Smart_hospital {
 
             Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
 
-            System.out.println("ciao");
 
             for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
                 System.out.println(direct_evaluation_atomic_distP2P[i][0]);
