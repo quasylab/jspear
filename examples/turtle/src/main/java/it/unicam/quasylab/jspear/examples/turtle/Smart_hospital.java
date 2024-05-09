@@ -26,9 +26,15 @@ import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
+import it.unicam.quasylab.jspear.distance.DistanceExpression;
+import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
 import it.unicam.quasylab.jspear.feedback.*;
+import it.unicam.quasylab.jspear.robtl.AtomicRobustnessFormula;
+import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
+import it.unicam.quasylab.jspear.robtl.ThreeValuedSemanticsVisitor;
+import it.unicam.quasylab.jspear.robtl.TruthValues;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
@@ -47,7 +53,7 @@ public class Smart_hospital {
     public final static double INIT_SPEED = 0.0;
     public final static double MAX_SPEED = 1.0;
     public final static double MAX_SPEED_WITH_MED = 0.5;
-    public final static double MAX_THETA_OFFSET = 0.05;
+    public final static double MAX_THETA_OFFSET = 0.1;
     public final static double INIT_X = 15.0;
     public final static double INIT_Y = 6.0;
     public final static double INIT_THETA = Math.PI/2;
@@ -69,11 +75,13 @@ public class Smart_hospital {
     private static final int timer_V = 7; // timer
     private static final int gap = 8; // difference between p_distance and the space required to stop when braking
     private static final int currentWP = 9; // current w point
-    private static final int get_medicine = 10; // 0 if the robot is not transporting medicines. 1 otherwise.
-    private static final int fail = 11; // 0 if the robot delivered correctly the medicines. 1 otherwise.
+    private static final int previous_theta = 10;
+    private static final int get_medicine = 11; // 0 if the robot is not transporting medicines. 1 otherwise.
+    private static final int fail = 12; // 0 if the robot delivered correctly the medicines. 1 otherwise.
 
-    private static final int NUMBER_OF_VARIABLES = 12;
-    private static final double SPEED_DIFFERENCE = 0.0001;
+    private static final int NUMBER_OF_VARIABLES = 13;
+    private static final double DIR_DIFFERENCE = 0.001;
+    private static final double SPEED_DIFFERENCE = 0.05;
 
 
     public static void main(String[] args) throws IOException {
@@ -122,16 +130,6 @@ public class Smart_hospital {
 
             ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-
-
-            /*
-            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to obtain the evolution
-            sequence.
-            More in detail, an evolution sequence, modelled by class <code>EvolutionSequence</code>, is a sequence of
-            sample sets of system configurations, where configurations are modelled by class <code>ControlledSystem</code>
-            and sample sets by class <code>SampleSet</code>.
-            In this context, <code>sizeNominalSequence</code> is the cardinality of those sample sets.
-            */
             int sizeNominalSequence = 10;
 
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
@@ -143,147 +141,152 @@ public class Smart_hospital {
             <code>feedbackSpeedAndDir</code>, which is derived by the evolution sequence <code>sequence</code> and applies
             at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
              */
-            Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Smart_hospital::feedbackSpeedAndDirFunction));
+            Feedback feedbackDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Smart_hospital::feedbackDirFunction));
 
             /*
             Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
             is a version of <code>system</code> equipped by feedback <code>feedbackSpeedAndDir</code>.
              */
-            FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackSpeedAndDir);
+            FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackDir);
 
-            /*
-            Below we define an evolution sequence starting from <code>feedbackSystem</code>.
-            This evolution sequence, named <code>feedbackSequence</code> has the same size of <code>sequence</code>.
-             */
             EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, sizeNominalSequence);
 
+            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Smart_hospital::changeDir));
 
-            /*
-            Below we define a <code>Perturbation</code>.
-            In this case, <code>perturbation</code> is a <code>PersistentPerturbation</code>, namely at each
-            evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
-            which perturbs the data states by applying the </code>DataStateFunction</code> returned by
-            static method <code>slowerPerturbation</code>.
-             */
-            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Smart_hospital::slowerPerturbation));
-
-            /*
-            The systems <code>perturbedSystem</code> and <code>perturbedFeedbackSystem</code> defined below
-            are the perturbed versions of <code>system</code> and <code>feedbackSystem</code>, respectively.
-              */
             PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
+
 
             /*
             USING THE SIMULATOR
              */
 
+            int N = 300;
+
             ArrayList<String> L = new ArrayList<>();
-            L.add("      x   ");
-            L.add("   y   ");
-            L.add(" theta");
-            L.add(" p_speed");
-            L.add("s_speed");
-            L.add("distance");
-            L.add("gap ");
-            L.add(" waypoint");
-            L.add("    x   ");
-            L.add(" y   ");
-            L.add("  theta");
-            L.add("  p_speed");
-            L.add("  s_speed");
-            L.add("  distance");
-            L.add("  gap");
-            L.add("  waypoint ");
-            L.add("  x  ");
-            L.add("  y  ");
-            L.add("  theta");
-            L.add("  p_speed");
-            L.add("  s_speed");
-            L.add(" distance");
-            L.add(" gap ");
-            L.add(" waypoint ");
+            L.add("x");
+            L.add("y");
+            L.add("theta");
+            L.add("speed");
+            L.add("waypoint");
+            L.add("diff_angle");
+            L.add("got_med");
+            L.add("failure");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
             F.add(ds->ds.get(y));
             F.add(ds->ds.get(theta));
             F.add(ds->ds.get(p_speed));
-            F.add(ds->ds.get(s_speed));
-            F.add(ds->ds.get(p_distance));
-            F.add(ds->ds.get(gap));
-            F.add(ds->ds.get(currentWP));
+            F.add(ds->(int)ds.get(currentWP));
+            F.add(ds->ds.get(previous_theta));
+            F.add(ds->(int)ds.get(get_medicine));
+            F.add(ds->(int)ds.get(fail));
+
+            printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
+
+            double[][] position_system = new double[N][2];
+            double[][] position_perturbed_feedback_system = new double[N][2];
+
+            double[][] get_med_system = new double[N][1];
+            double[][] get_med_perturbed_feedback_system = new double[N][1];
+
+            double[][] fail_system = new double[N][1];
+            double[][] fail_perturbed_feedback_system = new double[N][1];
+
+            double[][] data = SystemState.sample(rand, F, system, N, sizeNominalSequence);
+            for (int i = 0; i<N; i++){
+                position_system[i][0] = data[i][0];
+                position_system[i][1] = data[i][1];
+                get_med_system[i][0] = data[i][6];
+                fail_system[i][0] = data[i][7];
+            }
+            Util.writeToCSV("./xy_nominal.csv",position_system);
+            Util.writeToCSV("./get_med_nominal.csv",position_system);
+            Util.writeToCSV("./fail_nominal.csv",position_system);
+
+            double[][] pfdata = SystemState.sample(rand, F, perturbation, perturbedFeedbackSystem, N, sizeNominalSequence);
+            for (int i = 0; i<N; i++){
+                position_perturbed_feedback_system[i][0] = pfdata[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata[i][1];
+                get_med_perturbed_feedback_system[i][0] = data[i][6];
+                fail_perturbed_feedback_system[i][0] = data[i][7];
+            }
+            Util.writeToCSV("./xy_feedback.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback.csv",position_perturbed_feedback_system);
 
             /*
-            We start with generating three evolution sequences of length <code>N</code> of sample sets of cardinality
-            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in <code>size</code>
-            copies of <code>system</code>, <code>perturbedSystem</code> or <code>perturbedFeedbackSystem</code>.
-            For each evolution sequence and step in [0,N-1], and for each variable, we print
-            the average value that the variable assumes in the <code>size</code> configurations in the sample set
-            obtained at that step.
-            The simulator, which is offered by method <code>sample</code> of <code>SystemState</code>,
-            is called by method <code>printDataPar</code>.
+
+            ESTIMATING BEHAVIORAL DISTANCES BETWEEN EVOLUTION SEQUENCES
+
+
+            Now we generate again three sequences:
+            1. a nominal sequence
+            2. a perturbed sequence for the system without feedback
+            3. a perturbed sequence for the system equipped with feedback.
+            Then, we quantify the differences between the evolutions sequences #1 and #2, which corresponds
+            to quantifying the behavioural distance between the nominal and the perturbed system without feedback,
+            and between the evolutions sequences #1 and #3, which corresponds to quantifying the behavioural distance
+            between the nominal and the perturbed system equipped with feedback.
+            The differences are expressed with respect to the points in the plane reached by the systems.
+             */
+
+            /*
+            The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
+            obtained from the evolution sequence <code>sequence</code> by applying a perturbation, where:
+            - as above, the perturbation is  <code>perturbation</code>
+            - the perturbation is applied at step 0
+            - the sample sets of configurations in <code>perturbedSequence</code> have a cardinality which corresponds to that
+            of <code>sequence</code> multiplied by <code>scale>/code>
+            Moreover, we create also the evolution sequence <code>perturbedFeedbackSequence</code>, which is
+            obtained from the evolution sequence <code>feedbackSequence</code> by applying <code>perturbation</code>
             */
 
-            int N = 200;
-            System.out.println("Simulation of " + N + " steps of a nominal, a perturbed and a perturbed with feedback system");
-            System.out.println("");
-            System.out.println(L);
-            printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
-            System.out.println("");
-            System.out.println("");
-
-
-
-            int size = 5;
-            System.out.println("");
-            System.out.println("Simulation of nominal system - Data maximal values:");
-            double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
-            System.out.println("");
-            System.out.println("Simulation of perturbed system - Data maximal values:");
-            System.out.println("");
-            double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
-
-            double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
-
-            double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
-
-            double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
-
-
             int scale=5;
-            EvolutionSequence perturbedSequence = sequence.apply(perturbation,0,scale);
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
-            AtomicDistanceExpression distP2P = new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
+
+            /*
+            The following lines of code first defines an atomic distance between evolution sequences, named
+            <code>distP2P</code>. Then, this distances are evaluated, time-point by time-point, over
+            evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
+            and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
+            Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
+            Technically, <code>distP2P</code> is an atomic distance in the sense that it is an instance of
+            class <code>AtomicDistanceExpression</code>, which consists in a data state expression,
+            which maps a data state to a number, or rank, and a binary operator. As already discussed, in this case,
+            given two configurations, the data state expression allow us to get the normalised distance from the origin,
+            which is a value in [0,1], from both configuration, and the binary operator gives us their difference, which,
+            intuitively, is the difference between the two configurations with respect to their position.
+            This distance will be lifted to two sample sets of configurations, those obtained from the compared
+            sequences at the same step.
+            */
+            AtomicDistanceExpression distSpeed = new AtomicDistanceExpression(ds->(ds.get(p_speed)/MAX_SPEED), (v1, v2) -> Math.abs(v2-v1));
 
             int leftBound = 0;
-            int rightBound = 200;
+            int rightBound = 300;
 
-            double[][] direct_evaluation_atomic_distP2P = new double[rightBound-leftBound][1];
-
-            for (int i = 0; i<(rightBound-leftBound); i++){
-                direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedSequence);
-            }
-
-            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
-
-
-            for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
-                System.out.println(direct_evaluation_atomic_distP2P[i][0]);
-
-            }
+            double[][] direct_evaluation_atomic_distSpeed = new double[rightBound-leftBound][1];
 
             for (int i = 0; i<(rightBound-leftBound); i++){
-                direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedFeedbackSequence);
+                direct_evaluation_atomic_distSpeed[i][0] = distSpeed.compute(i+leftBound, sequence, perturbedFeedbackSequence);
             }
 
-            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
+            Util.writeToCSV("./atomic_speed_nf.csv",direct_evaluation_atomic_distSpeed);
 
 
-            for(int i=0 ; i < direct_evaluation_atomic_distP2P.length; i++){
-                System.out.println(direct_evaluation_atomic_distP2P[i][0]);
+            AtomicDistanceExpression distTheta = new AtomicDistanceExpression(ds->(ds.get(theta)/(Math.PI*2)), (v1, v2) -> Math.abs(v2-v1));
+            double[][] direct_evaluation_atomic_distTheta = new double[rightBound-leftBound][1];
 
+            for (int i = 0; i<(rightBound-leftBound); i++){
+                direct_evaluation_atomic_distTheta[i][0] = distTheta.compute(i+leftBound, sequence, perturbedFeedbackSequence);
             }
+
+            Util.writeToCSV("./atomic_theta_nf.csv",direct_evaluation_atomic_distTheta);
+
+
+
+
 
 
 
@@ -292,17 +295,6 @@ public class Smart_hospital {
         }
     }
 
-    private static List<DataStateUpdate> feedbackSpeedFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
-        int step = dataState.getStep();
-        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
-        if (meanSpeed  + SPEED_DIFFERENCE < dataState.get(p_speed)) {
-            return List.of(new DataStateUpdate(accel, -BRAKE));
-        }
-        if (meanSpeed - SPEED_DIFFERENCE > dataState.get(p_speed)) {
-            return List.of(new DataStateUpdate(accel, ACCELERATION));
-        }
-        return List.of();
-    }
 
     /*
     The following feedback works as follows.
@@ -312,40 +304,41 @@ public class Smart_hospital {
     3. If the waypoint of the PT is not the waypoint of the DT, then the waypoint of the PT is corrected. Contextually,
     also the direction of the PT is corrected.
      */
-    private static List<DataStateUpdate> feedbackSpeedAndDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
+    private static List<DataStateUpdate> feedbackDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
         int step = dataState.getStep();
-        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
+        //double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
+        double meanTheta = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(theta));
         double meanWP = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(currentWP));
         List<DataStateUpdate> upd = new ArrayList<>();
-        if (meanSpeed  + SPEED_DIFFERENCE < dataState.get(s_speed)) {
-            upd.add(new DataStateUpdate(accel, -BRAKE));
+        if (dataState.get(get_medicine)==1 && dataState.get(p_speed) > MAX_SPEED_WITH_MED-SPEED_DIFFERENCE){
+            upd.add(new DataStateUpdate(accel,NEUTRAL));
         }
-        if (meanSpeed - SPEED_DIFFERENCE > dataState.get(s_speed)) {
-            upd.add(new DataStateUpdate(accel, ACCELERATION));
+        if (meanTheta + DIR_DIFFERENCE < dataState.get(theta) || meanTheta - DIR_DIFFERENCE > dataState.get(theta)) {
+            upd.add(new DataStateUpdate(previous_theta, dataState.get(theta)));
+            if(dataState.get(get_medicine)==0 && dataState.get(p_speed) < MAX_SPEED_WITH_MED){
+                upd.add(new DataStateUpdate(theta,
+                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
+                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
+                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x))))
+                );
+            } else {
+                upd.add(new DataStateUpdate(theta,
+                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
+                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
+                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x)))/2)
+                );
+            }
+
         }
         if( dataState.get(s_speed) == 0 & dataState.get(currentWP) < meanWP){
             upd.add(new DataStateUpdate(currentWP, dataState.get(currentWP)+1));
-            upd.add(new DataStateUpdate(theta, (WPx[(int)dataState.get(currentWP)+1]==dataState.get(x))?0:((WPx[(int)dataState.get(currentWP)+1]<dataState.get(x))?Math.PI:0)+Math.atan((WPy[(int)dataState.get(currentWP)+1]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)+1]-dataState.get(x)))));
+            upd.add(new DataStateUpdate(theta, (WPx[(int)dataState.get(currentWP)+1]==dataState.get(x))?0:(
+                    (WPx[(int)dataState.get(currentWP)+1]<dataState.get(x))?Math.PI:0)+
+                    Math.atan((WPy[(int)dataState.get(currentWP)+1]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)+1]-dataState.get(x)))));
         }
         return upd;
     }
 
-
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
-
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
 
     private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
         System.out.println(label);
@@ -535,21 +528,25 @@ public class Smart_hospital {
                 Controller.ifThenElse(
                         DataState.greaterThan(gap,0),
                         Controller.doAction(
-                                (rg, ds) -> List.of(new DataStateUpdate(theta,
+                                (rg, ds) -> List.of(new DataStateUpdate(previous_theta,ds.get(theta)),
+                                        new DataStateUpdate(theta,
                                         (WPx[(int)ds.get(currentWP)]==ds.get(x))?0:(
                                                 (WPx[(int)ds.get(currentWP)]<ds.get(x))?Math.PI:0)+
-                                                Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
+                                                Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))
+                                        ),
                                 registry.reference("Ctrl")
                         ),
                         Controller.ifThenElse(
                                 DataState.equalsTo(currentWP,WPx.length-1),
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(timer_V, TIMER)),
                                         registry.reference("Stop")),
-                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),
+                                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(previous_theta,ds.get(theta)),
+                                                new DataStateUpdate(currentWP, ds.get(currentWP)+1),
                                                 new DataStateUpdate(theta,
                                                         (WPx[(int)ds.get(currentWP)+1]==ds.get(x))?0:(
                                                                 (WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+
-                                                                Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
+                                                                Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))
+                                                ),
                                         registry.reference("Ctrl"))
                         )
                 )
@@ -649,9 +646,13 @@ public class Smart_hospital {
         if (state.get(currentWP)==8 && state.get(get_medicine)==1){
             updates.add(new DataStateUpdate(get_medicine,0));
         }
-        if ((state.get(currentWP)==8 && state.get(get_medicine)!=1) || (state.get(currentWP)==11 && state.get(get_medicine)!=0)){
+        if (Math.abs(state.get(theta)-state.get(previous_theta))>Math.PI/9 && state.get(get_medicine)==1 && state.get(p_speed)>MAX_SPEED_WITH_MED){
+            updates.add(new DataStateUpdate(get_medicine,0));
+        }
+        if ((state.get(currentWP)==7 && state.get(get_medicine)!=1) || (state.get(currentWP)==11 && state.get(get_medicine)!=0)){
             updates.add(new DataStateUpdate(fail,1));
         }
+        updates.add(new DataStateUpdate(previous_theta,state.get(theta)));
         return updates;
     }
 
@@ -672,6 +673,7 @@ public class Smart_hospital {
         double init_gap = INIT_DISTANCE - init_braking_distance;
         values.put(gap, init_gap);
         values.put(currentWP,0.0);
+        values.put(previous_theta,INIT_THETA);
         values.put(get_medicine,0.0);
         values.put(fail,0.0);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
@@ -680,20 +682,14 @@ public class Smart_hospital {
 
     // PERTURBATIONS
 
-    private static  Perturbation getIteratedSlowerPerturbation() {
-        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Smart_hospital::slowerPerturbation)));
+    private static  Perturbation getIteratedChangeDir() {
+        return new AfterPerturbation(1, new IterativePerturbation(10, new AtomicPerturbation(10, Smart_hospital::changeDir)));
     }
 
-    private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
+    private static DataState changeDir(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double offset = MAX_THETA_OFFSET;
-        // double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
-        double fake_speed = Math.max(0, state.get(p_speed) - offset);
-        double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
-                2 * fake_speed * TIMER)) / (2 * BRAKE);
-        double fake_gap = state.get(p_distance) - fake_braking_distance;
-        updates.add(new DataStateUpdate(s_speed, fake_speed));
-        updates.add(new DataStateUpdate(gap, fake_gap));
+        double offset = rg.nextDouble() * MAX_THETA_OFFSET - MAX_THETA_OFFSET/2;
+        updates.add(new DataStateUpdate(theta, state.get(theta)+offset));
         return state.apply(updates);
     }
 
