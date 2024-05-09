@@ -23,7 +23,19 @@ import matplotlib.pyplot as plt
 import numpy
 import csv
 
-df = pd.read_csv('Fnew_plotxy.csv', names=['x', 'y'])
+df_n = pd.read_csv('Fnew_plotxy.csv', names=['x_n', 'y_n'])
+df_p = pd.read_csv('Fnew_pplotxy.csv', names=['x_p', 'y_p'])
+df_f = pd.read_csv('Fnew_pfplotxy.csv', names=['x_f', 'y_f'])
+
+fix, ax = plt.subplots()
+ax = df_n.plot(x='x_n',y='y_n',label="nominal")
+df_p.plot(x='x_p', y='y_p', linestyle=":", label="perturbed",ax=ax)
+df_f.plot(x='x_f',y='y_f',linestyle="--",label="feedback",ax=ax)
+legend = ax.legend()
+plt.title("Trajectories of nominal, perturbed, and perturbed system with feedback")
+plt.savefig("xy_npf.png")
+plt.show()
+
 
 df.plot(x = 'x', y = 'y', label = 'Waypoints (1,3),(13,3),(7,7),(23,14),(30,31),(32,40),(35,30)')
 
@@ -52,7 +64,7 @@ plt.show()
 
 
 
-df = pd.read_csv('Fnew_pfplotxy.csv', names=['x', 'y'])
+
 
 df.plot(x = 'x', y = 'y', label = 'Waypoints (1,3),(13,3),(7,7),(23,14),(30,31),(32,40),(35,30)')
 
@@ -66,9 +78,11 @@ plt.show()
 
 distance = numpy.genfromtxt("Fatomic_P2P.csv", names=["d_P2P"])
 
+distancef = numpy.genfromtxt("Fatomic_FP2P.csv", names=["d_FP2P"])
 
 fix, ax = plt.subplots()
 ax.plot(range(0,200),distance['d_P2P'],label="distance")
+ax.plot(range(0,200),distancef['d_FP2P'],label="distance")
 legend = ax.legend()
 plt.title("Evolution distance between nominal and perturbed system")
 plt.savefig("new_distance.png")
@@ -77,7 +91,7 @@ plt.show()
 
 
 
-distancef = numpy.genfromtxt("Fatomic_FP2P.csv", names=["d_FP2P"])
+
 
 
 fix, ax = plt.subplots()
