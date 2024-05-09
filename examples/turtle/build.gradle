@@ -8,5 +8,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'it.unicam.quasylab.jspear.examples.marXbot.Main'
+    mainClass = 'it.unicam.quasylab.jspear.examples.turtle.Industrial_plant'
 }

@@ -20,7 +20,7 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.examples.marXbot;
+package it.unicam.quasylab.jspear.examples.turtle;
 
 import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
@@ -34,26 +34,27 @@ import org.apache.commons.math3.random.RandomGenerator;
 import java.io.IOException;
 import java.util.*;
 
-public class Main {
+public class Smart_hospital {
 
     public final static String[] VARIABLES =
             new String[]{"p_speed", "s_speed", "p_distance", "accel", "timer_V", "braking_distance", "gap"
             };
 
     public final static double ACCELERATION = 0.05;
-    public final static double BRAKE = 0.40;
+    public final static double BRAKE = 0.1;
     public final static double NEUTRAL = 0.0;
     public final static int TIMER = 1;
     public final static double INIT_SPEED = 0.0;
-    public final static double MAX_SPEED = 3.0;
-    public final static double MAX_SPEED_OFFSET = 0.1;
-    public final static double INIT_X = 0.0;
-    public final static double INIT_Y = 0.0;
+    public final static double MAX_SPEED = 1.0;
+    public final static double MAX_SPEED_WITH_MED = 0.5;
+    public final static double MAX_THETA_OFFSET = 0.05;
+    public final static double INIT_X = 15.0;
+    public final static double INIT_Y = 6.0;
     public final static double INIT_THETA = Math.PI/2;
-    public final static double FINAL_X = 50.0;
-    public final static double FINAL_Y = 30.0;
-    public final static double[] WPx = {1,13,7,FINAL_X};
-    public final static double[] WPy = {3,3,7,FINAL_Y};
+    public final static double FINAL_X = 15.0;
+    public final static double FINAL_Y = 6.0;
+    public final static double[] WPx = {13,13,13,6,6,2,6,6,2,6,6,FINAL_X};
+    public final static double[] WPy = {6,1,6,6,2,2,2,7,7,7,6,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
     private static final int H = 350;
@@ -68,8 +69,10 @@ public class Main {
     private static final int timer_V = 7; // timer
     private static final int gap = 8; // difference between p_distance and the space required to stop when braking
     private static final int currentWP = 9; // current w point
+    private static final int get_medicine = 10; // 0 if the robot is not transporting medicines. 1 otherwise.
+    private static final int fail = 11; // 0 if the robot delivered correctly the medicines. 1 otherwise.
 
-    private static final int NUMBER_OF_VARIABLES = 10;
+    private static final int NUMBER_OF_VARIABLES = 12;
     private static final double SPEED_DIFFERENCE = 0.0001;
 
 
@@ -104,8 +107,8 @@ public class Main {
             <code>getInitialState</code>, which will be defined later and assigns the initial value to all
             variables defined above.
              */
-            DataState state = getInitialState();
 
+            DataState state = getInitialState();
 
             /*
             We define the <code>ControlledSystem</code> <code>system</code>, which will be the starting configuration from
@@ -121,7 +124,7 @@ public class Main {
 
 
 
-/*
+            /*
             Variable <code>sizeNominalSequence</code> gives the number of runs that are used to obtain the evolution
             sequence.
             More in detail, an evolution sequence, modelled by class <code>EvolutionSequence</code>, is a sequence of
@@ -137,10 +140,10 @@ public class Main {
             Below we define a feedback, namely an element of <code>Feedback</code>.
             In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
             evolution step its body is applied, where the body is the <code>AtomicFeedback</code>
-            <code>feedbackSpeedAndDir</code>, which is drived by the evolution sequence <code>sequence</code> and applies
+            <code>feedbackSpeedAndDir</code>, which is derived by the evolution sequence <code>sequence</code> and applies
             at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
              */
-            Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Main::feedbackSpeedAndDirFunction));
+            Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Smart_hospital::feedbackSpeedAndDirFunction));
 
             /*
             Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
@@ -157,12 +160,12 @@ public class Main {
 
             /*
             Below we define a <code>Perturbation</code>.
-            In this case, <code>perturbationr</code> is a <code>PersistentPerturbation</code>, namely at each
+            In this case, <code>perturbation</code> is a <code>PersistentPerturbation</code>, namely at each
             evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
             which perturbs the data states by applying the </code>DataStateFunction</code> returned by
             static method <code>slowerPerturbation</code>.
              */
-            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Main::slowerPerturbation));
+            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Smart_hospital::slowerPerturbation));
 
             /*
             The systems <code>perturbedSystem</code> and <code>perturbedFeedbackSystem</code> defined below
@@ -532,9 +535,12 @@ public class Main {
 
         registry.set("SetDir",
                 Controller.ifThenElse(
-                      DataState.greaterThan(gap,0),
+                        DataState.greaterThan(gap,0),
                         Controller.doAction(
-                                (rg, ds) -> List.of(new DataStateUpdate(theta, (WPx[(int)ds.get(currentWP)]==ds.get(x))?0:((WPx[(int)ds.get(currentWP)]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
+                                (rg, ds) -> List.of(new DataStateUpdate(theta,
+                                        (WPx[(int)ds.get(currentWP)]==ds.get(x))?0:(
+                                                (WPx[(int)ds.get(currentWP)]<ds.get(x))?Math.PI:0)+
+                                                Math.atan((WPy[(int)ds.get(currentWP)]-ds.get(y))/(WPx[(int)ds.get(currentWP)]-ds.get(x))))),
                                 registry.reference("Ctrl")
                         ),
                         Controller.ifThenElse(
@@ -542,7 +548,10 @@ public class Main {
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(timer_V, TIMER)),
                                         registry.reference("Stop")),
                                 Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(currentWP, ds.get(currentWP)+1),
-                                                new DataStateUpdate(theta, (WPx[(int)ds.get(currentWP)+1]==ds.get(x))?0:((WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
+                                                new DataStateUpdate(theta,
+                                                        (WPx[(int)ds.get(currentWP)+1]==ds.get(x))?0:(
+                                                                (WPx[(int)ds.get(currentWP)+1]<ds.get(x))?Math.PI:0)+
+                                                                Math.atan((WPy[(int)ds.get(currentWP)+1]-ds.get(y))/(WPx[(int)ds.get(currentWP)+1]-ds.get(x))))),
                                         registry.reference("Ctrl"))
                         )
                 )
@@ -605,10 +614,7 @@ public class Main {
                 )
         );
 
-
-
         return registry.reference("SetDir");
-
     }
 
 
@@ -618,21 +624,15 @@ public class Main {
         List<DataStateUpdate> updates = new LinkedList<>();
         double new_timer_V = state.get(timer_V) - 1; // timer is simply decremented
         double new_p_speed;
+        // the speed is updated according to acceleration
         if (state.get(accel) == NEUTRAL) {
-            // the speed is updated according to acceleration
             new_p_speed = Math.max(0.0,state.get(p_speed)-ACCELERATION);
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
-        //double token = rg.nextDouble();
         double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
         double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
         double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
-        //if (token < 0.5){
-        //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
-        //} else {
-        //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
-        //}
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
         // the distance from the target is updated taking into account the new position
         updates.add(new DataStateUpdate(x,newX));
@@ -645,12 +645,17 @@ public class Main {
         double new_gap = new_p_distance - new_braking_distance;
         updates.add(new DataStateUpdate(s_speed, new_s_speed));
         updates.add(new DataStateUpdate(gap, new_gap));
+        if (state.get(currentWP)==2 && state.get(get_medicine)==0){
+            updates.add(new DataStateUpdate(get_medicine,1));
+        }
+        if (state.get(currentWP)==8 && state.get(get_medicine)==1){
+            updates.add(new DataStateUpdate(get_medicine,0));
+        }
+        if ((state.get(currentWP)==8 && state.get(get_medicine)!=1) || (state.get(currentWP)==11 && state.get(get_medicine)!=0)){
+            updates.add(new DataStateUpdate(fail,1));
+        }
         return updates;
     }
-
-
-
-
 
     // INITIALISATION OF DATA STATE
 
@@ -669,7 +674,8 @@ public class Main {
         double init_gap = INIT_DISTANCE - init_braking_distance;
         values.put(gap, init_gap);
         values.put(currentWP,0.0);
-
+        values.put(get_medicine,0.0);
+        values.put(fail,0.0);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
 
@@ -677,12 +683,12 @@ public class Main {
     // PERTURBATIONS
 
     private static  Perturbation getIteratedSlowerPerturbation() {
-        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Main::slowerPerturbation)));
+        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Smart_hospital::slowerPerturbation)));
     }
 
     private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double offset = MAX_SPEED_OFFSET;
+        double offset = MAX_THETA_OFFSET;
         // double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
         double fake_speed = Math.max(0, state.get(p_speed) - offset);
         double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
