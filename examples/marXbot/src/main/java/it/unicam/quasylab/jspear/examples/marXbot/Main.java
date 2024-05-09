@@ -26,9 +26,15 @@ import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
+import it.unicam.quasylab.jspear.distance.DistanceExpression;
+import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
 import it.unicam.quasylab.jspear.feedback.*;
+import it.unicam.quasylab.jspear.robtl.AtomicRobustnessFormula;
+import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
+import it.unicam.quasylab.jspear.robtl.ThreeValuedSemanticsVisitor;
+import it.unicam.quasylab.jspear.robtl.TruthValues;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
@@ -46,14 +52,14 @@ public class Main {
     public final static int TIMER = 1;
     public final static double INIT_SPEED = 0.0;
     public final static double MAX_SPEED = 3.0;
-    public final static double MAX_SPEED_OFFSET = 0.1;
+    public final static double MAX_SPEED_OFFSET = 0.15;
     public final static double INIT_X = 0.0;
     public final static double INIT_Y = 0.0;
     public final static double INIT_THETA = Math.PI/2;
-    public final static double FINAL_X = 50.0;
+    public final static double FINAL_X = 35.0;
     public final static double FINAL_Y = 30.0;
-    public final static double[] WPx = {1,13,7,FINAL_X};
-    public final static double[] WPy = {3,3,7,FINAL_Y};
+    public final static double[] WPx = {1,13,7,23,20,32,FINAL_X};
+    public final static double[] WPy = {3,3,7,14,31,40,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
     private static final int H = 350;
@@ -215,20 +221,85 @@ public class Main {
             We start with generating three evolution sequences of length <code>N</code> of sample sets of cardinality
             <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in <code>size</code>
             copies of <code>system</code>, <code>perturbedSystem</code> or <code>perturbedFeedbackSystem</code>.
-            For each evolution sequence and step in [0,N-1], and for each variable, we print
+            For each evolution sequence and step in [0,N-1], and for each variable, we print out
             the average value that the variable assumes in the <code>size</code> configurations in the sample set
             obtained at that step.
             The simulator, which is offered by method <code>sample</code> of <code>SystemState</code>,
             is called by method <code>printDataPar</code>.
             */
 
-            int N = 200;
+            int N = 300;
             System.out.println("Simulation of " + N + " steps of a nominal, a perturbed and a perturbed with feedback system");
             System.out.println("");
             System.out.println(L);
             printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
             System.out.println("");
             System.out.println("");
+
+
+            /*
+            Below we repeat the simulation, but instead of printing out the results we store in a .csv file
+            the value obtained for <code>x</code> and <code>y</code>.
+             */
+
+            double[][] plot_system = new double[N][2];
+            double[][] plot_perturbed_system = new double[N][2];
+            double[][] plot_perturbed_feedback_system = new double[N][2];
+
+
+            double[][] data = SystemState.sample(rand, F, system, N, sizeNominalSequence);
+            for (int i = 0; i<N; i++){
+                plot_system[i][0] = data[i][0];
+                plot_system[i][1] = data[i][1];
+            }
+            Util.writeToCSV("./Fnew_plotxy.csv",plot_system);
+
+
+            double[][] pdata = SystemState.sample(rand, F, perturbation, system, N, 5);
+            for (int i = 0; i<N; i++){
+                plot_perturbed_system[i][0] = pdata[i][0];
+                plot_perturbed_system[i][1] = pdata[i][1];
+            }
+            Util.writeToCSV("./Fnew_pplotxy.csv",plot_perturbed_system);
+
+            double[][] pfdata = SystemState.sample(rand, F, perturbation, perturbedFeedbackSystem, N, sizeNominalSequence);
+            for (int i = 0; i<N; i++){
+                plot_perturbed_feedback_system[i][0] = pfdata[i][0];
+                plot_perturbed_feedback_system[i][1] = pfdata[i][1];
+            }
+            Util.writeToCSV("./Fnew_pfplotxy.csv",plot_perturbed_feedback_system);
+
+
+            /*
+
+            ESTIMATING BEHAVIORAL DISTANCES BETWEEN EVOLUTION SEQUENCES
+
+
+            Now we generate again three sequences:
+            1. a nominal sequence
+            2. a perturbed sequence for the system without feedback
+            3. a perturbed sequence for the system equipped with feedback.
+            Then, we quantify the differences between the evolutions sequences #1 and #2, which corresponds
+            to quantifying the behavioural distance between the nominal and the perturbed system without feedback,
+            and between the evolutions sequences #1 and #3, which corresponds to quantifying the behavioural distance
+            between the nominal and the perturbed system equipped with feedback.
+            The differences are expressed with respec to the points in the plane reached by the systems.
+             */
+
+
+            /*
+            In order to quantify the difference between two evolution sequences w.r.t. coordinates x and y, we need
+            to define the difference between two configurations w.r.t. them: we decide that the difference is the
+            euclidean distance between the two points, normalised wrt. the maximal distance between all pair of points that
+            can be reached by the systems.
+
+            Therefore, we start with estimating the points that can be reached by system.
+            To this purpose, we generate a nominal and a perturbed evolution sequence of length 2N and collect the
+            maximal values that are assumed by the variables in all configurations in all sample sets.
+            */
+
+
+
 
 
 
@@ -247,10 +318,36 @@ public class Main {
 
             double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
 
+            /*
+            The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
+            obtained from the evolution sequence <code>sequence</code> by applying a perturbation, where:
+            - as above, the perturbation is  <code>perturbation</code>
+            - the perturbation is applied at step 0
+            - the sample sets of configurations in <code>perturbedSequence</code> have a cardinality which corresponds to that
+            of <code>sequence</code> multiplied by <code>scale>/code>
+            Moreover, we create also the evolution sequence <code>perturbedFeedbackSequence</code>, which is
+            obtained from the evolution sequence <code>feedbackSequence</code> by applying <code>perturbation</code>
+            */
 
             int scale=5;
             EvolutionSequence perturbedSequence = sequence.apply(perturbation,0,scale);
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
+
+            /*
+            The following lines of code first defines an atomic distance between evolution sequences, named
+            <code>distP2P</code>. Then, this distances are evaluated, time-point by time-point, over
+            evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
+            and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
+            Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
+            Technically, <code>distP2P</code> is an atomic distance in the sense that it is an instance of
+            class <code>AtomicDistanceExpression</code>, which consists in a data state expression,
+            which maps a data state to a number, or rank, and a binary operator. As already discussed, in this case,
+            given two configurations, the data state expression allow us to get the normalised distance from the origin,
+            which is a value in [0,1], from both configuration, and the binary operator gives us their difference, which,
+            intuitively, is the difference between the two configurations with respect to their position.
+            This distance will be lifted to two sample sets of configurations, those obtained from the compared
+            sequences at the same step.
+            */
             AtomicDistanceExpression distP2P = new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
 
             int leftBound = 0;
@@ -262,7 +359,7 @@ public class Main {
                 direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedSequence);
             }
 
-            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
+            Util.writeToCSV("./Fatomic_P2P.csv",direct_evaluation_atomic_distP2P);
 
             System.out.println("ciao");
 
@@ -275,7 +372,7 @@ public class Main {
                 direct_evaluation_atomic_distP2P[i][0] = distP2P.compute(i+leftBound, sequence, perturbedFeedbackSequence);
             }
 
-            Util.writeToCSV("./atomic_P2P.csv",direct_evaluation_atomic_distP2P);
+            Util.writeToCSV("./Fatomic_FP2P.csv",direct_evaluation_atomic_distP2P);
 
             System.out.println("ciao");
 
@@ -284,12 +381,86 @@ public class Main {
 
             }
 
+            /*
+            USING THE MODEL CHECKER
+
+            Later, we will write down a robustness formula that simply expresses whether the maximal of these distances is
+            below a given threshold.
+            First we define the distances <code>distanceZi</code>, as instances of <code>MaxIntervalDistanceExpression</code>.
+            Each <code>distanceZi</code> evaluates <code>atomicZi</code> in all time-points and returns the max value.
+            Then we define the distance expression <code>distanceMaxZ1Z2Z3</code>, which returns the maximal value
+            among those returned by three distances defined above.
+            Then, we define a robustness formula, in particular an atomic formula, namely an instance of
+            <code>AtomicRobustnessFormula</code>.
+            This formula will be evaluated on the evolution sequence <code>sequence</code> and expresses that the
+            distance, expressed by expression distance <code>distanceMaxZ1Z2Z3</code> between that evolution
+            sequence and the evolution sequence obtained from it by applying the perturbation returned by method
+            <code>itZ1TranslRate(x)</code>, is below a given threshold.
+
+             */
+            int leftRBound=0;
+            int rightRBound=200;
+
+
+            DistanceExpression intP2PMax = new MaxIntervalDistanceExpression(
+                    distP2P,
+                    leftRBound,
+                    rightRBound
+            );
+
+            double[][] robEvaluationsWF = new double[20][2];
+            RobustnessFormula robustFWF;
+            int indexWF=0;
+            double thresholdBWF = 30;
+            for(int i = 0; i < 20 ; i=i+1){
+                double thresholdWF = thresholdBWF + 2*i;
+                thresholdWF = thresholdWF / 100;
+                robustFWF = new AtomicRobustnessFormula(
+                        perturbation,
+                        intP2PMax,
+                        RelationOperator.LESS_OR_EQUAL_THAN,
+                        thresholdWF);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(robustFWF).eval(5, 0, sequence);
+                System.out.println(" ");
+                System.out.println("\n robustF evaluation at " + thresholdWF + ": " + value);
+                robEvaluationsWF[indexWF][1]=value.valueOf();
+                robEvaluationsWF[indexWF][0]=thresholdWF;
+                indexWF++;
+            }
+
+            Util.writeToCSV("./FevalR.csv",robEvaluationsWF);
+
+
+
+            double[][] robEvaluations = new double[20][2];
+            RobustnessFormula robustF;
+            int index=0;
+            double thresholdB = 1;
+            for(int i = 0; i < 20 ; i++){
+                double threshold = thresholdB + i;
+                threshold = threshold / 1000;
+                robustF = new AtomicRobustnessFormula(
+                        perturbation,
+                        intP2PMax,
+                        RelationOperator.LESS_OR_EQUAL_THAN,
+                        threshold);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(robustF).eval(5, 0, feedbackSequence);
+                System.out.println(" ");
+                System.out.println("\n robustF evaluation at " + threshold + ": " + value);
+                robEvaluations[index][1]=value.valueOf();
+                robEvaluations[index][0]=threshold;
+                index++;
+            }
+
+            Util.writeToCSV("./FevalRF.csv",robEvaluations);
+
 
 
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
     }
+
 
     private static List<DataStateUpdate> feedbackSpeedFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
         int step = dataState.getStep();
@@ -682,8 +853,8 @@ public class Main {
 
     private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double offset = MAX_SPEED_OFFSET;
-        // double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
+        //double offset = MAX_SPEED_OFFSET;
+        double offset = rg.nextDouble() * MAX_SPEED_OFFSET;
         double fake_speed = Math.max(0, state.get(p_speed) - offset);
         double fake_braking_distance = (Math.pow(fake_speed,2) + (ACCELERATION + BRAKE) * (ACCELERATION * Math.pow(TIMER,2) +
                 2 * fake_speed * TIMER)) / (2 * BRAKE);
