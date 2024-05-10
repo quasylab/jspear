@@ -287,49 +287,15 @@ public class Industrial_plant {
             1. a nominal sequence
             2. a perturbed sequence for the system without feedback
             3. a perturbed sequence for the system equipped with feedback.
-            Then, we quantify the differences between the evolutions sequences #1 and #2, which corresponds
+            Then, we quantify the step-by-step differences between the evolutions sequences #1 and #2, which corresponds
             to quantifying the behavioural distance between the nominal and the perturbed system without feedback,
             and between the evolutions sequences #1 and #3, which corresponds to quantifying the behavioural distance
             between the nominal and the perturbed system equipped with feedback.
-            The differences are expressed with respec to the points in the plane reached by the systems.
+            The differences are expressed with respect to the distance of the robot from the next waypoint.
              */
+/*
 
-
-            /*
-            In order to quantify the difference between two evolution sequences w.r.t. coordinates x and y, we need
-            to define the difference between two configurations w.r.t. them: we decide that the difference is the
-            euclidean distance between the two points, normalised wrt. the maximal distance between all pair of points that
-            can be reached by the systems.
-
-            Therefore, we start with estimating the points that can be reached by system.
-            To this purpose, we generate a nominal and a perturbed evolution sequence of length 2N and collect the
-            maximal values that are assumed by the variables in all configurations in all sample sets.
-            */
-
-
-
-
-
-
-            int size = 5;
-            System.out.println("");
-            System.out.println("Simulation of nominal system - Data maximal values:");
-            //double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
-            double dataMax = printMaxDataWP(rand, L, F, system, N, size, 0,2*N);
-            System.out.println("");
-            System.out.println("Simulation of perturbed system - Data maximal values:");
-            System.out.println("");
-            //double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
-            double dataMax_p = printMaxDataWPPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
-            double normalisationF = Math.max(dataMax,dataMax_p);
-
-            //double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
-
-            //double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
-
-            //double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
-
-            /*
+             /*
             The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
             obtained from the evolution sequence <code>sequence</code> by applying a perturbation, where:
             - as above, the perturbation is  <code>perturbation</code>
@@ -344,34 +310,56 @@ public class Industrial_plant {
             EvolutionSequence perturbedSequence = sequence.apply(perturbation,0,scale);
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
 
+
+
+            /*
+            In order to quantify the difference between two evolution sequences, we need to define a notion of distance
+            between two configurations.
+
+
+            We start with simulating the nominal and the perturbed system and with computing the maximal Euclidean distance
+            between the position of the robot and the current waypoint that can be observed in all configurations generated
+            in those simulations.
+            The value obtained will be exploited for normalisation purposes.
+            */
+
+
+
+
+
+
+            int size = 5;
+            System.out.println("");
+            System.out.println("Simulation of nominal system - Data maximal values:");
+            double dataMax = printMaxDataWP(rand, L, F, system, N, size, 0,2*N);
+            System.out.println("");
+            System.out.println("Simulation of perturbed system - Data maximal values:");
+            System.out.println("");
+            double dataMax_p = printMaxDataWPPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
+            double normalisationF = Math.max(dataMax,dataMax_p);
+
+
+
             /*
             The following lines of code first defines an atomic distance between evolution sequences, named
-            <code>distP2P</code>. Then, this distances are evaluated, time-point by time-point, over
+            <code>distP2P</code>. Then, this distance is evaluated, step-by-step, over
             evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
             and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
-            Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
+            Finally, the step-by-step values of the distances are stored in .csv files and printed out.
+
             Technically, <code>distP2P</code> is an atomic distance in the sense that it is an instance of
             class <code>AtomicDistanceExpression</code>, which consists in a data state expression,
-            which maps a data state to a number, or rank, and a binary operator. As already discussed, in this case,
-            given two configurations, the data state expression allow us to get the normalised distance from the origin,
-            which is a value in [0,1], from both configuration, and the binary operator gives us their difference, which,
-            intuitively, is the difference between the two configurations with respect to their position.
-            This distance will be lifted to two sample sets of configurations, those obtained from the compared
-            sequences at the same step.
-            */
-            /*
-            DistanceExpression distP2P = new MaxDistanceExpression(
+            which maps a data state to a number, or rank, and a binary operator.
 
-                    new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1)),
-                    new MaxDistanceExpression(
-                     new AtomicDistanceExpression(ds->ds.get(x)/normalisationX, (v1, v2) -> Math.abs(v2-v1)),
-                     new AtomicDistanceExpression(ds->ds.get(y)/normalisationY, (v1, v2) -> Math.abs(v2-v1))
-                    )
-            );
+            In our case, the data state expression allow us to get the normalised distance between the robot and the
+            current waypoint, and the binary operator gives us their difference, which, intuitively, tells us how
+            closer to the current waypoint is one robot with respect to the other.
+            This distance will be lifted to two sample sets of configurations, those obtained from the compared
+            sequences at the same step. This lifting is done by method <code>compute</code> of <code>DistanceExpression</code>.
             */
+
 
             DistanceExpression distP2P =  new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow((ds.get(x)-WPx[(int)ds.get(currentWP)]),2)+Math.pow((ds.get(y)-WPy[(int)ds.get(currentWP)]),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
-
 
             int leftBound = 0;
             int rightBound = 200;
@@ -404,6 +392,8 @@ public class Industrial_plant {
 
             }
 
+
+
             /*
             USING THE MODEL CHECKER
 
@@ -424,6 +414,9 @@ public class Industrial_plant {
             int leftRBound=0;
             int rightRBound=200;
 
+            /*
+
+             */
 
             DistanceExpression intP2PMax = new MaxIntervalDistanceExpression(
                     distP2P,
