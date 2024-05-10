@@ -397,18 +397,16 @@ public class Industrial_plant {
             /*
             USING THE MODEL CHECKER
 
-            Later, we will write down a robustness formula that simply expresses whether the maximal of these distances is
-            below a given threshold.
-            First we define the distances <code>distanceZi</code>, as instances of <code>MaxIntervalDistanceExpression</code>.
-            Each <code>distanceZi</code> evaluates <code>atomicZi</code> in all time-points and returns the max value.
-            Then we define the distance expression <code>distanceMaxZ1Z2Z3</code>, which returns the maximal value
-            among those returned by three distances defined above.
-            Then, we define a robustness formula, in particular an atomic formula, namely an instance of
+            The distance <code>intP2PMax</code> returns the maximal value given by the evaluation of <code>distP2P</code>
+            in an interval.
+            We define a robustness formula, in particular an atomic formula, namely an instance of
             <code>AtomicRobustnessFormula</code>.
             This formula will be evaluated on the evolution sequence <code>sequence</code> and expresses that the
-            distance, expressed by expression distance <code>distanceMaxZ1Z2Z3</code> between that evolution
-            sequence and the evolution sequence obtained from it by applying the perturbation returned by method
-            <code>itZ1TranslRate(x)</code>, is below a given threshold.
+            distance, expressed by expression distance <code>intP2PMax</code> between that evolution
+            sequence and the evolution sequence obtained from it by applying the perturbation <code>perturbation</code>
+            defined above, is below a given threshold.
+            For several thresholds, we print out and store in a .csv file the result.
+
 
              */
             int leftRBound=0;
@@ -447,6 +445,9 @@ public class Industrial_plant {
             Util.writeToCSV("./FevalR.csv",robEvaluationsWF);
 
 
+            /*
+            Below we re-employ the model checker for <code>feedbackSequence</code>.
+             */
 
             double[][] robEvaluations = new double[20][2];
             RobustnessFormula robustF;
@@ -517,61 +518,14 @@ public class Industrial_plant {
     }
 
 
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
 
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
 
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, int steps, int size) {
 
-        double[][] data = SystemState.sample(rg, F, s1, steps, size);
-        double[][] datap = SystemState.sample(rg, F, s2, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>  ", i);
-            for (int j = 0; j < data[i].length-1; j++) {
-                System.out.printf("%f ", data[i][j]);
-                System.out.printf("%f ", datap[i][j]);
-            }
-            System.out.printf("%f ", data[i][datap[i].length -1]);
-            System.out.printf("%f\n", datap[i][datap[i].length -1]);
 
-        }
-    }
+
+
 
     private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, SystemState s3, int steps, int size) {
 
@@ -592,87 +546,10 @@ public class Industrial_plant {
         }
     }
 
-    private static void printLDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        //System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, s, steps, size);
-        double[][] datap = SystemState.sample(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>  ", i);
-            for (int j = 0; j < data[i].length-1; j++) {
-                System.out.printf("%f ", data[i][j]);
-                System.out.printf("%f ", datap[i][j]);
-            }
-            System.out.printf("%f ", data[i][datap[i].length -1]);
-            System.out.printf("%f\n", datap[i][datap[i].length -1]);
 
-        }
-    }
 
-    private static void printLData_min(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_min(rg, F, new NonePerturbation(), s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printLData_max(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static double[] printMaxData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
-
-        /*
-        The following instruction creates an evolution sequence consisting in a sequence of <code>steps</code> sample
-        sets of cardinality <size>.
-        The first sample set contains <code>size</code> copies of configuration <code>s</code>.
-        The subsequent sample sets are derived by simulating the dynamics.
-        Finally, for each step from 1 to <code>steps</code> and for each variable, the maximal value taken by the
-        variable in the elements of the sample set is stored.
-         */
-        double[][] data_max = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
-        double[] max = new double[F.size()];
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
-            }
-        }
-        System.out.println(" ");
-        //System.out.println("Maximal values taken by variables by the non perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println("");
-        System.out.println("");
-        return max;
-    }
 
 
     private static double printMaxDataWP(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
@@ -698,40 +575,6 @@ public class Industrial_plant {
                 max = data_euc[i];
             }
         }
-        return max;
-    }
-
-    private static double[] printMaxDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
-
-        double[] max = new double[F.size()];
-
-        double[][] data_max = SystemState.sample_max(rg, F, perturbation, s, steps, size);
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
-            }
-        }
-        //System.out.println("");
-        //System.out.println("Maximal values taken by variables in steps by the perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println("");
         return max;
     }
 
@@ -838,17 +681,13 @@ public class Industrial_plant {
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
-        //double token = rg.nextDouble();
+
         double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
         double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
         double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
-        //if (token < 0.5){
-        //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
-        //} else {
-        //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
-        //}
+
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
-        // the distance from the target is updated taking into account the new position
+
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
@@ -890,9 +729,7 @@ public class Industrial_plant {
 
     // PERTURBATIONS
 
-    private static  Perturbation getIteratedSlowerPerturbation() {
-        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Industrial_plant::slowerPerturbation)));
-    }
+
 
     private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
