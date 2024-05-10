@@ -47,34 +47,34 @@ public class Industrial_plant {
             new String[]{"p_speed", "s_speed", "p_distance", "accel", "timer_V", "braking_distance", "gap"
             };
 
-    public final static double ACCELERATION = 0.05;
-    public final static double BRAKE = 0.40;
-    public final static double NEUTRAL = 0.0;
-    public final static int TIMER = 1;
-    public final static double INIT_SPEED = 0.0;
-    public final static double MAX_SPEED = 3.0;
-    public final static double MAX_SPEED_OFFSET = 0.15;
-    public final static double INIT_X = 0.0;
-    public final static double INIT_Y = 0.0;
-    public final static double INIT_THETA = Math.PI/2;
-    public final static double FINAL_X = 35.0;
-    public final static double FINAL_Y = 30.0;
-    public final static double[] WPx = {1,13,7,23,20,32,FINAL_X};
-    public final static double[] WPy = {3,3,7,14,31,40,FINAL_Y};
+    public final static double ACCELERATION = 0.05; // acceleration, m/s^2
+    public final static double BRAKE = 0.40; // negative acceleration, m/s^2
+    public final static double NEUTRAL = 0.0; // neutral acceleration
+    public final static int TIMER = 1; // frequency of working cycle by controller
+    public final static double INIT_SPEED = 0.0; // initial speed of the robot
+    public final static double MAX_SPEED = 3.0; // maximal speed
+    public final static double MAX_SPEED_OFFSET = 0.15; // maximal perturbation on the speed
+    public final static double INIT_X = 0.0; // initial x position
+    public final static double INIT_Y = 0.0; // initial y position
+    public final static double INIT_THETA = Math.PI/2; // initial steering angle
+    public final static double FINAL_X = 35.0; // last waypoint, x coordinate
+    public final static double FINAL_Y = 30.0; // last waypoint, y coordinate
+    public final static double[] WPx = {1,13,7,23,20,32,FINAL_X}; // list of x coordinate of waypoints
+    public final static double[] WPy = {3,3,7,14,31,40,FINAL_Y}; // list of y coordinate of waypoints
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
-    private static final int H = 350;
 
-    private static final int x = 0; // current position, first coordinate
-    private static final int y = 1; // current position, second coordinate
+
+    private static final int x = 0; // current position, x coordinate
+    private static final int y = 1; // current position, y coordinate
     private static final int theta = 2; // current direction
-    private static final int p_speed = 3; // physical speed
-    private static final int s_speed = 4; // sensed speed
-    private static final int p_distance = 5; // physical distance from the current target
+    private static final int p_speed = 3; // physical speed (m/s)
+    private static final int s_speed = 4; // sensed speed (m/s)
+    private static final int p_distance = 5; // physical distance from the current waypoint (m)
     private static final int accel = 6; // acceleration
     private static final int timer_V = 7; // timer
     private static final int gap = 8; // difference between p_distance and the space required to stop when braking
-    private static final int currentWP = 9; // current w point
+    private static final int currentWP = 9; // current waypoint
 
     private static final int NUMBER_OF_VARIABLES = 10;
     private static final double SPEED_DIFFERENCE = 0.0001;
@@ -90,7 +90,7 @@ public class Industrial_plant {
             INITIAL CONFIGURATION
 
             In order to perform simulations/analysis/model checking for a particular system, we need to create its
-            initial configuration, which is an instance of <code>ControlledSystem>/code>
+            initial configuration, which is an instance of <code>ControlledSystem</code>
 
             */
 
@@ -108,7 +108,7 @@ public class Industrial_plant {
             Instances of <code>DataState</code> contains values for variables representing the quantities of the
             system.
             The initial state <code>state</code> is constructed by exploiting the static method
-            <code>getInitialState</code>, which will be defined later and assigns the initial value to all
+            <code>getInitialState</code>, which will be defined later and assigns the initial value to the 10
             variables defined above.
              */
             DataState state = getInitialState();
@@ -128,13 +128,18 @@ public class Industrial_plant {
 
 
 
-/*
-            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to obtain the evolution
+            /*
+            Below we create an evolution sequence.
+            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to simulate the evolution
             sequence.
             More in detail, an evolution sequence, modelled by class <code>EvolutionSequence</code>, is a sequence of
             sample sets of system configurations, where configurations are modelled by class <code>ControlledSystem</code>
             and sample sets by class <code>SampleSet</code>.
             In this context, <code>sizeNominalSequence</code> is the cardinality of those sample sets.
+            The evolution sequence is created as a sequence containing only one sample set of configurations, which
+            consists in <code>sizeNominalSequence</code> of configuration <code>system</code>.
+            The subsequent sample sets will be generated "on demand".
+
             */
             int sizeNominalSequence = 10;
 
@@ -143,15 +148,17 @@ public class Industrial_plant {
             /*
             Below we define a feedback, namely an element of <code>Feedback</code>.
             In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
-            evolution step its body is applied, where the body is the <code>AtomicFeedback</code>
-            <code>feedbackSpeedAndDir</code>, which is drived by the evolution sequence <code>sequence</code> and applies
-            at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
+            evolution step its body is applied, where the body is an atomic feedback, namely an instance of
+            <code>AtomicFeedback</code>. An atomic distance consists in a delay, which is 0 in this case, an
+            evolution sequence, which is <code>sequence</code> in this case, and a feedback function,
+            which is returned by static method <code>feedbackSpeedAndDir</code> in this case.
+            Essentially, <code>sequence</code> will play the role of the DT.
              */
             Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Industrial_plant::feedbackSpeedAndDirFunction));
 
             /*
             Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
-            is a version of <code>system</code> equipped by feedback <code>feedbackSpeedAndDir</code>.
+            is a version of <code>system</code> equipped with feedback <code>feedbackSpeedAndDir</code>.
              */
             FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackSpeedAndDir);
 
@@ -164,7 +171,7 @@ public class Industrial_plant {
 
             /*
             Below we define a <code>Perturbation</code>.
-            In this case, <code>perturbationr</code> is a <code>PersistentPerturbation</code>, namely at each
+            In this case, <code>perturbatior</code> is a <code>PersistentPerturbation</code>, namely at each
             evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
             which perturbs the data states by applying the </code>DataStateFunction</code> returned by
             static method <code>slowerPerturbation</code>.
@@ -180,7 +187,7 @@ public class Industrial_plant {
 
             /*
             USING THE SIMULATOR
-             */
+            */
 
             ArrayList<String> L = new ArrayList<>();
             L.add("      x   ");
