@@ -15,6 +15,9 @@
             <option value="$PROJECT_DIR$/examples" />
             <option value="$PROJECT_DIR$/examples/Isocitrate" />
             <option value="$PROJECT_DIR$/examples/engine" />
+            <option value="$PROJECT_DIR$/examples/envzompr" />
+            <option value="$PROJECT_DIR$/examples/repressilator" />
+            <option value="$PROJECT_DIR$/examples/tollbooth" />
             <option value="$PROJECT_DIR$/examples/vehicle" />
             <option value="$PROJECT_DIR$/lib" />
             <option value="$PROJECT_DIR$/speclang" />
