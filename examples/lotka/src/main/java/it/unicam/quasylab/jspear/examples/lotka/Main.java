@@ -107,7 +107,7 @@ public class Main {
 
     VARIABLES MODELING THE STATUS OF THE SYSTEM
 
-    Below a list of 30 variables, the idea being that the value of these 30 variables gives a data state, namely an
+    Below a list of 7 variables, the idea being that the value of these 30 variables gives a data state, namely an
     instance of class <code>DataState</code> representing the status of all quantities of the system.
     We have variables for active and inactive promoters, mRNA, proteins and reaction rates. Reaction rates can vary
     since promoter parameters, i.e. the rates of promoter activation and deactivation, depend on the amount of proteins.
