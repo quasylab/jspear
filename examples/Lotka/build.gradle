@@ -8,5 +8,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'it.unicam.quasylab.jspear.examples.lotka.Main'
+    mainClass = 'it.unicam.quasylab.jspear.examples.Lotka.Main'
 }

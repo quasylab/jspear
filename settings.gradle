@@ -23,4 +23,6 @@ include 'examples:tollbooth'
 findProject(':examples:tollbooth')?.name = 'tollbooth'
 include 'examples:envzompr'
 findProject(':examples:envzompr')?.name = 'envzompr'
+include 'examples:Lotka'
+findProject(':examples:Lotka')?.name = 'Lotka'
 
