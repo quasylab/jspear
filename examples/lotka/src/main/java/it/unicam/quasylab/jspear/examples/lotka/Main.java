@@ -23,7 +23,6 @@
 package it.unicam.quasylab.jspear.examples.Lotka;
 
 
-
 import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.NilController;
@@ -31,11 +30,16 @@ import it.unicam.quasylab.jspear.distance.*;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
+import it.unicam.quasylab.jspear.ds.RelationOperator;
 import it.unicam.quasylab.jspear.perturbation.AtomicPerturbation;
+import it.unicam.quasylab.jspear.perturbation.IterativePerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
+import it.unicam.quasylab.jspear.perturbation.SequentialPerturbation;
+import it.unicam.quasylab.jspear.robtl.*;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 
 public class Main {
@@ -74,49 +78,49 @@ public class Main {
     /*
      Reaction r1 is X + Y1 ---c1---> 2Y1
     */
-    public static final int[] r1_input = {1,1,0,0};
-    public static final int[] r1_output = {1,2,0,0};
-    public static final double r1_k = 0.01;
+ public static final int[] r1_input = {1,1,0,0};
+ public static final int[] r1_output = {1,2,0,0};
+ public static final double r1_k = 0.01;
 
-    /*
-    Reaction r2 is Y1 + Y2 ---c2---> 2Y2.
-    */
-    public static final int[] r2_input =  {0,1,1,0};
-    public static final int[] r2_output = {0,0,2,0};
-    public static final double r2_k = 0.01;
+ /*
+ Reaction r2 is Y1 + Y2 ---c2---> 2Y2.
+ */
+ public static final int[] r2_input =  {0,1,1,0};
+ public static final int[] r2_output = {0,0,2,0};
+ public static final double r2_k = 0.01;
 
-    /*
-    Reaction r3 is Y2 ---c3---> Z.
-    */
-    public static final int[] r3_input =  {0,0,1,0};
-    public static final int[] r3_output = {0,0,0,1};
-    public static final double r3_k = 10.0;
-
-
-    public static final int[][] r_input = {r1_input,r2_input,r3_input};
-    public static final double[] r_k = {r1_k,r2_k,r3_k};
+ /*
+ Reaction r3 is Y2 ---c3---> Z.
+ */
+ public static final int[] r3_input =  {0,0,1,0};
+ public static final int[] r3_output = {0,0,0,1};
+ public static final double r3_k = 10.0;
 
 
-    /*
-
-    VARIABLES MODELING THE STATUS OF THE SYSTEM
-
-    Below a list of 4 variables, the idea being that the value of these 4 variables gives a data state, namely an
-    instance of class <code>DataState</code> representing the status of all quantities of the system.
-    Each variable is associated with an index, from 0 to 29.
-    */
-    public static final int X = 0; // amount of molecules of X
-    public static final int Y1 = 1; // amount of molecules of Y1.
-    public static final int Y2 = 2; // amount of molecules of Y2.
-    public static final int Z = 3; // amount of molecules of Z.
-
-    private static final int NUMBER_OF_VARIABLES = 4;
+ public static final int[][] r_input = {r1_input,r2_input,r3_input};
+ public static final double[] r_k = {r1_k,r2_k,r3_k};
 
 
+ /*
 
-    // MAIN PROGRAM
-    public static void main(String[] args) throws IOException {
-        try {
+ VARIABLES MODELING THE STATUS OF THE SYSTEM
+
+ Below a list of 4 variables, the idea being that the value of these 4 variables gives a data state, namely an
+ instance of class <code>DataState</code> representing the status of all quantities of the system.
+ Each variable is associated with an index, from 0 to 29.
+ */
+ public static final int X = 0; // amount of molecules of X
+ public static final int Y1 = 1; // amount of molecules of Y1.
+ public static final int Y2 = 2; // amount of molecules of Y2.
+ public static final int Z = 3; // amount of molecules of Z.
+
+ private static final int NUMBER_OF_VARIABLES = 4;
+
+
+
+ // MAIN PROGRAM
+ public static void main(String[] args) throws IOException {
+  try {
             /*
 
             INITIAL CONFIGURATION
@@ -266,10 +270,10 @@ public class Main {
 
             double[][] data = SystemState.sample(rand, F, system, N, size);
             for (int i = 0; i<N; i++){
-                plot_LX[i][0] = data[i][0];
-                plot_LY1[i][0] = data[i][1];
-                plot_LY2[i][0] = data[i][2];
-                plot_LZ[i][0] = data[i][3];
+              plot_LX[i][0] = data[i][0];
+              plot_LY1[i][0] = data[i][1];
+              plot_LY2[i][0] = data[i][2];
+              plot_LZ[i][0] = data[i][3];
             }
             Util.writeToCSV("./new_plotLX.csv",plot_LX);
             Util.writeToCSV("./new_plotLY1.csv",plot_LY1);
@@ -283,10 +287,10 @@ public class Main {
 
             double[][] pertdata = SystemState.sample(rand, F, pertY1(N/2), system, N, size);
             for (int i = 0; i<N; i++){
-                plot_pertLX[i][0] = pertdata[i][0];
-                plot_pertLY1[i][0] = pertdata[i][1];
-                plot_pertLY2[i][0] = pertdata[i][2];
-                plot_pertLZ[i][0] = pertdata[i][3];
+              plot_pertLX[i][0] = pertdata[i][0];
+              plot_pertLY1[i][0] = pertdata[i][1];
+              plot_pertLY2[i][0] = pertdata[i][2];
+              plot_pertLZ[i][0] = pertdata[i][3];
             }
             Util.writeToCSV("./new_plotLXpert.csv",plot_pertLX);
             Util.writeToCSV("./new_plotLY1pert.csv",plot_pertLY1);
@@ -296,10 +300,10 @@ public class Main {
             double[][] plot_LY1Y2 = new double[N][2];
             double[][] plot_pertLY1Y2 = new double[N][2];
             for (int i = 0; i<N; i++){
-                plot_LY1Y2[i][0] = data[i][1];
-                plot_LY1Y2[i][1] = data[i][2];
-                plot_pertLY1Y2[i][0] = pertdata[i][1];
-                plot_pertLY1Y2[i][1] = pertdata[i][2];
+               plot_LY1Y2[i][0] = data[i][1];
+               plot_LY1Y2[i][1] = data[i][2];
+               plot_pertLY1Y2[i][0] = pertdata[i][1];
+               plot_pertLY1Y2[i][1] = pertdata[i][2];
             }
             Util.writeToCSV("./new_plotLY1Y2.csv",plot_LY1Y2);
             Util.writeToCSV("./new_plotLY1Y2pert.csv",plot_pertLY1Y2);
@@ -310,14 +314,14 @@ public class Main {
             */
 
 
-            System.out.println();
-            System.out.println("Simulation of nominal system - data average values:");
-            System.out.println();
-            printAvgData(rand, L, F, system, N, size, 0, N);
-            System.out.println();
-            System.out.println("Simulation of perturbed system - data average values:");
-            System.out.println("");
-            printAvgDataPerturbed(rand, L, F, system, N, size, 0, N, pertY1(N/2));
+           System.out.println();
+           System.out.println("Simulation of nominal system - data average values:");
+           System.out.println();
+           printAvgData(rand, L, F, system, N, size, 0, N);
+           System.out.println();
+           System.out.println("Simulation of perturbed system - data average values:");
+           System.out.println("");
+           printAvgDataPerturbed(rand, L, F, system, N, size, 0, N, pertY1(N/2));
 
 
 
@@ -352,22 +356,22 @@ public class Main {
 
 
 
-            System.out.println("");
+           System.out.println("");
 
-            System.out.println("Estimating behavioural differences between nominal and perturbed system");
-            System.out.println("");
+           System.out.println("Estimating behavioural differences between nominal and perturbed system");
+           System.out.println("");
 
 
-            System.out.println("");
-            System.out.println("Simulation of nominal system - Data maximal values:");
-            double[] dataMax = printMaxData(rand, L, F, system, N, size, 0, 2*N);
-            System.out.println("");
-            System.out.println("Simulation of perturbed system - Data maximal values:");
-            System.out.println("");
-            double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, pertY1(N/4));
+           System.out.println("");
+           System.out.println("Simulation of nominal system - Data maximal values:");
+           double[] dataMax = printMaxData(rand, L, F, system, N, size, 0, 2*N);
+           System.out.println("");
+           System.out.println("Simulation of perturbed system - Data maximal values:");
+           System.out.println("");
+           double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, pertY1(N/4));
 
-            double normalisationY1 = Math.max(dataMax[Y1],dataMax_p[Y1])*1.1;
-            double normalisationY2 = Math.max(dataMax[Y2],dataMax_p[Y2])*1.1;
+           double normalisationY1 = Math.max(dataMax[Y1],dataMax_p[Y1])*1.1;
+           double normalisationY2 = Math.max(dataMax[Y2],dataMax_p[Y2])*1.1;
 
 
 
@@ -414,8 +418,8 @@ public class Main {
             double[][] direct_evaluation_atomic_Y2 = new double[rightBound-leftBound][1];
 
             for (int i = 0; i<(rightBound-leftBound); i++){
-                direct_evaluation_atomic_Y1[i][0] = atomicY1.compute(i+leftBound, sequence, sequence_p);
-                direct_evaluation_atomic_Y2[i][0] = atomicY2.compute(i+leftBound, sequence, sequence_p);
+              direct_evaluation_atomic_Y1[i][0] = atomicY1.compute(i+leftBound, sequence, sequence_p);
+              direct_evaluation_atomic_Y2[i][0] = atomicY2.compute(i+leftBound, sequence, sequence_p);
             }
 
             Util.writeToCSV("./new_Latomic_Y1.csv",direct_evaluation_atomic_Y1);
@@ -425,29 +429,29 @@ public class Main {
 
 
 
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-        }
+  } catch (RuntimeException e) {
+   e.printStackTrace();
+  }
 
 
 
-    }
+ }
 
 
 
 
 
-    /*
-    The following method generates an evolution sequence consisting of a sequence of <code>steps</code> sample sets
-    of cardinality <code>size</code>, with the first sample set consisting in <code>size</code> copies of configuration
-    <code>s</code>.
-    For each sample set, all expressions over data states in <code>F</code> are evaluated on all configurations and
-    their average value are printed out.
-    The method returns the average evaluation that each expression in <code>F</code> gets in all configurations in all
-    sample sets that are in the sequence in between positions <code>leftbound</code> and <code>rightbound</code>
-     */
-    private static double[] printAvgData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
-        System.out.println(label);
+ /*
+ The following method generates an evolution sequence consisting of a sequence of <code>steps</code> sample sets
+ of cardinality <code>size</code>, with the first sample set consisting in <code>size</code> copies of configuration
+ <code>s</code>.
+ For each sample set, all expressions over data states in <code>F</code> are evaluated on all configurations and
+ their average value are printed out.
+ The method returns the average evaluation that each expression in <code>F</code> gets in all configurations in all
+ sample sets that are in the sequence in between positions <code>leftbound</code> and <code>rightbound</code>
+  */
+ private static double[] printAvgData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
+  System.out.println(label);
         /*
         The following instruction creates an evolution sequence consisting in a sequence of <code>steps</code> sample
         sets of cardinality <size>.
@@ -456,64 +460,64 @@ public class Main {
         For each step from 1 to <code>steps</code> and for each variable, the average value taken by the
         variables in the elements of the sample set at each step are printed out.
          */
-        double[][] data_avg = SystemState.sample(rg, F, s, steps, size);
-        double[] tot = new double[F.size()];
-        Arrays.fill(tot, 0);
-        for (int i = 0; i < data_avg.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_avg[i].length -1 ; j++) {
-                System.out.printf("%f   ", data_avg[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    tot[j]=tot[j]+data_avg[i][j];
-                }
-            }
-            System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                tot[data_avg[i].length -1]=tot[data_avg[i].length -1]+data_avg[i][data_avg[i].length -1];
-            }
-        }
-        System.out.println(" ");
-        System.out.println("Avg over all steps of the average values taken in the single step by the variables:");
-        for(int j=0; j<tot.length-1; j++){
-            System.out.printf("%f   ", tot[j] / (rightbound-leftbound));
-        }
-        System.out.printf("%f\n", tot[tot.length-1]/ (rightbound-leftbound));
-        System.out.println();
-        System.out.println();
-        return tot;
+  double[][] data_avg = SystemState.sample(rg, F, s, steps, size);
+  double[] tot = new double[F.size()];
+  Arrays.fill(tot, 0);
+  for (int i = 0; i < data_avg.length; i++) {
+   System.out.printf("%d>   ", i);
+   for (int j = 0; j < data_avg[i].length -1 ; j++) {
+    System.out.printf("%f   ", data_avg[i][j]);
+    if (leftbound <= i & i <= rightbound) {
+     tot[j]=tot[j]+data_avg[i][j];
     }
+   }
+   System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
+   if (leftbound <= i & i <= rightbound) {
+    tot[data_avg[i].length -1]=tot[data_avg[i].length -1]+data_avg[i][data_avg[i].length -1];
+   }
+  }
+  System.out.println(" ");
+  System.out.println("Avg over all steps of the average values taken in the single step by the variables:");
+  for(int j=0; j<tot.length-1; j++){
+   System.out.printf("%f   ", tot[j] / (rightbound-leftbound));
+  }
+  System.out.printf("%f\n", tot[tot.length-1]/ (rightbound-leftbound));
+  System.out.println();
+  System.out.println();
+  return tot;
+ }
 
 
-    private static double[] printAvgDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
-        System.out.println(label);
+ private static double[] printAvgDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
+  System.out.println(label);
 
-        double[] tot = new double[F.size()];
+  double[] tot = new double[F.size()];
 
-        double[][] data_avg = SystemState.sample(rg, F, perturbation, s, steps, size);
-        Arrays.fill(tot, 0);
-        for (int i = 0; i < data_avg.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_avg[i].length -1 ; j++) {
-                System.out.printf("%f   ", data_avg[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    tot[j]=tot[j]+data_avg[i][j];
-                }
-            }
-            System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                tot[data_avg[i].length -1]=tot[data_avg[i].length -1]+data_avg[i][data_avg[i].length -1];
-            }
-        }
-        System.out.println();
-        System.out.println("Avg over all steps of the average values taken in the single step by the variables:");
-        for(int j=0; j<tot.length-1; j++){
-            System.out.printf("%f   ", tot[j] / (rightbound-leftbound));
-        }
-        System.out.printf("%f\n", tot[tot.length-1]/ (rightbound-leftbound));
-        System.out.println();
-        return tot;
-
+  double[][] data_avg = SystemState.sample(rg, F, perturbation, s, steps, size);
+  Arrays.fill(tot, 0);
+  for (int i = 0; i < data_avg.length; i++) {
+   System.out.printf("%d>   ", i);
+   for (int j = 0; j < data_avg[i].length -1 ; j++) {
+    System.out.printf("%f   ", data_avg[i][j]);
+    if (leftbound <= i & i <= rightbound) {
+     tot[j]=tot[j]+data_avg[i][j];
     }
+   }
+   System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
+   if (leftbound <= i & i <= rightbound) {
+    tot[data_avg[i].length -1]=tot[data_avg[i].length -1]+data_avg[i][data_avg[i].length -1];
+   }
+  }
+  System.out.println();
+  System.out.println("Avg over all steps of the average values taken in the single step by the variables:");
+  for(int j=0; j<tot.length-1; j++){
+   System.out.printf("%f   ", tot[j] / (rightbound-leftbound));
+  }
+  System.out.printf("%f\n", tot[tot.length-1]/ (rightbound-leftbound));
+  System.out.println();
+  return tot;
+
+ }
 
     /*
     The following method generates an evolution sequence consisting of a sequence of <code>steps</code> sample sets
@@ -524,7 +528,7 @@ public class Main {
      */
 
 
-    private static double[] printMaxData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
+ private static double[] printMaxData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
 
         /*
         The following instruction creates an evolution sequence consisting in a sequence of <code>steps</code> sample
@@ -534,116 +538,116 @@ public class Main {
         Finally, for each step from 1 to <code>steps</code> and for each variable, the maximal value taken by the
         variable in the elements of the sample set is stored.
          */
-        double[][] data_max = SystemState.sample_max(rg, F, s, steps, size);
-        double[] max = new double[F.size()];
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
-            }
-        }
-        System.out.println(" ");
-        //System.out.println("Maximal values taken by variables by the non perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println();
-        System.out.println();
-        return max;
+  double[][] data_max = SystemState.sample_max(rg, F, s, steps, size);
+  double[] max = new double[F.size()];
+  Arrays.fill(max, Double.NEGATIVE_INFINITY);
+  for (int i = 0; i < data_max.length; i++) {
+   //System.out.printf("%d>   ", i);
+   for (int j = 0; j < data_max[i].length -1 ; j++) {
+    //System.out.printf("%f   ", data_max[i][j]);
+    if (leftbound <= i & i <= rightbound) {
+     if (max[j] < data_max[i][j]) {
+      max[j] = data_max[i][j];
+     }
     }
-
-
-    private static double[] printMaxDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
-
-        double[] max = new double[F.size()];
-
-        double[][] data_max = SystemState.sample_max(rg, F, perturbation, s, steps, size);
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
-            }
-        }
-        //System.out.println("");
-        //System.out.println("Maximal values taken by variables in steps by the perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println();
-        return max;
-
+   }
+   //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
+   if (leftbound <= i & i <= rightbound) {
+    if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
+     max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
     }
+   }
+  }
+  System.out.println(" ");
+  //System.out.println("Maximal values taken by variables by the non perturbed system:");
+  System.out.println(label);
+  for(int j=0; j<max.length-1; j++){
+   System.out.printf("%f ", max[j]);
+  }
+  System.out.printf("%f\n", max[max.length-1]);
+  System.out.println();
+  System.out.println();
+  return max;
+ }
 
 
+ private static double[] printMaxDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
 
+  double[] max = new double[F.size()];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-    The following method selects the time of next reaction according to Gillespie algorithm.
-     */
-    public static double selectReactionTime(RandomGenerator rg, DataState state){
-        double rate = 0.0;
-        double[] lambda = new double[3];
-        for (int j=0; j<3; j++){
-            double weight = 1.0;
-            for (int i=0; i<4; i++){
-                if(r_input[j][i] > 0) {
-                    weight = weight * Math.pow(state.get(i), r_input[j][i]);
-                }
-            }
-            lambda[j] = r_k[j] * weight;
-            rate = rate + lambda[j];
-        }
-
-        double rand = rg.nextDouble();
-        return (1/rate)*Math.log(1/rand);
+  double[][] data_max = SystemState.sample_max(rg, F, perturbation, s, steps, size);
+  Arrays.fill(max, Double.NEGATIVE_INFINITY);
+  for (int i = 0; i < data_max.length; i++) {
+   //System.out.printf("%d>   ", i);
+   for (int j = 0; j < data_max[i].length -1 ; j++) {
+    //System.out.printf("%f   ", data_max[i][j]);
+    if (leftbound <= i & i <= rightbound) {
+     if (max[j] < data_max[i][j]) {
+      max[j] = data_max[i][j];
+     }
     }
+   }
+   //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
+   if (leftbound <= i & i <= rightbound) {
+    if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
+     max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
+    }
+   }
+  }
+  //System.out.println("");
+  //System.out.println("Maximal values taken by variables in steps by the perturbed system:");
+  System.out.println(label);
+  for(int j=0; j<max.length-1; j++){
+   System.out.printf("%f ", max[j]);
+  }
+  System.out.printf("%f\n", max[max.length-1]);
+  System.out.println();
+  return max;
+
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /*
+ The following method selects the time of next reaction according to Gillespie algorithm.
+  */
+ public static double selectReactionTime(RandomGenerator rg, DataState state){
+  double rate = 0.0;
+  double[] lambda = new double[3];
+  for (int j=0; j<3; j++){
+   double weight = 1.0;
+   for (int i=0; i<4; i++){
+    if(r_input[j][i] > 0) {
+     weight = weight * Math.pow(state.get(i), r_input[j][i]);
+    }
+   }
+   lambda[j] = r_k[j] * weight;
+   rate = rate + lambda[j];
+  }
+
+  double rand = rg.nextDouble();
+  return (1/rate)*Math.log(1/rand);
+ }
 
 
     /*
@@ -653,64 +657,64 @@ public class Main {
     new value of proteins.
     */
 
-    public static List<DataStateUpdate> selectAndApplyReaction(RandomGenerator rg, DataState state) {
-        List<DataStateUpdate> updates = new LinkedList<>();
+ public static List<DataStateUpdate> selectAndApplyReaction(RandomGenerator rg, DataState state) {
+  List<DataStateUpdate> updates = new LinkedList<>();
 
-        double[] lambda = new double[3];
-        double[] lambdaParSum = new double[3];
-        double lambdaSum = 0.0;
+  double[] lambda = new double[3];
+  double[] lambdaParSum = new double[3];
+  double lambdaSum = 0.0;
 
-        for (int j=0; j<3; j++){
-            double weight = 1.0;
-            for (int i=0; i<3; i++){
-                weight = weight * Math.pow(state.get(i),r_input[j][i]);
-            }
-            lambda[j] = r_k[j] * weight;
-            lambdaSum = lambda[j]+lambdaSum;
-            lambdaParSum[j] = lambdaSum;
-        }
+  for (int j=0; j<3; j++){
+   double weight = 1.0;
+   for (int i=0; i<3; i++){
+    weight = weight * Math.pow(state.get(i),r_input[j][i]);
+   }
+   lambda[j] = r_k[j] * weight;
+   lambdaSum = lambda[j]+lambdaSum;
+   lambdaParSum[j] = lambdaSum;
+  }
 
-        if(lambdaSum > 0){
+  if(lambdaSum > 0){
 
-            double token = 1 - rg.nextDouble();
+   double token = 1 - rg.nextDouble();
 
-            int selReaction = 0;
+   int selReaction = 0;
 
-            while (lambdaParSum[selReaction] < token * lambdaSum) {
-                selReaction++;
-            }
+   while (lambdaParSum[selReaction] < token * lambdaSum) {
+    selReaction++;
+   }
 
-            selReaction++;
+   selReaction++;
 
-            switch(selReaction){
-                case 1:
-                    for (int i=0; i<4; i++) {
-                        double newArity = state.get(i) + r1_output[i] - r1_input[i];
-                        updates.add(new DataStateUpdate(i, newArity));
-                    }
-                    break;
-                case 2:
-                    for (int i = 0; i < 4; i++) {
-                        double newArity = state.get(i) + r2_output[i] - r2_input[i];
-                        updates.add(new DataStateUpdate(i, newArity));
-                    }
-                    break;
-                case 3:
-                    for (int i = 0; i < 4; i++) {
-                        double newArity = state.get(i) + r3_output[i] - r3_input[i];
-                        updates.add(new DataStateUpdate(i, newArity));
-                    }
-                    break;
-            }
+   switch(selReaction){
+    case 1:
+     for (int i=0; i<4; i++) {
+      double newArity = state.get(i) + r1_output[i] - r1_input[i];
+      updates.add(new DataStateUpdate(i, newArity));
+     }
+     break;
+    case 2:
+     for (int i = 0; i < 4; i++) {
+      double newArity = state.get(i) + r2_output[i] - r2_input[i];
+      updates.add(new DataStateUpdate(i, newArity));
+     }
+     break;
+    case 3:
+     for (int i = 0; i < 4; i++) {
+      double newArity = state.get(i) + r3_output[i] - r3_input[i];
+      updates.add(new DataStateUpdate(i, newArity));
+     }
+     break;
+   }
 
-        } else {
-            System.out.println("Missing reagents");
-        }
+  } else {
+   System.out.println("Missing reagents");
+  }
 
 
-        return updates;
+  return updates;
 
-    }
+ }
 
 
 
@@ -728,15 +732,15 @@ public class Main {
      */
 
 
-    public static Perturbation pertY1(int step){
-        return new AtomicPerturbation(step,(rg,ds)->ds.apply(cutY1(rg,ds)));
-    }
-    private static List<DataStateUpdate> cutY1(RandomGenerator rg, DataState state){
-        List<DataStateUpdate> updates = new LinkedList<>();
-        updates.add(new DataStateUpdate(Y1,state.get(Y1)*0.5));
-        // updates.add(new DataStateUpdate(Y2,state.get(Y2)*0.5));
-        return updates;
-    }
+ public static Perturbation pertY1(int step){
+  return new AtomicPerturbation(step,(rg,ds)->ds.apply(cutY1(rg,ds)));
+ }
+ private static List<DataStateUpdate> cutY1(RandomGenerator rg, DataState state){
+  List<DataStateUpdate> updates = new LinkedList<>();
+  updates.add(new DataStateUpdate(Y1,state.get(Y1)*0.5));
+     // updates.add(new DataStateUpdate(Y2,state.get(Y2)*0.5));
+  return updates;
+ }
 
 
 
@@ -747,22 +751,23 @@ public class Main {
 
 
 
-    /*
-    Method getInitialState assigns the initial value to all variables.
-    The values are taken from "Ulysse Herbach: ''Harissa: Stochastic Simulation and Inference of Gene Regulatory Networks Based on Transcriptional
-    Bursting''. Proc. CMSB 2023".
+ /*
+ Method getInitialState assigns the initial value to all variables.
+ The values are taken from "Ulysse Herbach: ''Harissa: Stochastic Simulation and Inference of Gene Regulatory Networks Based on Transcriptional
+ Bursting''. Proc. CMSB 2023".
 
-     */
-    public static DataState getInitialState(double gran, double Tstep, double Treal, double Tdelta) {
-        Map<Integer, Double> values = new HashMap<>();
+  */
+ public static DataState getInitialState(double gran, double Tstep, double Treal, double Tdelta) {
+  Map<Integer, Double> values = new HashMap<>();
 
-        values.put(X, 1000.0);
-        values.put(Y1, 1000.0);
-        values.put(Y2, 1000.0);
-        values.put(Z, 0.0);
+  values.put(X, 1000.0);
+  values.put(Y1, 1000.0);
+  values.put(Y2, 1000.0);
+  values.put(Z, 0.0);
 
 
-        return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Treal, Tdelta);
-    }
+  return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Treal, Tdelta);
+ }
 
 }
+
