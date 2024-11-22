@@ -29,6 +29,7 @@ import it.unicam.quasylab.jspear.distance.*;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
+import it.unicam.quasylab.jspear.ds.RelationOperator;
 import it.unicam.quasylab.jspear.perturbation.AtomicPerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import it.unicam.quasylab.jspear.perturbation.*;
@@ -316,7 +317,6 @@ public class Main {
             printAvgData(rand, L, F, system, N, size, 0, N);
             System.out.println();
             System.out.println("Simulation of perturbed system - data average values:");
-            System.out.println("");
             printAvgDataPerturbed(rand, L, F, system, N, size, 0, N, pertY1(N/2));
 
 
