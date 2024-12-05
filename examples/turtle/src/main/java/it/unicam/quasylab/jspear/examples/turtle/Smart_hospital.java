@@ -130,7 +130,7 @@ public class Smart_hospital {
 
             ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
-            int sizeNominalSequence = 10;
+            int sizeNominalSequence = 100;
 
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
 
@@ -151,7 +151,7 @@ public class Smart_hospital {
 
             EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, sizeNominalSequence);
 
-            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, Smart_hospital::changeDir));
+            Perturbation perturbation = new PersistentPerturbation(new AtomicPerturbation(0, (rg,ds)-> ds.apply(changeDir(rg,ds,ACCELERATION/2))));
 
             PerturbedSystem perturbedSystem = new PerturbedSystem(system, perturbation);
             PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, perturbation);
@@ -185,6 +185,7 @@ public class Smart_hospital {
 
             printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence);
 
+
             double[][] position_system = new double[N][2];
             double[][] position_perturbed_feedback_system = new double[N][2];
 
@@ -202,19 +203,19 @@ public class Smart_hospital {
                 fail_system[i][0] = data[i][7];
             }
             Util.writeToCSV("./xy_nominal.csv",position_system);
-            Util.writeToCSV("./get_med_nominal.csv",position_system);
-            Util.writeToCSV("./fail_nominal.csv",position_system);
+            Util.writeToCSV("./get_med_nominal.csv",get_med_system);
+            Util.writeToCSV("./fail_nominal.csv",fail_system);
 
             double[][] pfdata = SystemState.sample(rand, F, perturbation, perturbedFeedbackSystem, N, sizeNominalSequence);
             for (int i = 0; i<N; i++){
                 position_perturbed_feedback_system[i][0] = pfdata[i][0];
                 position_perturbed_feedback_system[i][1] = pfdata[i][1];
-                get_med_perturbed_feedback_system[i][0] = data[i][6];
-                fail_perturbed_feedback_system[i][0] = data[i][7];
+                get_med_perturbed_feedback_system[i][0] = pfdata[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata[i][7];
             }
             Util.writeToCSV("./xy_feedback.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback.csv",fail_perturbed_feedback_system);
 
             /*
 
@@ -243,12 +244,12 @@ public class Smart_hospital {
             obtained from the evolution sequence <code>feedbackSequence</code> by applying <code>perturbation</code>
             */
 
-            int scale=5;
+            int scale=500;
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
 
             /*
             The following lines of code first defines an atomic distance between evolution sequences, named
-            <code>distP2P</code>. Then, this distances are evaluated, time-point by time-point, over
+            <code>distP2P</code>. Then, these distances are evaluated, time-point by time-point, over
             evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
             and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
             Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
@@ -260,7 +261,8 @@ public class Smart_hospital {
             intuitively, is the difference between the two configurations with respect to their position.
             This distance will be lifted to two sample sets of configurations, those obtained from the compared
             sequences at the same step.
-            */
+             */
+
             AtomicDistanceExpression distSpeed = new AtomicDistanceExpression(ds->(ds.get(p_speed)/MAX_SPEED), (v1, v2) -> Math.abs(v2-v1));
 
             int leftBound = 0;
@@ -296,48 +298,6 @@ public class Smart_hospital {
     }
 
 
-    /*
-    The following feedback works as follows.
-    The present status of the PT is compared with the status that the DT reached at the same instant. Then:
-    1. If the sensed speed of the PT is much higher than the speed of the DT, then braking is activated.
-    2. If the sensed speed of the PT is much lower than the speed of the DT, then acceleration is activated.
-    3. If the waypoint of the PT is not the waypoint of the DT, then the waypoint of the PT is corrected. Contextually,
-    also the direction of the PT is corrected.
-     */
-    private static List<DataStateUpdate> feedbackDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
-        int step = dataState.getStep();
-        //double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
-        double meanTheta = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(theta));
-        double meanWP = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(currentWP));
-        List<DataStateUpdate> upd = new ArrayList<>();
-        if (dataState.get(get_medicine)==1 && dataState.get(p_speed) > MAX_SPEED_WITH_MED-SPEED_DIFFERENCE){
-            upd.add(new DataStateUpdate(accel,NEUTRAL));
-        }
-        if (meanTheta + DIR_DIFFERENCE < dataState.get(theta) || meanTheta - DIR_DIFFERENCE > dataState.get(theta)) {
-            upd.add(new DataStateUpdate(previous_theta, dataState.get(theta)));
-            if(dataState.get(get_medicine)==0 && dataState.get(p_speed) < MAX_SPEED_WITH_MED){
-                upd.add(new DataStateUpdate(theta,
-                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
-                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
-                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x))))
-                );
-            } else {
-                upd.add(new DataStateUpdate(theta,
-                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
-                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
-                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x)))/2)
-                );
-            }
-
-        }
-        if( dataState.get(s_speed) == 0 & dataState.get(currentWP) < meanWP){
-            upd.add(new DataStateUpdate(currentWP, dataState.get(currentWP)+1));
-            upd.add(new DataStateUpdate(theta, (WPx[(int)dataState.get(currentWP)+1]==dataState.get(x))?0:(
-                    (WPx[(int)dataState.get(currentWP)+1]<dataState.get(x))?Math.PI:0)+
-                    Math.atan((WPy[(int)dataState.get(currentWP)+1]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)+1]-dataState.get(x)))));
-        }
-        return upd;
-    }
 
 
     private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
@@ -383,17 +343,17 @@ public class Smart_hospital {
     private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, SystemState s3, int steps, int size) {
 
         double[][] data1 = SystemState.sample(rg, F, s1, steps, size);
-        double[][] data2 = SystemState.sample(rg, F, s2, steps, size);
+        //double[][] data2 = SystemState.sample(rg, F, s2, steps, size);
         double[][] data3 = SystemState.sample(rg, F, s3, steps, size);
         for (int i = 0; i < data1.length; i++) {
             System.out.printf("%d>  ", i);
             for (int j = 0; j < data1[i].length-1; j++) {
                 System.out.printf("%f ", data1[i][j]);
-                System.out.printf("%f ", data2[i][j]);
+                //System.out.printf("%f ", data2[i][j]);
                 System.out.printf("%f ", data3[i][j]);
             }
             System.out.printf("%f ", data1[i][data1[i].length -1]);
-            System.out.printf("%f ", data2[i][data2[i].length -1]);
+            //System.out.printf("%f ", data2[i][data2[i].length -1]);
             System.out.printf("%f\n", data3[i][data3[i].length -1]);
 
         }
@@ -518,7 +478,7 @@ public class Smart_hospital {
 
 
 
-    // CONTROLLER OF VEHICLE
+    // CONTROLLER OF ROBOT
 
     public static Controller getController() {
 
@@ -612,6 +572,49 @@ public class Smart_hospital {
         return registry.reference("SetDir");
     }
 
+    /*
+    The following feedback works as follows.
+    The present status of the PT is compared with the status that the DT reached at the same instant. Then:
+    1. If the sensed speed of the PT is much higher than the speed of the DT, then braking is activated.
+    2. If the sensed speed of the PT is much lower than the speed of the DT, then acceleration is activated.
+    3. If the waypoint of the PT is not the waypoint of the DT, then the waypoint of the PT is corrected. Contextually,
+    also the direction of the PT is corrected.
+     */
+    private static List<DataStateUpdate> feedbackDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
+        int step = dataState.getStep();
+        double meanSpeed = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(p_speed));
+        double meanTheta = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(theta));
+        double meanWP = evolutionSequence.get(step).mean(ss -> ss.getDataState().get(currentWP));
+        List<DataStateUpdate> upd = new ArrayList<>();
+        if (dataState.get(get_medicine)==1 && dataState.get(p_speed) > MAX_SPEED_WITH_MED-SPEED_DIFFERENCE){
+            upd.add(new DataStateUpdate(accel,NEUTRAL));
+        }
+        if (meanTheta + DIR_DIFFERENCE < dataState.get(theta) || meanTheta - DIR_DIFFERENCE > dataState.get(theta)) {
+            upd.add(new DataStateUpdate(previous_theta, dataState.get(theta)));
+            if(dataState.get(get_medicine)==0 && dataState.get(p_speed) < MAX_SPEED_WITH_MED){
+                upd.add(new DataStateUpdate(theta,
+                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
+                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
+                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x))))
+                );
+            } else {
+                upd.add(new DataStateUpdate(theta,
+                        (WPx[(int)dataState.get(currentWP)]==dataState.get(x))?0:(
+                                (WPx[(int)dataState.get(currentWP)]<dataState.get(x))?Math.PI:0)+
+                                Math.atan((WPy[(int)dataState.get(currentWP)]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)]-dataState.get(x)))/2)
+                );
+            }
+
+        }
+        if( dataState.get(s_speed) == 0 & dataState.get(currentWP) < meanWP){
+            upd.add(new DataStateUpdate(currentWP, dataState.get(currentWP)+1));
+            upd.add(new DataStateUpdate(theta, (WPx[(int)dataState.get(currentWP)+1]==dataState.get(x))?0:(
+                    (WPx[(int)dataState.get(currentWP)+1]<dataState.get(x))?Math.PI:0)+
+                    Math.atan((WPy[(int)dataState.get(currentWP)+1]-dataState.get(y))/(WPx[(int)dataState.get(currentWP)+1]-dataState.get(x)))));
+        }
+        return upd;
+    }
+
 
     // ENVIRONMENT EVOLUTION
 
@@ -646,8 +649,9 @@ public class Smart_hospital {
         if (state.get(currentWP)==8 && state.get(get_medicine)==1){
             updates.add(new DataStateUpdate(get_medicine,0));
         }
-        if (Math.abs(state.get(theta)-state.get(previous_theta))>Math.PI/9 && state.get(get_medicine)==1 && state.get(p_speed)>MAX_SPEED_WITH_MED){
-            updates.add(new DataStateUpdate(get_medicine,0));
+        if (Math.abs(state.get(theta)-state.get(previous_theta))>Math.PI/9 && state.get(get_medicine)==1 && new_p_speed > MAX_SPEED_WITH_MED){
+            updates.add(new DataStateUpdate(get_medicine,-1));
+            updates.add(new DataStateUpdate(fail,1));
         }
         if ((state.get(currentWP)==7 && state.get(get_medicine)!=1) || (state.get(currentWP)==11 && state.get(get_medicine)!=0)){
             updates.add(new DataStateUpdate(fail,1));
@@ -682,15 +686,18 @@ public class Smart_hospital {
 
     // PERTURBATIONS
 
-    private static  Perturbation getIteratedChangeDir() {
-        return new AfterPerturbation(1, new IterativePerturbation(10, new AtomicPerturbation(10, Smart_hospital::changeDir)));
+    private static  Perturbation getIteratedChangeDir(double off) {
+        return new AfterPerturbation(1, new IterativePerturbation(10, new AtomicPerturbation(10, (rg,ds)->ds.apply(changeDir(rg,ds,off)))));
     }
 
-    private static DataState changeDir(RandomGenerator rg, DataState state) {
+    private static List<DataStateUpdate> changeDir(RandomGenerator rg, DataState state, double off) {
         List<DataStateUpdate> updates = new LinkedList<>();
         double offset = rg.nextDouble() * MAX_THETA_OFFSET - MAX_THETA_OFFSET/2;
         updates.add(new DataStateUpdate(theta, state.get(theta)+offset));
-        return state.apply(updates);
+        if (state.getStep() % 5 == 0){
+            updates.add(new DataStateUpdate(p_speed, state.get(p_speed)+rg.nextDouble()*off));
+        }
+        return updates;
     }
 
 }

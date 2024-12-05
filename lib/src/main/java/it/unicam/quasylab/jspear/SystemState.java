@@ -114,6 +114,16 @@ public interface SystemState {
         return result;
     }
 
+    static double[] sample_max(RandomGenerator rg, DataStateExpression f, Function<RandomGenerator, SystemState> generator, int steps, int size) {
+        SampleSet<SystemState> current = SampleSet.generate(rg, generator, size);
+        double[] result = new double[steps];
+        for (int i = 0; i < steps; i++) {
+            result[i] = Arrays.stream(current.evalPenaltyFunction(f)).max().orElse(Double.NaN);
+            current = current.apply(s -> s.sampleNext(rg));
+        }
+        return result;
+    }
+
     /**
      * Computes the average value obtained by applying the given function experienced in a computation of a
      * length <code>steps</code> starting from <code>system</code> under the perturbation <code>p</code>.
@@ -192,6 +202,14 @@ public interface SystemState {
      */
     static double[][] sample(RandomGenerator rg, ArrayList<DataStateExpression> F, SystemState system, int steps, int size) {
         return sample(rg, F, new NonePerturbation(), r -> system, steps, size);
+    }
+
+    static double[][] sample_max(RandomGenerator rg, ArrayList<DataStateExpression> F, SystemState system, int steps, int size) {
+        return sample_max(rg, F, new NonePerturbation(), r -> system, steps, size);
+    }
+
+    static double[][] sample_min(RandomGenerator rg, ArrayList<DataStateExpression> F, SystemState system, int steps, int size) {
+        return sample_min(rg, F, new NonePerturbation(), r -> system, steps, size);
     }
 
     /**
