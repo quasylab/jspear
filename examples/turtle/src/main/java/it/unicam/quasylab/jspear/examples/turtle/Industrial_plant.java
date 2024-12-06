@@ -118,9 +118,10 @@ public class Industrial_plant {
             We define the <code>ControlledSystem</code> <code>system</code>, which will be the starting configuration from
             which the evolution sequence will be constructed.
             This configuration consists of 3 elements:
-            - the controller <code>robot</code> defined above,
+            - the controller <code>robot</code> defined above, which model the cyber component of the system;
             - a random function over data states, which implements interface <code>DataStateFunction</code> and maps a
-            random generator <code>rg</code> and a data state <code>ds</code> to a new data state,
+            random generator <code>rg</code> and a data state <code>ds</code> to a new data state. This function models
+            the physical component of the system;
             - the data state <code>state</state> defined above.
              */
 
@@ -146,12 +147,13 @@ public class Industrial_plant {
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
 
             /*
-            Below we define a feedback, namely an element of <code>Feedback</code>.
+            Below we define a feedback, namely an instance of <code>Feedback</code>.
             In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
             evolution step its body is applied, where the body is an atomic feedback, namely an instance of
-            <code>AtomicFeedback</code>. An atomic distance consists in a delay, which is 0 in this case, an
-            evolution sequence, which is <code>sequence</code> in this case, and a feedback function,
-            which is returned by static method <code>feedbackSpeedAndDir</code> in this case.
+            <code>AtomicFeedback</code>. An atomic feedback consists in a delay, which is 0 in this case, an
+            evolution sequence, which is <code>sequence</code> in this case, and a feedback function, namely an instance
+            of <code>FeedbackFunction</code> that is returned by static method <code>feedbackSpeedAndDir</code> in
+            this case.
             Essentially, <code>sequence</code> will play the role of the DT.
              */
             Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Industrial_plant::feedbackSpeedAndDirFunction));
@@ -170,8 +172,8 @@ public class Industrial_plant {
 
 
             /*
-            Below we define a <code>Perturbation</code>.
-            In this case, <code>perturbatior</code> is a <code>PersistentPerturbation</code>, namely at each
+            Below we define a perturbation, namely an instance of <code>Perturbation</code>.
+            In this case, <code>perturbation</code> is a <code>PersistentPerturbation</code>, namely at each
             evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
             which perturbs the data states by applying the </code>DataStateFunction</code> returned by
             static method <code>slowerPerturbation</code>.
@@ -227,11 +229,12 @@ public class Industrial_plant {
 
             /*
             We start with generating three evolution sequences of length <code>N</code> of sample sets of cardinality
-            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in <code>size</code>
-            copies of <code>system</code>, <code>perturbedSystem</code> or <code>perturbedFeedbackSystem</code>.
+            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in
+            <code>sizeNominalSequence</code> copies of <code>system</code>, <code>perturbedSystem</code> or
+            <code>perturbedFeedbackSystem</code>, respectively.
             For each evolution sequence and step in [0,N-1], and for each variable, we print out
-            the average value that the variable assumes in the <code>size</code> configurations in the sample set
-            obtained at that step.
+            the average value that the variable assumes in the <code>sizeNominalSequence</code> configurations in the
+            sample set obtained at that step.
             The simulator, which is offered by method <code>sample</code> of <code>SystemState</code>,
             is called by method <code>printDataPar</code>.
             */
@@ -246,9 +249,9 @@ public class Industrial_plant {
 
 
             /*
-            Below we repeat the simulation, but instead of printing out the results we store in a .csv file
+            Below we repeat the simulation, but instead of printing out the results we store them in a .csv file
             the value obtained for <code>x</code> and <code>y</code>.
-             */
+            */
 
             double[][] plot_system = new double[N][2];
             double[][] plot_perturbed_system = new double[100][2];
@@ -397,8 +400,8 @@ public class Industrial_plant {
             /*
             USING THE MODEL CHECKER
 
-            The distance <code>intP2PMax</code> returns the maximal value given by the evaluation of <code>distP2P</code>
-            in an interval.
+            The distance <code>intP2PMax</code> defined below returns the maximal value given by the evaluation of
+            <code>distP2P</code> in an interval.
             We define a robustness formula, in particular an atomic formula, namely an instance of
             <code>AtomicRobustnessFormula</code>.
             This formula will be evaluated on the evolution sequence <code>sequence</code> and expresses that the
