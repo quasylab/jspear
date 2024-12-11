@@ -63,8 +63,6 @@ public class Smart_hospital {
     public final static double[] WPy = {6,1,6,6,2,2,2,7,7,7,6,FINAL_Y};
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
-    private static final int H = 350;
-
     private static final int x = 0; // current position, first coordinate
     private static final int y = 1; // current position, second coordinate
     private static final int theta = 2; // current direction
@@ -197,7 +195,7 @@ public class Smart_hospital {
             double[][] fail_system = new double[N][1];
             double[][] fail_perturbed_feedback_system = new double[N][1];
 
-            /*
+
             double[][] data = SystemState.sample(rand, F, system, N, sizeNominalSequence);
             for (int i = 0; i<N; i++){
                 position_system[i][0] = data[i][0];
@@ -211,132 +209,132 @@ public class Smart_hospital {
 
             // Fixed k, changing off
 
-            int k = 30;
+            int k = 5;
 
-            double[][] pfdata_005 = SystemState.sample(rand, F, ChangeDir(0.05,k), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_100 = SystemState.sample(rand, F, ChangeDir(1.0,k), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                position_perturbed_feedback_system[i][0] = pfdata_005[i][0];
-                position_perturbed_feedback_system[i][1] = pfdata_005[i][1];
-                get_med_perturbed_feedback_system[i][0] = pfdata_005[i][6];
-                fail_perturbed_feedback_system[i][0] = pfdata_005[i][7];
+                position_perturbed_feedback_system[i][0] = pfdata_100[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_100[i][1];
+                get_med_perturbed_feedback_system[i][0] = pfdata_100[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata_100[i][7];
             }
-            Util.writeToCSV("./xy_feedback_005.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback_005.csv",get_med_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback_005.csv",fail_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_100.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback_100.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback_100.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_01 = SystemState.sample(rand, F, ChangeDir(0.1,k), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_125 = SystemState.sample(rand, F, ChangeDir(1.25,k), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
-                get_med_perturbed_feedback_system[i][0] = pfdata_01[i][6];
-                fail_perturbed_feedback_system[i][0] = pfdata_01[i][7];
+                position_perturbed_feedback_system[i][0] = pfdata_125[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_125[i][1];
+                get_med_perturbed_feedback_system[i][0] = pfdata_125[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata_125[i][7];
             }
-            Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback_01.csv",get_med_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback_01.csv",fail_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_125.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback_125.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback_125.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_015 = SystemState.sample(rand, F, ChangeDir(0.15,k), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_150 = SystemState.sample(rand, F, ChangeDir(1.5,k), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                position_perturbed_feedback_system[i][0] = pfdata_015[i][0];
-                position_perturbed_feedback_system[i][1] = pfdata_015[i][1];
-                get_med_perturbed_feedback_system[i][0] = pfdata_015[i][6];
-                fail_perturbed_feedback_system[i][0] = pfdata_015[i][7];
+                position_perturbed_feedback_system[i][0] = pfdata_150[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_150[i][1];
+                get_med_perturbed_feedback_system[i][0] = pfdata_150[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata_150[i][7];
             }
-            Util.writeToCSV("./xy_feedback_015.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback_015.csv",get_med_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback_015.csv",fail_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_150.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback_150.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback_150.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_02 = SystemState.sample(rand, F, ChangeDir(0.2,k), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_175 = SystemState.sample(rand, F, ChangeDir(1.75,k), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                position_perturbed_feedback_system[i][0] = pfdata_02[i][0];
-                position_perturbed_feedback_system[i][1] = pfdata_02[i][1];
-                get_med_perturbed_feedback_system[i][0] = pfdata_02[i][6];
-                fail_perturbed_feedback_system[i][0] = pfdata_02[i][7];
+                position_perturbed_feedback_system[i][0] = pfdata_175[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_175[i][1];
+                get_med_perturbed_feedback_system[i][0] = pfdata_175[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata_175[i][7];
             }
-            Util.writeToCSV("./xy_feedback_02.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback_02.csv",get_med_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback_02.csv",fail_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_175.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback_175.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback_175.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_025 = SystemState.sample(rand, F, ChangeDir(0.25,k), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_2 = SystemState.sample(rand, F, ChangeDir(2.0,k), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                position_perturbed_feedback_system[i][0] = pfdata_025[i][0];
-                position_perturbed_feedback_system[i][1] = pfdata_025[i][1];
-                get_med_perturbed_feedback_system[i][0] = pfdata_025[i][6];
-                fail_perturbed_feedback_system[i][0] = pfdata_025[i][7];
+                position_perturbed_feedback_system[i][0] = pfdata_2[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_2[i][1];
+                get_med_perturbed_feedback_system[i][0] = pfdata_2[i][6];
+                fail_perturbed_feedback_system[i][0] = pfdata_2[i][7];
             }
-            Util.writeToCSV("./xy_feedback_025.csv",position_perturbed_feedback_system);
-            Util.writeToCSV("./get_med_feedback_025.csv",get_med_perturbed_feedback_system);
-            Util.writeToCSV("./fail_feedback_025.csv",fail_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_2.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./get_med_feedback_2.csv",get_med_perturbed_feedback_system);
+            Util.writeToCSV("./fail_feedback_2.csv",fail_perturbed_feedback_system);
+
 
             // Fixed off, changing k
 
-            double[][] pfdata_5 = SystemState.sample(rand, F, ChangeDir(0.1,5), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_5 = SystemState.sample(rand, F, ChangeDir(1.5,5), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_5[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_5[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_5[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_5[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_5.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_5.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_5.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_10 = SystemState.sample(rand, F, ChangeDir(0.1,10), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_10 = SystemState.sample(rand, F, ChangeDir(1.5,10), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_10[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_10[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_10[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_10[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_10.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_10.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_10.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_15 = SystemState.sample(rand, F, ChangeDir(0.1,15), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_15 = SystemState.sample(rand, F, ChangeDir(1.5,15), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_15[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_15[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_15[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_15[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_15.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_15.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_15.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_20 = SystemState.sample(rand, F, ChangeDir(0.1,20), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_20 = SystemState.sample(rand, F, ChangeDir(1.5,20), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_20[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_20[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_20[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_20[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_20.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_20.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_20.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_25 = SystemState.sample(rand, F, ChangeDir(0.1,25), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_25 = SystemState.sample(rand, F, ChangeDir(1.5,25), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_25[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_25[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_25[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_25[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_25.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_25.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_25.csv",fail_perturbed_feedback_system);
 
-            double[][] pfdata_30 = SystemState.sample(rand, F, ChangeDir(0.1,30), feedbackSystem, N, sizeNominalSequence*scale);
+            double[][] pfdata_30 = SystemState.sample(rand, F, ChangeDir(1.5,30), feedbackSystem, N, sizeNominalSequence*scale);
             for (int i = 0; i<N; i++){
-                //position_perturbed_feedback_system[i][0] = pfdata_01[i][0];
-                //position_perturbed_feedback_system[i][1] = pfdata_01[i][1];
+                position_perturbed_feedback_system[i][0] = pfdata_30[i][0];
+                position_perturbed_feedback_system[i][1] = pfdata_30[i][1];
                 get_med_perturbed_feedback_system[i][0] = pfdata_30[i][6];
                 fail_perturbed_feedback_system[i][0] = pfdata_30[i][7];
             }
-            //Util.writeToCSV("./xy_feedback_01.csv",position_perturbed_feedback_system);
+            Util.writeToCSV("./xy_feedback_30.csv",position_perturbed_feedback_system);
             Util.writeToCSV("./get_med_feedback_30.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_30.csv",fail_perturbed_feedback_system);
 
-             */
 
             /*
 
@@ -364,7 +362,7 @@ public class Smart_hospital {
             obtained from the evolution sequence <code>feedbackSequence</code> by applying <code>perturbation</code>
             */
 
-            EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(ChangeDir(0.05,5),0,scale);
+            EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(ChangeDir(1.25,5),0,scale);
 
             /*
             The following lines of code first defines an atomic distance between evolution sequences, named
@@ -424,20 +422,6 @@ public class Smart_hospital {
 
             System.out.println(flagUntil);
             System.out.println(flagMax);
-
-            double[][] direct_evaluation_flag = new double[N][1];
-            double[][] direct_evaluation_flag_l = new double[N][1];
-            double[][] direct_evaluation_flag_r = new double[N][1];
-
-            for (int i = 0; i<N; i++){
-                direct_evaluation_flag[i][0] = flagDist.compute(i, sequence, perturbedFeedbackSequence);
-                direct_evaluation_flag_l[i][0] = flag_left.compute(i, sequence, perturbedFeedbackSequence);
-                direct_evaluation_flag_r[i][0] = flag_right.compute(i, sequence, perturbedFeedbackSequence);
-            }
-
-            Util.writeToCSV("./atomic_flag.csv",direct_evaluation_flag);
-            Util.writeToCSV("./flag_left.csv",direct_evaluation_flag_l);
-            Util.writeToCSV("./flag_right.csv",direct_evaluation_flag_r);
 
 
 
@@ -848,7 +832,7 @@ public class Smart_hospital {
         double offset = rg.nextDouble() * MAX_THETA_OFFSET - MAX_THETA_OFFSET/2;
         updates.add(new DataStateUpdate(theta, state.get(theta)+offset));
         if (state.getStep() % k == 0){
-            updates.add(new DataStateUpdate(p_speed, state.get(p_speed)+rg.nextDouble()*off));
+            updates.add(new DataStateUpdate(p_speed, state.get(p_speed)+rg.nextDouble()*off*ACCELERATION));
         }
         return updates;
     }
