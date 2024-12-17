@@ -70,10 +70,10 @@ public class Industrial_plant {
     private static final int theta = 2; // current direction
     private static final int p_speed = 3; // physical speed (m/s)
     private static final int s_speed = 4; // sensed speed (m/s)
-    private static final int p_distance = 5; // physical distance from the current waypoint (m)
+    private static final int p_distance = 5; // auxiliary variable, physical distance from the current waypoint
     private static final int accel = 6; // acceleration
     private static final int timer_V = 7; // timer
-    private static final int gap = 8; // difference between p_distance and the space required to stop when braking
+    private static final int gap = 8; // auxiliary variable, difference between p_distance and the space required to stop when braking
     private static final int currentWP = 9; // current waypoint
 
     private static final int NUMBER_OF_VARIABLES = 10;
