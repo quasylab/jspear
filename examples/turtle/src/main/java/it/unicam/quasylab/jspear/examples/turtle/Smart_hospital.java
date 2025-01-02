@@ -22,6 +22,7 @@
 
 package it.unicam.quasylab.jspear.examples.turtle;
 
+import com.sun.jdi.BooleanValue;
 import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
@@ -29,10 +30,7 @@ import it.unicam.quasylab.jspear.distance.*;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
 import it.unicam.quasylab.jspear.feedback.*;
-import it.unicam.quasylab.jspear.robtl.AtomicRobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.ThreeValuedSemanticsVisitor;
-import it.unicam.quasylab.jspear.robtl.TruthValues;
+import it.unicam.quasylab.jspear.robtl.*;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
@@ -423,7 +421,97 @@ public class Smart_hospital {
             System.out.println(flagUntil);
             System.out.println(flagMax);
 
+            /*
+            MODEL CHECKING
+            */
 
+            k = 15;
+
+            DistanceExpression failDist = new AtomicDistanceExpression(ds->(ds.get(fail)), (v1, v2) -> Math.abs(v2-v1));
+            DistanceExpression failM = new MaxIntervalDistanceExpression(
+                    failDist,
+                    46-k,
+                    251-k
+            );
+            int indexWF=0;
+            double eta = 5;
+
+
+            double[][] rob_125 = new double[11][2];
+            double[][] rob_150 = new double[11][2];
+            double[][] rob_175 = new double[11][2];
+
+            for(int i = 0; i < 11 ; i++) {
+                double new_eta = (eta + i) / 100;
+                RobustnessFormula phi_125 = new AtomicRobustnessFormula(
+                        ChangeDir(1.25, k),
+                        failM,
+                        RelationOperator.LESS_OR_EQUAL_THAN,
+                        new_eta
+                );
+                RobustnessFormula phi_fail_125 = new AlwaysRobustnessFormula(
+                        phi_125,
+                        0,
+                        k - 1
+                );
+                Boolean value_125 = new BooleanSemanticsVisitor().eval(phi_fail_125).eval(N, 0, feedbackSequence);
+
+                System.out.println(" ");
+                System.out.println("\n off=1.25 evaluation at " + new_eta + ": " + value_125);
+                rob_125[indexWF][1] = value_125?1:-1;
+                rob_125[indexWF][0] = new_eta;
+                indexWF++;
+            }
+
+            indexWF=0;
+            for(int i = 0; i < 11 ; i++) {
+                double new_eta = (eta + i) / 100;
+                RobustnessFormula phi_150 = new AtomicRobustnessFormula(
+                        ChangeDir(1.5, k),
+                        failM,
+                        RelationOperator.LESS_OR_EQUAL_THAN,
+                        new_eta
+                );
+                RobustnessFormula phi_fail_150 = new AlwaysRobustnessFormula(
+                        phi_150,
+                        0,
+                        k - 1
+                );
+                Boolean value_150 = new BooleanSemanticsVisitor().eval(phi_fail_150).eval(N, 0, feedbackSequence);
+
+                System.out.println(" ");
+                System.out.println("\n off=1.5 evaluation at " + new_eta + ": " + value_150);
+                rob_150[indexWF][1] = value_150?1:-1;
+                rob_150[indexWF][0] = new_eta;
+                indexWF++;
+            }
+
+            indexWF=0;
+            for(int i = 0; i < 11 ; i++) {
+                double new_eta = (eta + i) / 100;
+                RobustnessFormula phi_175 = new AtomicRobustnessFormula(
+                        ChangeDir(1.75,k),
+                        failM,
+                        RelationOperator.LESS_OR_EQUAL_THAN,
+                        new_eta
+                );
+                RobustnessFormula phi_fail_175 = new AlwaysRobustnessFormula(
+                        phi_175,
+                        0,
+                        k-1
+                );
+                Boolean value_175 = new BooleanSemanticsVisitor().eval(phi_fail_175).eval(N, 0, feedbackSequence);
+
+                System.out.println(" ");
+                System.out.println("\n off=1.75 evaluation at " + new_eta + ": " + value_175);
+                rob_175[indexWF][1]=value_175?1:-1;
+                rob_175[indexWF][0]=new_eta;
+                indexWF++;
+            }
+
+            Util.writeToCSV("./FevalR_125.csv",rob_125);
+            Util.writeToCSV("./FevalR_150.csv",rob_150);
+            Util.writeToCSV("./FevalR_175.csv",rob_175);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -706,12 +794,7 @@ public class Smart_hospital {
     }
 
     /*
-    The following feedback works as follows.
-    The present status of the PT is compared with the status that the DT reached at the same instant. Then:
-    1. If the sensed speed of the PT is much higher than the speed of the DT, then braking is activated.
-    2. If the sensed speed of the PT is much lower than the speed of the DT, then acceleration is activated.
-    3. If the waypoint of the PT is not the waypoint of the DT, then the waypoint of the PT is corrected. Contextually,
-    also the direction of the PT is corrected.
+    THE FEEDBACK FUNCTION
      */
     private static List<DataStateUpdate> feedbackDirFunction(RandomGenerator randomGenerator, DataState dataState, EvolutionSequence evolutionSequence) {
         int step = dataState.getStep();
@@ -752,11 +835,11 @@ public class Smart_hospital {
     }
 
 
-    // ENVIRONMENT EVOLUTION
+    // ENVIRONMENT
 
     public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        double new_timer_V = state.get(timer_V) - 1; // timer is simply decremented
+        double new_timer_V = state.get(timer_V) - 1;
         double new_p_speed;
         // the speed is updated according to acceleration
         if (state.get(accel) == NEUTRAL) {
@@ -764,7 +847,7 @@ public class Smart_hospital {
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
-        double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
+        double new_s_speed = new_p_speed; // in the simplified setting, sensed and physical speed coincide
         double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
         double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
@@ -780,18 +863,18 @@ public class Smart_hospital {
         updates.add(new DataStateUpdate(s_speed, new_s_speed));
         updates.add(new DataStateUpdate(gap, new_gap));
         if (state.get(currentWP)==2 && state.get(get_medicine)==0){
-            updates.add(new DataStateUpdate(get_medicine,1));
+            updates.add(new DataStateUpdate(get_medicine,1)); // medicines are picked up
         }
         if (state.get(currentWP)==8 && state.get(get_medicine)==1){
-            updates.add(new DataStateUpdate(get_medicine,0));
+            updates.add(new DataStateUpdate(get_medicine,0)); // medicines are delivered correctly
         }
         if (Math.abs(state.get(theta)-state.get(previous_theta))>Math.PI/9 && state.get(get_medicine)==1 && new_p_speed > MAX_SPEED_WITH_MED){
             updates.add(new DataStateUpdate(get_medicine,-1));
-            updates.add(new DataStateUpdate(fail,1));
+            updates.add(new DataStateUpdate(fail,1)); // the medicines are dropped because of unsafe movement
         }
         if ((state.get(currentWP)==7 && state.get(get_medicine)!=1) || (state.get(currentWP)==11 && state.get(get_medicine)!=0)){
             updates.add(new DataStateUpdate(fail,1));
-        }
+        } // medicines are not delivered correctly
         updates.add(new DataStateUpdate(previous_theta,state.get(theta)));
         return updates;
     }
