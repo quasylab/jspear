@@ -19,4 +19,8 @@ include 'examples:agriculturalDT'
 findProject(':examples:agriculturalDT')?.name = 'agriculturalDT'
 include 'examples:turtle'
 findProject(':examples:turtle')?.name = 'turtle'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
 
