@@ -482,7 +482,7 @@ Main {
         return new ParallelController(registry.reference("Ctrl_V2"), registry.reference("IDS_V2"));
     }
 
-    // ENVIRONMENT EVOLUTION
+    // ENVIRONMENT FUNCTION
 
     public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
