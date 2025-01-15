@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/cli" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/examples/ABZ2025" />
             <option value="$PROJECT_DIR$/examples/agriculturalDT" />
             <option value="$PROJECT_DIR$/examples/engine" />
             <option value="$PROJECT_DIR$/examples/turtle" />
