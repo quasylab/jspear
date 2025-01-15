@@ -67,12 +67,12 @@ public class SingleLaneTwoCars {
     private static final double IDLE_DELTA = 1;
 
     // INITIAL VALUES
-    private static final double INIT_SPEED_V1 = 15;
+    private static final double INIT_SPEED_V1 = 0;
     private static final double INIT_DISTANCE_V1_V2 = 100;
     private static final double INIT_ACCEL_V1 = 0;
 
-    private static final double INIT_SPEED_V2 = 15;
-    private static final double INIT_ACCEL_V2 = 5;
+    private static final double INIT_SPEED_V2 = 0;
+    private static final double INIT_ACCEL_V2 = 1;
 
     // PERTURBATION PARAMETERS
     private static final int STARTING_STEP = 4;
@@ -82,18 +82,18 @@ public class SingleLaneTwoCars {
     private static final double BRAKE_CHECK_CHANCE = 0.8;
 
     // ROBUSTNESS FORMULAE PARAMETERS
-    private static final double ETA_CRASH = 0.05; // Maximum acceptable risk of collision
+    private static final double ETA_CRASH = 0.3; // Maximum acceptable risk of collision
     private static final double ETA_SAFETY_GAP_VIOLATION = 0.2; // Maximum acceptable risk of violating safety gap
 
     // ENVIRONMENT VARIABLE INDEXES
-    private static final int s_speed_V1 = 0;
-    private static final int safety_gap = 1;
-    private static final int accel_V1 = 2;
-    private static final int s_distance_V1_V2 = 3;
-    private static final int s_speed_V2 = 4;
-    private static final int accel_V2 = 5;
+    private static final int speedV1 = 0;
+    private static final int safetyGap = 1;
+    private static final int accelV1 = 2;
+    private static final int distance = 3;
+    private static final int speedV2 = 4;
+    private static final int accelV2 = 5;
     private static final int intention = 6;
-    private static final int pertubation_app = 7;
+    private static final int perturbationApplied = 7;
 
     private static final int NUMBER_OF_VARIABLES = 8;
 
@@ -118,36 +118,36 @@ public class SingleLaneTwoCars {
         printSummary(drunkDriverSequence, 30, "DRUNK DRIVER");
         printSummary(brakeCheckerSequence, 30, "BRAKE CHECKER");
 
-        //RobustnessFormula PHI_NoPerturbation = getSafetyGapViolationFormula(new NonePerturbation());
-        RobustnessFormula PHI_BrakeCheck = getSafetyGapViolationFormula(brakeChecker);
-        RobustnessFormula PHI_DrunkDriver = getSafetyGapViolationFormula(drunkDriver);
+        //RobustnessFormula PHINoPerturbation = getSafetyGapViolationFormula(new NonePerturbation());
+        RobustnessFormula PHIBrakeCheck = getSafetyGapViolationFormula(brakeChecker);
+        RobustnessFormula PHIDrunkDriver = getSafetyGapViolationFormula(drunkDriver);
 
-        //PHI_NoPerturbation = getCrashFormula(new NonePerturbation());
-        PHI_BrakeCheck = getCrashFormula(brakeChecker);
-        PHI_DrunkDriver = getCrashFormula(drunkDriver);
+        //PHINoPerturbation = getCrashFormula(new NonePerturbation());
+        PHIBrakeCheck = getCrashFormula(brakeChecker);
+        PHIDrunkDriver = getCrashFormula(drunkDriver);
 
         for(int testStep = 0; testStep < 100; testStep++){
             System.out.print("Step " + testStep + ":  ");
-            System.out.print("PHI_BrakeCheck "  + new BooleanSemanticsVisitor().eval(PHI_BrakeCheck).eval(100, testStep, sequence));
-            System.out.print(" PHI_DrunkDriver "  + new BooleanSemanticsVisitor().eval(PHI_DrunkDriver).eval(100, testStep, sequence));
-            //System.out.print(" PHI_NoPerturbation "  + new BooleanSemanticsVisitor().eval(PHI_NoPerturbation).eval(100, testStep, sequence));
+            System.out.print("PHIBrakeCheck "  + new BooleanSemanticsVisitor().eval(PHIBrakeCheck).eval(100, testStep, sequence));
+            System.out.print(" PHIDrunkDriver "  + new BooleanSemanticsVisitor().eval(PHIDrunkDriver).eval(100, testStep, sequence));
+            //System.out.print(" PHINoPerturbation "  + new BooleanSemanticsVisitor().eval(PHINoPerturbation).eval(100, testStep, sequence));
             System.out.println();
         }
     }
 
     private void printSummary(EvolutionSequence sequence, int stepsToPrint, String title){
-        System.out.printf("%s%n %16s %16s %16s %16s %16s %16s %16s %16s%n", title, "accel_V1", "s_speed_V1", "accel_V2", "s_speed_V2", "s_distance_V1_V2", "safety_gap", "perturb_app", "intention");
+        System.out.printf("%s%n %16s, %16s, %16s, %16s, %16s, %16s, %16s, %16s%n", title, "accelV1", "speedV1", "accelV2", "speedV2", "distance", "safetyGap", "perturbApplied", "intention");
         for (int i = 0; i < stepsToPrint; i++) {
             SampleSet<SystemState> dss = sequence.get(i);
 
             ArrayList<String> s = new ArrayList<>();
-            for (int j : new int[]{accel_V1, s_speed_V1, accel_V2, s_speed_V2, s_distance_V1_V2, safety_gap, pertubation_app}) {
+            for (int j : new int[]{accelV1, speedV1, accelV2, speedV2, distance, safetyGap, perturbationApplied}) {
                 OptionalDouble avg = Arrays.stream(dss.evalPenaltyFunction(ds -> ds.get(j))).average();
-                s.add(String.format("%16.2f", avg.getAsDouble()));
+                s.add(String.format("%16.2f,", avg.getAsDouble()));
             }
 
-            double[] intention_s = dss.evalPenaltyFunction(ds -> ds.get(intention));
-            Double intention_mode = Arrays.stream(intention_s).boxed()
+            double[] intentions = dss.evalPenaltyFunction(ds -> ds.get(intention));
+            Double intention_mode = Arrays.stream(intentions).boxed()
                     .collect(Collectors.groupingBy(t -> t, Collectors.counting()))
                     .entrySet()
                     .stream()
@@ -160,7 +160,7 @@ public class SingleLaneTwoCars {
     }
 
     private static RobustnessFormula getCrashFormula(Perturbation perturbation) {
-        DataStateExpression penaltyFunction = ds -> ds.get(s_distance_V1_V2) > 0.0 ? 0.0 : 1.0;
+        DataStateExpression penaltyFunction = ds -> ds.get(distance) > 0.0 ? 0.0 : 1.0;
         DistanceExpression distanceExp = new MaxIntervalDistanceExpression(new AtomicDistanceExpressionLeq(penaltyFunction), STARTING_STEP, STARTING_STEP + TIMES_TO_APPLY * FREQUENCY);
         return new AtomicRobustnessFormula(perturbation,
                 distanceExp,
@@ -170,7 +170,7 @@ public class SingleLaneTwoCars {
     }
 
     private static RobustnessFormula getSafetyGapViolationFormula(Perturbation perturbation) {
-        DataStateExpression penaltyFunction = ds -> ds.get(s_distance_V1_V2) > ds.get(safety_gap) ? 0.0 : 1.0;
+        DataStateExpression penaltyFunction = ds -> ds.get(distance) > ds.get(safetyGap) ? 0.0 : 1.0;
         DistanceExpression distanceExp = new MaxIntervalDistanceExpression(new AtomicDistanceExpressionLeq(penaltyFunction), STARTING_STEP, STARTING_STEP + TIMES_TO_APPLY * FREQUENCY);
         return new AtomicRobustnessFormula(
                 perturbation,
@@ -185,19 +185,19 @@ public class SingleLaneTwoCars {
         Map<Integer, Double> values = new HashMap<>();
         values.put(intention, IDLE);
         // INITIAL DATA FOR V1
-        values.put(s_speed_V1, INIT_SPEED_V1);
-        values.put(accel_V1, INIT_ACCEL_V1);
+        values.put(speedV1, INIT_SPEED_V1);
+        values.put(accelV1, INIT_ACCEL_V1);
 
         // INITIAL DATA FOR V2
-        values.put(s_speed_V2, INIT_SPEED_V2);
-        values.put(accel_V2, INIT_ACCEL_V2);
+        values.put(speedV2, INIT_SPEED_V2);
+        values.put(accelV2, INIT_ACCEL_V2);
 
-        values.put(s_distance_V1_V2, INIT_DISTANCE_V1_V2);
+        values.put(distance, INIT_DISTANCE_V1_V2);
 
         double initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, INIT_SPEED_V1, INIT_SPEED_V2);
-        values.put(safety_gap, initialSafetyGap);
+        values.put(safetyGap, initialSafetyGap);
 
-        values.put(pertubation_app, 0.0);
+        values.put(perturbationApplied, 0.0);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
 
@@ -221,13 +221,13 @@ public class SingleLaneTwoCars {
 
         registry.set("Control",
                 Controller.ifThenElse(
-                        (rg, ds) -> ds.get(s_distance_V1_V2) == ds.get(safety_gap),
+                        (rg, ds) -> ds.get(distance) == ds.get(safetyGap),
                         Controller.doAction( // IDLE
                                 (_rg, _ds) -> List.of(new DataStateUpdate(intention, IDLE)),
                                 registry.reference("Control")
                         ),
                         Controller.ifThenElse(
-                                (rg, ds) -> ds.get(s_distance_V1_V2) > ds.get(safety_gap),
+                                (rg, ds) -> ds.get(distance) > ds.get(safetyGap),
                                 Controller.doAction( // FASTER
                                         (_rg, _ds) -> List.of(new DataStateUpdate(intention, FASTER)),
                                         registry.reference("Control")
@@ -247,40 +247,47 @@ public class SingleLaneTwoCars {
     public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
         double intent = state.get(intention);
-        double new_accel_V1;
+        double newAccelV1;
         if(intent == FASTER){ // Controller wants to do action FASTER
             double offset = rg.nextDouble() * MAX_ACCEL_OFFSET;
-            new_accel_V1 = MAX_ACCELERATION - offset;
+            newAccelV1 = MAX_ACCELERATION - offset;
         }else if(intent == SLOWER){ // Controller wants to do action SLOWER
-            new_accel_V1 = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+            newAccelV1 = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
         } else if(intent == IDLE) { // Controller wants to do action IDLE
-            new_accel_V1 = rg.nextDouble() * (2*IDLE_DELTA) - IDLE_DELTA; // Accel "close to 0"
+            newAccelV1 = rg.nextDouble() * (2*IDLE_DELTA) - IDLE_DELTA; // Accel "close to 0"
         } else {
             System.out.println("Controller wants to do something else besides FASTER, SLOWER or IDLE");
-            new_accel_V1 = 0;
+            newAccelV1 = 0;
         }
+        updates.add(new DataStateUpdate(accelV1, newAccelV1));
 
-        updates.add(new DataStateUpdate(accel_V1, new_accel_V1));
+        // Reset V2 acceleration to the initial value
+        updates.add(new DataStateUpdate(accelV2, INIT_ACCEL_V2));
 
+        includePhysicsUpdates(state, updates);
 
-        double travel_V1 = new_accel_V1/2 + state.get(s_speed_V1);
-        double new_s_speed_V1 = Math.min(Math.max(0,state.get(s_speed_V1) + new_accel_V1), MAX_SPEED);
-        updates.add(new DataStateUpdate(s_speed_V1, new_s_speed_V1));
-
-        //double off = rg.nextDouble()*MAX_ACCEL_OFFSET;
-        double new_accel_V2 =  rg.nextDouble()*MAX_ACCELERATION;
-        updates.add(new DataStateUpdate(accel_V2, new_accel_V2));
-        double travel_V2 = state.get(accel_V2)/2 + state.get(s_speed_V2);
-        double new_s_speed_V2 = Math.min(Math.max(0,state.get(s_speed_V2) + state.get(accel_V2)),MAX_SPEED);
-        updates.add(new DataStateUpdate(s_speed_V2, new_s_speed_V2));
-
-        double new_s_distance_V1_V2 = state.get(s_distance_V1_V2) - travel_V1 + travel_V2;
-        updates.add(new DataStateUpdate(s_distance_V1_V2, new_s_distance_V1_V2));
-
-        double new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME, new_s_speed_V1, new_s_speed_V2);
-        updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
-        updates.add(new DataStateUpdate(pertubation_app, 0.0));
+        updates.add(new DataStateUpdate(perturbationApplied, 0.0));
         return updates;
+    }
+
+    private static void includePhysicsUpdates(DataState state, List<DataStateUpdate> updates) {
+        double aV1 = state.get(accelV1);
+        double sV1 = state.get(speedV1);
+        double travelV1 = aV1/2 + sV1;
+        double newSpeedV1 = Math.min(Math.max(0,sV1 + aV1), MAX_SPEED);
+        updates.add(new DataStateUpdate(speedV1, newSpeedV1));
+
+        double aV2 = state.get(accelV2);
+        double sV2 = state.get(speedV2);
+        double travelV2 = aV2/2 + sV2;
+        double newSpeedV2 = Math.min(Math.max(0,sV2 + aV2), MAX_SPEED);
+        updates.add(new DataStateUpdate(speedV2, newSpeedV2));
+
+        double newDistance = state.get(distance) - travelV1 + travelV2;
+        updates.add(new DataStateUpdate(distance, newDistance));
+
+        double newSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, sV1, sV2);
+        updates.add(new DataStateUpdate(safetyGap, newSafetyGap));
     }
 
     private static Perturbation getDrunkDriverPerturbation(int timesToApply, int frequency) {
@@ -289,23 +296,13 @@ public class SingleLaneTwoCars {
 
     private static DataState applyDrunkDriverPerturbation(RandomGenerator rg, DataState state){
         List<DataStateUpdate> updates = new LinkedList<>();
-        updates.add(new DataStateUpdate(pertubation_app, 1.0));
+        updates.add(new DataStateUpdate(perturbationApplied, 1.0));
 
         // Drunk driving: A uniformly random acceleration or braking for V2
         double perturbedAccel = rg.nextDouble()*(MAX_ACCELERATION + MAX_BRAKE) - MAX_BRAKE;
-        updates.add(new DataStateUpdate(accel_V2, perturbedAccel));
+        updates.add(new DataStateUpdate(accelV2, perturbedAccel));
 
-        // Recomputing speeds and distance after the perturbation was determined
-        double travel_V1 = state.get(accel_V1)/2 + state.get(s_speed_V1);
-        double travel_V2 = perturbedAccel/2 + state.get(s_speed_V2);
-        double new_s_speed_V2 = Math.min(Math.max(0,state.get(s_speed_V2) + perturbedAccel),MAX_SPEED);
-        updates.add(new DataStateUpdate(s_speed_V2, new_s_speed_V2));
-
-        double new_s_distance_V1_V2 = state.get(s_distance_V1_V2) - travel_V1 + travel_V2;
-        updates.add(new DataStateUpdate(s_distance_V1_V2, new_s_distance_V1_V2));
-
-        double new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME, state.get(s_speed_V1), new_s_speed_V2);
-        updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
+        includePhysicsUpdates(state, updates);
 
         return state.apply(updates);
     }
@@ -316,28 +313,18 @@ public class SingleLaneTwoCars {
 
     private static DataState applyBreakCheckPerturbation(RandomGenerator rg, DataState state){
         List<DataStateUpdate> updates = new LinkedList<>();
-        updates.add(new DataStateUpdate(pertubation_app, 1.0));
+        updates.add(new DataStateUpdate(perturbationApplied, 1.0));
 
         // There is a BREAK_CHECK_CHANCE probability that V2 does a break check
         // Break check: apply maximum braking this time step
-        boolean doRoadRage = rg.nextDouble() < BRAKE_CHECK_CHANCE;
-        if(!doRoadRage){
+        boolean doBreakCheck = rg.nextDouble() < BRAKE_CHECK_CHANCE;
+        if(!doBreakCheck){
             return state; // If there is no break check, return the state intact
         }
         double perturbedAccel = - MAX_BRAKE;
-        updates.add(new DataStateUpdate(accel_V2, perturbedAccel));
+        updates.add(new DataStateUpdate(accelV2, perturbedAccel));
 
-        // Recomputing speeds and distance after the perturbation was determined
-        double travel_V1 = state.get(accel_V1)/2 + state.get(s_speed_V1);
-        double travel_V2 = perturbedAccel/2 + state.get(s_speed_V2);
-        double new_s_speed_V2 = Math.min(Math.max(0,state.get(s_speed_V2) + perturbedAccel),MAX_SPEED);
-        updates.add(new DataStateUpdate(s_speed_V2, new_s_speed_V2));
-
-        double new_s_distance_V1_V2 = state.get(s_distance_V1_V2) - travel_V1 + travel_V2;
-        updates.add(new DataStateUpdate(s_distance_V1_V2, new_s_distance_V1_V2));
-
-        double new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME, state.get(s_speed_V1), new_s_speed_V2);
-        updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
+        includePhysicsUpdates(state, updates);
 
         return state.apply(updates);
     }
