@@ -70,7 +70,7 @@ declarationComponent:
     '}'
 ;
 
-controllerStateDeclaration: 'state' name=ID body=controllerBlockBehaviour;
+controllerStateDeclaration: 'aiState' name=ID body=controllerBlockBehaviour;
 
 //controllerStateBody:
 //    controllerBlockBehaviour
@@ -121,7 +121,7 @@ controllerCaseStatment:
 ;
 
 controllerExpression:
-    state = ID                                                      # controllerExpressionReference
+    aiState = ID                                                      # controllerExpressionReference
     | left= controllerExpression '||' right=controllerExpression    # controllerExpressionParallel
 ;
 

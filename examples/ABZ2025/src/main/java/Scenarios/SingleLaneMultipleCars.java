@@ -26,6 +26,7 @@ import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.controller.ExecController;
+import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpressionLeq;
 import it.unicam.quasylab.jspear.distance.DistanceExpression;
 import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
@@ -68,7 +69,7 @@ public class SingleLaneMultipleCars {
     // INITIAL VEHICLE VALUES
     private static final double[] INIT_SPEED = {0,0,0};
     private static final double[] INIT_ACCEL = {2.5,2.5,2.5};
-    private static final double[] INIT_DISTANCE_BETWEEN = {100,100};
+    private static final double[] INIT_DISTANCE_BETWEEN = {10,10};
     private static final int CONTROLLED_VEHICLE = 1;
 
     // ENVIRONMENT VARIABLE INDEXES
@@ -109,7 +110,7 @@ public class SingleLaneMultipleCars {
     private static final double BRAKE_CHECK_CHANCE = 0.4;
 
     // ROBUSTNESS FORMULAE PARAMETERS
-    private static final double ETA_CRASH = 0.3; // Maximum acceptable risk of collision
+    private static final double ETA_CRASH = 0.01; // Maximum acceptable risk of collision
     private static final double ETA_SAFETY_GAP_VIOLATION = 0.2; // Maximum acceptable risk of violating safety gap
 
     private static final int EVOLUTION_SEQUENCE_SIZE = 100;
@@ -180,7 +181,9 @@ public class SingleLaneMultipleCars {
                 ds.get(distance[CONTROLLED_VEHICLE]) > 0.0
                         || ds.get(distance[CONTROLLED_VEHICLE-1]) > 0.0
                         ? 0.0 : 1.0;
-        DistanceExpression distanceExp = new MaxIntervalDistanceExpression(new AtomicDistanceExpressionLeq(penaltyFunction), STARTING_STEP, STARTING_STEP + TIMES_TO_APPLY * FREQUENCY);
+
+
+        DistanceExpression distanceExp = new MaxIntervalDistanceExpression(new AtomicDistanceExpression(penaltyFunction, (v1,v2)-> Math.abs(v1-v2)), STARTING_STEP, STARTING_STEP + TIMES_TO_APPLY * FREQUENCY);
         return new AtomicRobustnessFormula(perturbation,
                 distanceExp,
                 RelationOperator.LESS_OR_EQUAL_THAN,
@@ -251,7 +254,7 @@ public class SingleLaneMultipleCars {
         registry.set("Control",
                 Controller.ifThenElse(
                         (rg, ds) ->
-                        ds.get(distance[CONTROLLED_VEHICLE -1]) == ds.get(safety_gap[CONTROLLED_VEHICLE -1]) // distance to rear vehicle
+                        ds.get(distance[CONTROLLED_VEHICLE -1]) == ds.get(safety_gap[CONTROLLED_VEHICLE - 1]) // distance to rear vehicle
                                 && ds.get(distance[CONTROLLED_VEHICLE]) == ds.get(safety_gap[CONTROLLED_VEHICLE]), // distance to front vehicle
                         Controller.doAction(
                                 (_rg, _ds) -> List.of(new DataStateUpdate(intention, IDLE)),
@@ -287,15 +290,34 @@ public class SingleLaneMultipleCars {
         }
         updates.add(new DataStateUpdate(accel[CONTROLLED_VEHICLE], newAccel));
 
-        // Reset acceleration to initial value for every vehicle except the controlled one
+        // Make the other cars try to keep the safety gap
         for (int i = 0; i < NUMBER_OF_VEHICLES; i++) {
             if (i != CONTROLLED_VEHICLE) {
-                updates.add(new DataStateUpdate(accel[i], INIT_ACCEL[i]));
+                double newAccelOtherVehicles;
+                // The car in front always accelerates
+                if (i == NUMBER_OF_VEHICLES - 1) {
+                    newAccelOtherVehicles = INIT_ACCEL[i];
+                } else {
+                    boolean frontDistanceViolated = state.get(distance[i]) < state.get(safety_gap[i]);
+                    boolean backDistanceViolated = i != 0 && (state.get(distance[i - 1]) < state.get(safety_gap[i - 1]));
+                    boolean backDistanceIsSmaller = i != 0 && state.get(distance[i]) < state.get(distance[i - 1]);
+                    if (frontDistanceViolated) {
+                        if (backDistanceViolated && backDistanceIsSmaller) {
+                            newAccelOtherVehicles = INIT_ACCEL[i];
+                        } else {
+                            newAccelOtherVehicles = -MIN_BRAKE;
+                        }
+                    } else if (state.get(distance[i]) == state.get(safety_gap[i])) {
+                        newAccelOtherVehicles = 0;
+                    } else {
+                        newAccelOtherVehicles = INIT_ACCEL[i];
+                    }
+                }
+                updates.add(new DataStateUpdate(accel[i], newAccelOtherVehicles));
             }
         }
 
         includePhysicsUpdates(state, updates);
-
         return updates;
     }
 
@@ -306,29 +328,35 @@ public class SingleLaneMultipleCars {
      * @param updates The list to mutate with the addition of updates
      */
     private static void includePhysicsUpdates(DataState state, List<DataStateUpdate> updates){
-        for (int i = 0; i < NUMBER_OF_VEHICLES; i++) {
+        // Update the physical properties of cars
+        // We store the last car's speed because safety gaps are updated with the speeds of two vehicles
+        double currentAccelBack = state.get(accel[0]);
+        double currentSpeedBack = state.get(speed[0]);
+        double newSpeedBack = Math.min(Math.max(0, currentSpeedBack + currentAccelBack), MAX_SPEED);
+        updates.add(new DataStateUpdate(speed[0], newSpeedBack));
+        // We loop over the gaps between cars
+        for (int i = 0; i < NUMBER_OF_VEHICLES - 1; i++) {
             // Update speeds
-            double currentAccel = state.get(accel[i]);
-            double currentSpeed = state.get(speed[i]);
-            double newSpeed = Math.min(Math.max(0, currentSpeed + currentAccel), MAX_SPEED);
-            updates.add(new DataStateUpdate(speed[i], newSpeed));
+            double currentAccelFront = state.get(accel[i+1]);
+            double currentSpeedFront = state.get(speed[i+1]);
+            double newSpeedFront = Math.min(Math.max(0, currentSpeedFront + currentAccelFront), MAX_SPEED);
+            updates.add(new DataStateUpdate(speed[i+1], newSpeedFront));
 
-            if (i < NUMBER_OF_VEHICLES - 1) {
-                // Update distance between cars. The i-th distance is the distance between the i-th and (i+1)-th vehicles
-                double travelBack = currentAccel / 2 + currentSpeed;
+            // Update distance between cars. The i-th distance is the distance between the i-th (back) and (i+1)-th (front) vehicles
+            double travelBack = currentAccelBack / 2 + currentSpeedBack;
+            double travelFront = currentAccelFront / 2 + currentSpeedFront;
 
-                double accelFront = state.get(accel[i + 1]);
-                double speedFront = state.get(speed[i + 1]);
-                double travelFront = accelFront / 2 + speedFront;
+            double newDistance = state.get(distance[i]) + travelFront - travelBack;
+            updates.add(new DataStateUpdate(distance[i], newDistance));
 
-                double newDistance = state.get(distance[i]) + travelFront - travelBack;
-                updates.add(new DataStateUpdate(distance[i], newDistance));
+            // Update safety gap. The i-th safety gap is the safety gap between the i-th and (i+1)-th vehicles.
+            // The front vehicle does not have a safety back in front.
+            double newSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, newSpeedBack, newSpeedFront);
+            updates.add(new DataStateUpdate(safety_gap[i], newSafetyGap));
 
-                // Update safety gap. The i-th safety gap is the safety gap between the i-th and (i+1)-th vehicles.
-                // The front vehicle does not have a safety back in front.
-                double newSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, speed[i], speed[i + 1]);
-                updates.add(new DataStateUpdate(safety_gap[i], newSafetyGap));
-            }
+            currentAccelBack = currentAccelFront;
+            currentAccelBack = currentAccelFront;
+            newSpeedBack = newSpeedFront;
         }
     }
 
@@ -363,7 +391,7 @@ public class SingleLaneMultipleCars {
         // Break check: apply maximum braking the next time step
         for (int i = 0; i < NUMBER_OF_VEHICLES; i++) {
             boolean doBreakCheck = rg.nextDouble() < BRAKE_CHECK_CHANCE;
-            if(i != CONTROLLED_VEHICLE && doBreakCheck) {
+            if(i != CONTROLLED_VEHICLE && i != 0 && doBreakCheck) {
                 double perturbedAccel = - MAX_BRAKE;
                 updates.add(new DataStateUpdate(accel[i], perturbedAccel));
             }
