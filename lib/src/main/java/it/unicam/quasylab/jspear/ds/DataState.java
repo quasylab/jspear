@@ -22,6 +22,7 @@
 
 package it.unicam.quasylab.jspear.ds;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntToDoubleFunction;
 import java.util.function.Predicate;
@@ -328,5 +329,12 @@ public class DataState {
         this.set(dataStateUpdate.getIndex(), dataStateUpdate.getValue());
     }
 
+    /**
+     * Returns the string representation of this data state.
+     * @return The string representation of the array of values.
+     */
+    public String toString(){
+        return Arrays.toString(this.data);
+    }
 
 }
