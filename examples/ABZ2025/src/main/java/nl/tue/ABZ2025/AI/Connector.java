@@ -29,36 +29,63 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import it.unicam.quasylab.jspear.ds.DataState;
 import org.json.JSONObject;
 
-
 public class Connector {
     private final String baseUrl;
+    private final ArrayList<AiState> aiStates;
 
     public Connector(String baseUrl) {
         this.baseUrl = baseUrl;
+        aiStates = new ArrayList<>();
     }
 
     public AiState getInitialState(){
-        JSONObject response;
+        HttpURLConnection initConnection = getInitConnection();
+        return new AiState(doPOST(initConnection, null), this);
+    }
+
+    private HttpURLConnection getInitConnection() {
         HttpURLConnection initConnection = null;
         try {
             initConnection = (HttpURLConnection) new URL(baseUrl + "/reset").openConnection();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-        response = doPOST(initConnection, null);
-        return new AiState(response);
+        return initConnection;
     }
 
-    public AiState doStep(AiState aiState, DataState perturbedState){
-        if (aiState.isDone() || aiState.isTruncated()){
-            //System.out.print(aiState.state.getInt("crashes"));
+    protected int addAiStateToHistory(AiState aiState){
+        int index = aiStates.size();
+        aiStates.add(aiState);
+        return index;
+    }
+
+    public void clearHistory(){
+        aiStates.clear();
+    }
+
+    public AiState getAiStateFromHistory(DataState state){
+        int index = (int) state.get(AiState.DATASTATE_INDEX_FOR_HISTORY_INDEX);
+        return aiStates.get(index);
+    }
+
+
+    public AiState doStep(DataState perturbedState){
+        AiState aiState = getAiStateFromHistory(perturbedState);
+
+        if (aiState.isDone() || aiState.isTruncated()) {
             return aiState;
         }
+        HttpURLConnection stepConnection = getStepConnection();
+        aiState.setPerturbedDataState(perturbedState);
+        return new AiState(doPOST(stepConnection, aiState.toJson()), this);
+    }
+
+    private HttpURLConnection getStepConnection() {
         HttpURLConnection stepConnection = null;
         try {
             stepConnection = (HttpURLConnection) new URL(baseUrl + "/step").openConnection();
@@ -66,8 +93,7 @@ public class Connector {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        aiState.setDataState(perturbedState);
-        return new AiState(doPOST(stepConnection, aiState.toJson()));
+        return stepConnection;
     }
 
     private JSONObject doPOST(HttpURLConnection connection, JSONObject body) {
@@ -83,17 +109,7 @@ public class Connector {
             }
 
             int responseCode = connection.getResponseCode();
-            StringBuilder response = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    responseCode == HttpURLConnection.HTTP_OK
-                            ? connection.getInputStream()
-                            : connection.getErrorStream(),
-                    StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line.trim());
-                }
-            }
+            StringBuilder response = getResponse(connection, responseCode);
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 return new JSONObject(response.toString());
             } else {
@@ -102,5 +118,20 @@ public class Connector {
         } catch (Exception e) {
             throw new RuntimeException(e.toString());
         }
+    }
+
+    private static StringBuilder getResponse(HttpURLConnection connection, int responseCode) throws IOException {
+        StringBuilder response = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                responseCode == HttpURLConnection.HTTP_OK
+                        ? connection.getInputStream()
+                        : connection.getErrorStream(),
+                StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line.trim());
+            }
+        }
+        return response;
     }
 }

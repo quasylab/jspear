@@ -29,21 +29,33 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-// features ex: ['presence', 'x', 'y', 'vx', 'vy']
-
 
 public class AiState {
     // expected features: ['presence', 'x', 'y', 'vx', 'vy']
-    private static final int SPEED_COLUMN = 3;
-    private static final int POSITION_COLUMN = 1;
-    private static final int PRESENCE_COLUMN = 0;
 
-    private int originalValuesCount;
+    private static final int PRESENCE_COLUMN = 0;
+    private static final int X_POSITION_COLUMN = 1;
+    private static final int Y_SPEED_COLUMN = 2;
+    private static final int X_SPEED_COLUMN = 3;
+    private static final int Y_POSITION_COLUMN =  4;
+
+
+    private int originalValuesCount = -1; // includes non car values
+
+    private static final int NUMBER_OF_NON_CAR_VALUES = 1;
+
+    protected static final int DATASTATE_INDEX_FOR_HISTORY_INDEX = 0;
+    private int historyIndex;
 
     protected final JSONObject state;
 
-    public AiState(JSONObject state) {
+    public AiState(JSONObject state, Connector connector) {
         this.state = state;
+        this.historyIndex = connector.addAiStateToHistory(this);
+    }
+
+    protected int getHistoryIndex(){
+        return historyIndex;
     }
 
     protected JSONObject toJson(){
@@ -66,30 +78,45 @@ public class AiState {
         return state.getJSONArray("features");
     }
 
-    public int[] getRealDataStateSpeedIndexes(){
-        return getRealDataStateIndexes(SPEED_COLUMN);
-    }
-
-    public int[] getRealDataStatePositionIndexes(){
-        return getRealDataStateIndexes(POSITION_COLUMN);
-    }
-
     public int[] getRealDataStatePresenceIndexes(){
         return getRealDataStateIndexes(PRESENCE_COLUMN);
-    }
-
-    public int[] getPerturbedDataStateSpeedIndexes(){
-        return getPerturbedDataStateIndexes(SPEED_COLUMN);
-    }
-
-    public int[] getPerturbedDataStatePositionIndexes(){
-        return getPerturbedDataStateIndexes(POSITION_COLUMN);
     }
 
     public int[] getPerturbedDataStatePresenceIndexes(){
         return getPerturbedDataStateIndexes(PRESENCE_COLUMN);
     }
 
+    public int[] getRealDataStateXSpeedIndexes(){
+        return getRealDataStateIndexes(X_SPEED_COLUMN);
+    }
+
+    public int[] getRealDataStateXPositionIndexes(){
+        return getRealDataStateIndexes(X_POSITION_COLUMN);
+    }
+
+    public int[] getPerturbedDataStateXSpeedIndexes(){
+        return getPerturbedDataStateIndexes(X_SPEED_COLUMN);
+    }
+
+    public int[] getPerturbedDataStateXPositionIndexes(){
+        return getPerturbedDataStateIndexes(X_POSITION_COLUMN);
+    }
+
+    public int[] getRealDataStateYSpeedIndexes(){
+        return getRealDataStateIndexes(Y_SPEED_COLUMN);
+    }
+
+    public int[] getRealDataStateYPositionIndexes(){
+        return getRealDataStateIndexes(Y_POSITION_COLUMN);
+    }
+
+    public int[] getPerturbedDataStateYSpeedIndexes(){
+        return getPerturbedDataStateIndexes(Y_SPEED_COLUMN);
+    }
+
+    public int[] getPerturbedDataStateYPositionIndexes(){
+        return getPerturbedDataStateIndexes(Y_POSITION_COLUMN);
+    }
 
     public int getControlledVehicleIndex(){
         return 0;
@@ -106,7 +133,7 @@ public class AiState {
     }
 
     private int[] getRealDataStateIndexes(int column){
-        return getDataStateIndexes(column, 0);
+        return getDataStateIndexes(column, NUMBER_OF_NON_CAR_VALUES);
     }
 
     private int[] getPerturbedDataStateIndexes(int column){
@@ -114,21 +141,25 @@ public class AiState {
     }
 
     private int[] getDataStateIndexes(int column, int offset) {
+        if (originalValuesCount == -1){
+            throw new RuntimeException("Calling for perturbed datastate indexes before creating a datastate");
+        }
         int[] m = new int[this.getCarCount()];
-        for (int i = 0; i < this.getCarCount(); i++) {
-            m[i] = offset+i*getFeatures().length() + column;
+        int colCount = this.getFeatures().length();
+        for (int i = 0; i < colCount; i++) {
+            m[i] = offset + (i*colCount) + column;
         }
         return m;
     }
 
-    public void setDataState(DataState pds) {
+    public void setPerturbedDataState(DataState pds) {
         state.put("state", perturbedDataStateToJson(pds));
     }
 
     private JSONArray perturbedDataStateToJson(DataState pds){
         int carCount = this.getCarCount();
         int colCount = this.getFeatures().length();
-        JSONArray perturbedDataState = new JSONArray(carCount);
+        JSONArray perturbedJson = new JSONArray(carCount);
 
         for (int i = 0; i < carCount; i++) {
             JSONArray row = new JSONArray(colCount);
@@ -136,13 +167,12 @@ public class AiState {
                 double value = pds.get(originalValuesCount+i*carCount+j);
                 row.put(j, value);
             }
-            perturbedDataState.put(i, row);
+            perturbedJson.put(i, row);
         }
-        return perturbedDataState;
+        return perturbedJson;
     }
 
     /**
-     *
      * @return the observable state
      */
     public DataState getDataState(){
@@ -151,26 +181,33 @@ public class AiState {
         int colCount = this.getFeatures().length();
 
         Map<Integer, Double> values = new HashMap<>();
+
+        values.put(DATASTATE_INDEX_FOR_HISTORY_INDEX, (double) this.historyIndex);
+
         for (int i = 0; i < carCount; i++) {
-            JSONArray rows = carState.getJSONArray(i);
-            if (rows.length() != colCount){
+            JSONArray row = carState.getJSONArray(i);
+            if (row.length() != colCount){
                 System.out.println("AIServer: Rows of different sizes in the received observation");
             }
             for (int j = 0; j < colCount; j++) {
                 double value;
-                if (j < rows.length()){
-                    value = rows.getDouble(j);
+                if (j < row.length()){
+                    value = row.getDouble(j);
                 } else {
                     value = Double.NaN;
                 }
-                values.put(i * colCount + j, value);
+                values.put(NUMBER_OF_NON_CAR_VALUES + (i * colCount) + j, value);
             }
         }
-        // create a duplicate of all variables to be perturbed
+        // create a duplicate of all car values to be perturbed
         originalValuesCount = values.size();
-        for (int i = 0; i < originalValuesCount; i++){
-            values.put(originalValuesCount + i, values.get(i));
+        for (int i = 0; i < originalValuesCount-NUMBER_OF_NON_CAR_VALUES; i++){
+            values.put(originalValuesCount + i, values.get(NUMBER_OF_NON_CAR_VALUES+i));
         }
-        return new DataState(values.size(),  i -> values.getOrDefault(i, Double.NaN));
+        return new DataState(values.size(), i -> values.getOrDefault(i, Double.NaN));
+    }
+
+    public void setHistoryIndex(int historyIndex) {
+        this.historyIndex = historyIndex;
     }
 }
