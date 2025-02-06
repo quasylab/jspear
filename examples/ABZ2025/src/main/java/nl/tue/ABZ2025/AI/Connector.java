@@ -49,7 +49,7 @@ public class Connector {
     }
 
     private HttpURLConnection getInitConnection() {
-        HttpURLConnection initConnection = null;
+        HttpURLConnection initConnection;
         try {
             initConnection = (HttpURLConnection) new URL(baseUrl + "/reset").openConnection();
         } catch (IOException e) {
@@ -62,10 +62,6 @@ public class Connector {
         int index = aiStates.size();
         aiStates.add(aiState);
         return index;
-    }
-
-    public void clearHistory(){
-        aiStates.clear();
     }
 
     public AiState getAiStateFromHistory(DataState state){
@@ -86,7 +82,7 @@ public class Connector {
     }
 
     private HttpURLConnection getStepConnection() {
-        HttpURLConnection stepConnection = null;
+        HttpURLConnection stepConnection;
         try {
             stepConnection = (HttpURLConnection) new URL(baseUrl + "/step").openConnection();
             stepConnection.setDoOutput(true);
@@ -113,7 +109,7 @@ public class Connector {
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 return new JSONObject(response.toString());
             } else {
-                throw new RuntimeException("Failed to get a successful response: " + responseCode + " " + response.toString());
+                throw new RuntimeException("Failed to get a successful response: " + responseCode + " " + response);
             }
         } catch (Exception e) {
             throw new RuntimeException(e.toString());

@@ -121,12 +121,12 @@ public class SingleLaneTwoCars {
         printSummary(drunkDriverSequence, 30, "DRUNK DRIVER");
         printSummary(brakeCheckerSequence, 30, "BRAKE CHECKER");
         //RobustnessFormula PHINoPerturbation = getSafetyGapViolationFormula(new NonePerturbation());
-        RobustnessFormula PHIBrakeCheck = getSafetyGapViolationFormula(brakeChecker);
-        RobustnessFormula PHIDrunkDriver = getSafetyGapViolationFormula(drunkDriver);
+        //RobustnessFormula PHIBrakeCheck = getSafetyGapViolationFormula(brakeChecker);
+        //RobustnessFormula PHIDrunkDriver = getSafetyGapViolationFormula(drunkDriver);
 
         //PHINoPerturbation = getCrashFormula(new NonePerturbation());
-        PHIBrakeCheck = getCrashFormula(brakeChecker);
-        PHIDrunkDriver = getCrashFormula(drunkDriver);
+        RobustnessFormula PHIBrakeCheck = getCrashFormula(brakeChecker);
+        RobustnessFormula PHIDrunkDriver = getCrashFormula(drunkDriver);
 
         for(int testStep = 0; testStep < 100; testStep++){
             System.out.print("Step " + testStep + ":  ");

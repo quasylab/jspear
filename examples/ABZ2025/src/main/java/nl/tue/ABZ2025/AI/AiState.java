@@ -45,7 +45,7 @@ public class AiState {
     private static final int NUMBER_OF_NON_CAR_VALUES = 1;
 
     protected static final int DATASTATE_INDEX_FOR_HISTORY_INDEX = 0;
-    private int historyIndex;
+    private final int historyIndex;
 
     protected final JSONObject state;
 
@@ -54,11 +54,7 @@ public class AiState {
         this.historyIndex = connector.addAiStateToHistory(this);
     }
 
-    protected int getHistoryIndex(){
-        return historyIndex;
-    }
-
-    protected JSONObject toJson(){
+   protected JSONObject toJson(){
         return state;
     }
 
@@ -207,7 +203,4 @@ public class AiState {
         return new DataState(values.size(), i -> values.getOrDefault(i, Double.NaN));
     }
 
-    public void setHistoryIndex(int historyIndex) {
-        this.historyIndex = historyIndex;
-    }
 }
