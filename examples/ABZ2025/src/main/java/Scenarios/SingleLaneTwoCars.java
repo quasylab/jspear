@@ -73,7 +73,7 @@ public class SingleLaneTwoCars {
 
     private static final double INIT_SPEED_V2 = 0;
     private static final double INIT_ACCEL_V2 = 1;
-
+ 
     // PERTURBATION PARAMETERS
     private static final int STARTING_STEP = 4;
     private static final int FREQUENCY = 2;
@@ -103,6 +103,8 @@ public class SingleLaneTwoCars {
     private static final double IDLE  = 0.0;
 
     private static final int EVOLUTION_SEQUENCE_SIZE = 100;
+    private static final int PERTURBATION_SCALE = 100;
+
 
     public SingleLaneTwoCars(){
         DataState state = getInitialState();
@@ -111,13 +113,13 @@ public class SingleLaneTwoCars {
         Perturbation drunkDriver = getDrunkDriverPerturbation(TIMES_TO_APPLY, FREQUENCY);
         Perturbation brakeChecker = getBreakCheckPerturbation(TIMES_TO_APPLY, FREQUENCY);
 
-        EvolutionSequence drunkDriverSequence = sequence.apply(drunkDriver, STARTING_STEP, EVOLUTION_SEQUENCE_SIZE);
-        EvolutionSequence brakeCheckerSequence = sequence.apply(brakeChecker, STARTING_STEP, EVOLUTION_SEQUENCE_SIZE);
+
+        EvolutionSequence drunkDriverSequence = sequence.apply(drunkDriver, STARTING_STEP, PERTURBATION_SCALE);
+        EvolutionSequence brakeCheckerSequence = sequence.apply(brakeChecker, STARTING_STEP, PERTURBATION_SCALE);
 
         printSummary(sequence, 30, "UNPERTURBED");
         printSummary(drunkDriverSequence, 30, "DRUNK DRIVER");
         printSummary(brakeCheckerSequence, 30, "BRAKE CHECKER");
-
         //RobustnessFormula PHINoPerturbation = getSafetyGapViolationFormula(new NonePerturbation());
         RobustnessFormula PHIBrakeCheck = getSafetyGapViolationFormula(brakeChecker);
         RobustnessFormula PHIDrunkDriver = getSafetyGapViolationFormula(drunkDriver);
