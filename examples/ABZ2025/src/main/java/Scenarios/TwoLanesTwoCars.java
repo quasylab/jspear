@@ -125,6 +125,7 @@ public class TwoLanesTwoCars {
         try {
             int EVOLUTION_SEQUENCE_SIZE = 100;
             int PERTURBATION_SIZE = 100;
+            int EXTRA_SIZE = 10000;
 
             RandomGenerator rand = new DefaultRandomGenerator();
             DataState state = getInitialState();
@@ -170,11 +171,12 @@ public class TwoLanesTwoCars {
 
             int H = 100;
 
-            System.out.println("Simulation of nominal behaviour in scenario: "+SCENARIO);
+            System.out.println("Simulation of single nominal behaviour in scenario: "+SCENARIO);
             printLData(rand, L, F, system, H, EVOLUTION_SEQUENCE_SIZE);
 
-            System.out.println("Simulation of perturbed behaviour in scenario: "+SCENARIO);
+            System.out.println("Simulation of single perturbed behaviour in scenario: "+SCENARIO);
             printLData(rand, L, F, get_reckless_driver(), system, H, EVOLUTION_SEQUENCE_SIZE*PERTURBATION_SIZE);
+
 
             // VISUALISATION OF SINGLE TRAJECTORY NOMINAL SYSTEM
 
@@ -188,15 +190,52 @@ public class TwoLanesTwoCars {
                 other_trajectory[i][1] = data[i][3];
             }
 
+            double[][] my_extra_trajectory = new double[H][2];
+            double[][] other_extra_trajectory = new double[H][2];
+            double[][] extra_data = SystemState.sample(rand, F, system, H, EXTRA_SIZE);
+            for (int i = 0; i < H; i++) {
+                my_extra_trajectory[i][0] = extra_data[i][0];
+                my_extra_trajectory[i][1] = extra_data[i][1];
+                other_extra_trajectory[i][0] = extra_data[i][2];
+                other_extra_trajectory[i][1] = extra_data[i][3];
+            }
+
             if (SCENARIO == 1){
                 Util.writeToCSV("./my_trajectory.csv", my_trajectory);
                 Util.writeToCSV("./other_trajectory.csv", other_trajectory);
+                Util.writeToCSV("./my_extra_trajectory.csv", my_extra_trajectory);
+                Util.writeToCSV("./other_extra_trajectory.csv", other_extra_trajectory);
             } else if (SCENARIO==2) {
                 Util.writeToCSV("./my_trajectory_scen2.csv", my_trajectory);
                 Util.writeToCSV("./other_trajectory_scen2.csv", other_trajectory);
+                Util.writeToCSV("./my_extra_trajectory_scen2.csv", my_extra_trajectory);
+                Util.writeToCSV("./other_extra_trajectory_scen2.csv", other_extra_trajectory);
             } else {
                 Util.writeToCSV("./my_trajectory_scen3.csv", my_trajectory);
                 Util.writeToCSV("./other_trajectory_scen3.csv", other_trajectory);
+                Util.writeToCSV("./my_extra_trajectory_scen3.csv", my_extra_trajectory);
+                Util.writeToCSV("./other_extra_trajectory_scen3.csv", other_extra_trajectory);
+            }
+
+            double[][] my_extra_trajectory_p = new double[H][2];
+            double[][] other_extra_trajectory_p = new double[H][2];
+            double[][] extra_data_p = SystemState.sample(rand, F, get_reckless_driver(), system, H, EXTRA_SIZE);
+            for (int i = 0; i < H; i++) {
+                my_extra_trajectory_p[i][0] = extra_data_p[i][0];
+                my_extra_trajectory_p[i][1] = extra_data_p[i][1];
+                other_extra_trajectory_p[i][0] = extra_data_p[i][2];
+                other_extra_trajectory_p[i][1] = extra_data_p[i][3];
+            }
+
+            if (SCENARIO == 1){
+                Util.writeToCSV("./my_extra_trajectory_p.csv", my_extra_trajectory_p);
+                Util.writeToCSV("./other_extra_trajectory_p.csv", other_extra_trajectory_p);
+            } else if (SCENARIO==2) {
+                Util.writeToCSV("./my_extra_trajectory_p_scen2.csv", my_extra_trajectory_p);
+                Util.writeToCSV("./other_extra_trajectory_p_scen2.csv", other_extra_trajectory_p);
+            } else {
+                Util.writeToCSV("./my_extra_trajectory_p_scen3.csv", my_extra_trajectory_p);
+                Util.writeToCSV("./other_extra_trajectory_p_scen3.csv", other_extra_trajectory_p);
             }
 
             // APPLICATION OF PERTURBATION reckless_driver
@@ -591,7 +630,7 @@ public class TwoLanesTwoCars {
             }
         }
         double my_new_speed;
-        if (SCENARIO != 2){
+        if (SCENARIO == 3){
             my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED);
         } else {
             my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED-5);
@@ -625,6 +664,46 @@ public class TwoLanesTwoCars {
                 other_new_timer = state.get(other_timer)-1;
                 other_new_acc = state.get(other_acc);
             }
+        } else if(SCENARIO == 2) {
+            if (state.get(other_timer) == 0){
+                other_new_timer = RESPONSE_TIME-1;
+                if (state.get(other_move)==0){
+                    if (state.get(my_lane)==state.get(other_lane) && state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
+                    other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                    } else {
+                        double token = rg.nextDouble();
+                        if (token >= 0.40){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
+                        } else {
+                            if (token >= 0.20) {
+                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                            } else {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                            }
+                        }
+                    }
+                } else {
+                    other_new_move = 0;
+                    if (state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
+                        other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                    } else {
+                        double token = rg.nextDouble();
+                        if (token >= 0.40){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
+                        } else {
+                            if (token >= 0.20) {
+                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                            } else {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                            }
+                        }
+                    }
+                }
+            } else {
+                other_new_timer = state.get(other_timer)-1;
+                other_new_acc = state.get(other_acc);
+                other_new_move = state.get(other_move);
+            }
         } else {
             if (state.get(other_timer) == 0){
                 other_new_timer = RESPONSE_TIME-1;
@@ -633,7 +712,7 @@ public class TwoLanesTwoCars {
                         other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                     } else {
                         double token = rg.nextDouble();
-                        if (token >= 0.50){
+                        if (token >= 0.40){
                             other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
                         } else {
                             other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
