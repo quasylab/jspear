@@ -49,7 +49,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- *  Scenario where two cars V1 and V2 driving on a single lane. V1 is behind V2. Only V1 is managed by the controller.
+ *  Scenario where two cars (my and other) driving on a highway with two lanes. Only my_car is managed by the controller.
  */
 public class TwoLanesTwoCars {
 
@@ -81,7 +81,7 @@ public class TwoLanesTwoCars {
     private static final double MY_INIT_X_2 = 50;
     private static final double MY_INIT_Y_2 = 6;
     private static final double OTHER_INIT_X_2 = 0;
-    private static final double OTHER_INIT_Y_2 = 2;
+    private static final double OTHER_INIT_Y_2 = 4;
     private static final double MY_INIT_X_3 = 0;
     private static final double MY_INIT_Y_3 = 2;
     private static final double OTHER_INIT_X_3 = 150;
@@ -111,6 +111,8 @@ public class TwoLanesTwoCars {
     private static final int safety_gap = 17;
     private static final int crash = 18;
 
+    //private static final int flag = 19;
+
     private static final int NUMBER_OF_VARIABLES = 19;
 
     // POSSIBLE CONTROLLER ACTIONS
@@ -129,13 +131,23 @@ public class TwoLanesTwoCars {
 
             RandomGenerator rand = new DefaultRandomGenerator();
             DataState state = getInitialState();
-            ControlledSystem system = new ControlledSystem(getController(), (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
+
+            ControlledSystem system;
+
+            if(SCENARIO==1) {
+                system = new ControlledSystem(getController(), (rg, ds) -> ds.apply(getEnvironmentUpdates_1(rg, ds)), state);
+            } else if (SCENARIO==2) {
+                system = new ControlledSystem(getController(), (rg, ds) -> ds.apply(getEnvironmentUpdates_2(rg, ds)), state);
+            }else{
+                system = new ControlledSystem(getController(), (rg, ds) -> ds.apply(getEnvironmentUpdates_3(rg, ds)), state);
+            }
+
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, EVOLUTION_SEQUENCE_SIZE);
 
             ArrayList<String> L = new ArrayList<>();
-            L.add("my_x");
+            //L.add("my_x");
             L.add("my_y");
-            L.add("other_x");
+            //L.add("other_x");
             L.add("other_y");
             //L.add("intention");
             //L.add("my_acc");
@@ -144,18 +156,21 @@ public class TwoLanesTwoCars {
             //L.add("other_speed");
             //L.add("my_position");
             //L.add("my_timer");
+            //L.add("other_timer");
             L.add("dist");
             L.add("safety_gap");
-            //L.add("other_timer");
             //L.add("my_lane");
+            //L.add("other_lane");
             L.add("crash");
 
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds -> ds.get(my_x));
             F.add(ds -> ds.get(my_y));
+            //F.add(ds -> ds.get(my_move));
             F.add(ds -> ds.get(other_x));
-            F.add(ds->ds.get(other_y));
+            F.add(ds -> ds.get(other_y));
+            //F.add(ds -> ds.get(other_move));
             //F.add(ds->ds.get(intention));
             //F.add(ds->ds.get(my_acc));
             //F.add(ds->ds.get(my_speed));
@@ -163,19 +178,21 @@ public class TwoLanesTwoCars {
             //F.add(ds -> ds.get(other_speed));
             //F.add(ds -> ds.get(my_position));
             //F.add(ds->ds.get(my_timer));
+            //F.add(ds->ds.get(other_timer));
             F.add(ds -> ds.get(dist));
             F.add(ds -> ds.get(safety_gap));
-            //F.add(ds->ds.get(other_timer));
             //F.add(ds->ds.get(my_lane));
+            //F.add(ds->ds.get(other_lane));
             F.add(ds->ds.get(crash));
 
             int H = 100;
 
             System.out.println("Simulation of single nominal behaviour in scenario: "+SCENARIO);
-            printLData(rand, L, F, system, H, EVOLUTION_SEQUENCE_SIZE);
+            printLData(rand, L, F, system, H, 1);
 
             System.out.println("Simulation of single perturbed behaviour in scenario: "+SCENARIO);
-            printLData(rand, L, F, get_reckless_driver(), system, H, EVOLUTION_SEQUENCE_SIZE*PERTURBATION_SIZE);
+            printLData(rand, L, F, get_reckless_driver(), system, H, 1);
+
 
 
             // VISUALISATION OF SINGLE TRAJECTORY NOMINAL SYSTEM
@@ -258,62 +275,100 @@ public class TwoLanesTwoCars {
                 Util.writeToCSV("./atomic_crash_speed_scen3.csv",direct_evaluation_crash_speed);
             }
 
-            if (SCENARIO==3){
-                double[][] step1_crash_speed = new double[H][1];
-                double[][] step2_crash_speed = new double[H][1];
-                double[][] step3_crash_speed = new double[H][1];
-                double[][] step4_crash_speed = new double[H][1];
-                double[][] step5_crash_speed = new double[H][1];
+            double[][] step1_crash_speed = new double[H][1];
+            double[][] step2_crash_speed = new double[H][1];
+            double[][] step3_crash_speed = new double[H][1];
+            double[][] step4_crash_speed = new double[H][1];
+            double[][] step5_crash_speed = new double[H][1];
 
-                EvolutionSequence step1_pert = sequence.apply(get_reckless_driver(),1,PERTURBATION_SIZE);
-                EvolutionSequence step2_pert = sequence.apply(get_reckless_driver(),2,PERTURBATION_SIZE);
-                EvolutionSequence step3_pert = sequence.apply(get_reckless_driver(),3,PERTURBATION_SIZE);
-                EvolutionSequence step4_pert = sequence.apply(get_reckless_driver(),4,PERTURBATION_SIZE);
-                EvolutionSequence step5_pert = sequence.apply(get_reckless_driver(),5,PERTURBATION_SIZE);
+            EvolutionSequence step1_pert = sequence.apply(get_reckless_driver(),1,PERTURBATION_SIZE);
+            EvolutionSequence step2_pert = sequence.apply(get_reckless_driver(),2,PERTURBATION_SIZE);
+            EvolutionSequence step3_pert = sequence.apply(get_reckless_driver(),3,PERTURBATION_SIZE);
+            EvolutionSequence step4_pert = sequence.apply(get_reckless_driver(),4,PERTURBATION_SIZE);
+            EvolutionSequence step5_pert = sequence.apply(get_reckless_driver(),5,PERTURBATION_SIZE);
 
-                DistanceExpression crash = new AtomicDistanceExpression(TwoLanesTwoCars::rho_crash_probability,(v1,v2)->Math.abs(v1-v2));
+            DistanceExpression crash = new AtomicDistanceExpression(TwoLanesTwoCars::rho_crash_probability,(v1,v2)->Math.abs(v1-v2));
 
-                double[][] step1_crash = new double[H][1];
-                double[][] step2_crash = new double[H][1];
-                double[][] step3_crash = new double[H][1];
-                double[][] step4_crash = new double[H][1];
-                double[][] step5_crash = new double[H][1];
+            double[][] step1_crash = new double[H][1];
+            double[][] step2_crash = new double[H][1];
+            double[][] step3_crash = new double[H][1];
+            double[][] step4_crash = new double[H][1];
+            double[][] step5_crash = new double[H][1];
 
 
-                for (int i = 0; i<H; i++){
-                    step1_crash_speed[i][0] = crash_speed.compute(i+1, sequence, step1_pert);
-                    step1_crash[i][0] = crash.compute(i, sequence, step1_pert);
-                }
-                Util.writeToCSV("./step1_crash_speed_scen3.csv",step1_crash_speed);
-                Util.writeToCSV("./step1_crash_scen3.csv",step1_crash);
+            for (int i = 0; i<H; i++){
+                step1_crash_speed[i][0] = crash_speed.compute(i+1, sequence, step1_pert);
+                step1_crash[i][0] = crash.compute(i, sequence, step1_pert);
+            }
+            if (SCENARIO == 1){
+                Util.writeToCSV("./step1_crash_speed.csv", step1_crash_speed);
+                Util.writeToCSV("./step1_crash.csv", step1_crash);
+            } else if (SCENARIO == 2){
+                Util.writeToCSV("./step1_crash_speed_scen2.csv", step1_crash_speed);
+                Util.writeToCSV("./step1_crash_scen2.csv", step1_crash);
+            } else {
+                Util.writeToCSV("./step1_crash_speed_scen3.csv", step1_crash_speed);
+                Util.writeToCSV("./step1_crash_scen3.csv", step1_crash);
+            }
 
-                for (int i = 0; i<H; i++){
-                    step2_crash_speed[i][0] = crash_speed.compute(i+2, sequence, step2_pert);
-                    step2_crash[i][0] = crash.compute(i, sequence, step2_pert);
-                }
-                Util.writeToCSV("./step2_crash_speed_scen3.csv",step2_crash_speed);
-                Util.writeToCSV("./step2_crash_scen3.csv",step2_crash);
+            for (int i = 0; i<H; i++){
+                step2_crash_speed[i][0] = crash_speed.compute(i+2, sequence, step2_pert);
+                step2_crash[i][0] = crash.compute(i, sequence, step2_pert);
+            }
+            if (SCENARIO == 1){
+                Util.writeToCSV("./step2_crash_speed.csv", step2_crash_speed);
+                Util.writeToCSV("./step2_crash.csv", step2_crash);
+            } else if (SCENARIO == 2){
+                Util.writeToCSV("./step2_crash_speed_scen2.csv", step2_crash_speed);
+                Util.writeToCSV("./step2_crash_scen2.csv", step2_crash);
+            } else {
+                Util.writeToCSV("./step2_crash_speed_scen3.csv", step2_crash_speed);
+                Util.writeToCSV("./step2_crash_scen3.csv", step2_crash);
+            }
 
-                for (int i = 0; i<H; i++){
-                    step3_crash_speed[i][0] = crash_speed.compute(i+3, sequence, step3_pert);
-                    step3_crash[i][0] = crash.compute(i+3, sequence, step3_pert);
-                }
-                Util.writeToCSV("./step3_crash_speed_scen3.csv",step3_crash_speed);
-                Util.writeToCSV("./step3_crash_scen3.csv",step3_crash);
+            for (int i = 0; i<H; i++){
+                step3_crash_speed[i][0] = crash_speed.compute(i+3, sequence, step3_pert);
+                step3_crash[i][0] = crash.compute(i+3, sequence, step3_pert);
+            }
+            if (SCENARIO == 1){
+                Util.writeToCSV("./step3_crash_speed.csv", step3_crash_speed);
+                Util.writeToCSV("./step3_crash.csv", step3_crash);
+            } else if (SCENARIO == 2){
+                Util.writeToCSV("./step3_crash_speed_scen2.csv", step3_crash_speed);
+                Util.writeToCSV("./step3_crash_scen2.csv", step3_crash);
+            } else {
+                Util.writeToCSV("./step3_crash_speed_scen3.csv", step3_crash_speed);
+                Util.writeToCSV("./step3_crash_scen3.csv", step3_crash);
+            }
 
-                for (int i = 0; i<H; i++){
-                    step4_crash_speed[i][0] = crash_speed.compute(i+4, sequence, step4_pert);
-                    step4_crash[i][0] = crash.compute(i+4, sequence, step4_pert);
-                }
-                Util.writeToCSV("./step4_crash_speed_scen3.csv",step4_crash_speed);
-                Util.writeToCSV("./step4_crash_scen3.csv",step4_crash);
+            for (int i = 0; i<H; i++){
+                step4_crash_speed[i][0] = crash_speed.compute(i+4, sequence, step4_pert);
+                step4_crash[i][0] = crash.compute(i+4, sequence, step4_pert);
+            }
+            if (SCENARIO == 1){
+                Util.writeToCSV("./step4_crash_speed.csv", step4_crash_speed);
+                Util.writeToCSV("./step4_crash.csv", step4_crash);
+            } else if (SCENARIO == 2){
+                Util.writeToCSV("./step4_crash_speed_scen2.csv", step4_crash_speed);
+                Util.writeToCSV("./step4_crash_scen2.csv", step4_crash);
+            } else {
+                Util.writeToCSV("./step4_crash_speed_scen3.csv", step4_crash_speed);
+                Util.writeToCSV("./step4_crash_scen3.csv", step4_crash);
+            }
 
-                for (int i = 0; i<H; i++){
-                    step5_crash_speed[i][0] = crash_speed.compute(i+5, sequence, step5_pert);
-                    step5_crash[i][0] = crash.compute(i+5, sequence, step5_pert);
-                }
-                Util.writeToCSV("./step5_crash_speed_scen3.csv",step5_crash_speed);
-                Util.writeToCSV("./step5_crash_scen3.csv",step5_crash);
+            for (int i = 0; i<H; i++){
+                step5_crash_speed[i][0] = crash_speed.compute(i+5, sequence, step5_pert);
+                step5_crash[i][0] = crash.compute(i+5, sequence, step5_pert);
+            }
+            if (SCENARIO == 1){
+                Util.writeToCSV("./step5_crash_speed.csv", step5_crash_speed);
+                Util.writeToCSV("./step5_crash.csv", step5_crash);
+            } else if (SCENARIO == 2){
+                Util.writeToCSV("./step5_crash_speed_scen2.csv", step5_crash_speed);
+                Util.writeToCSV("./step5_crash_scen2.csv", step5_crash);
+            } else {
+                Util.writeToCSV("./step5_crash_speed_scen3.csv", step5_crash_speed);
+                Util.writeToCSV("./step5_crash_scen3.csv", step5_crash);
             }
 
 
@@ -327,23 +382,39 @@ public class TwoLanesTwoCars {
                     H
             );
 
-            RobustnessFormula phi_crash = new AtomicRobustnessFormula(
+            DistanceExpression max_crash = new MaxIntervalDistanceExpression(
+                    crash,
+                    0,
+                    H
+            );
+
+
+            RobustnessFormula phi_speed_crash = new AtomicRobustnessFormula(
                     get_reckless_driver(),
                     max_crash_speed,
                     RelationOperator.LESS_OR_EQUAL_THAN,
                     eta
             );
 
+            RobustnessFormula phi_crash = new AtomicRobustnessFormula(
+                    get_reckless_driver(),
+                    max_crash,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    eta
+            );
+
+            RobustnessFormula phi_combined = new ConjunctionRobustnessFormula(phi_speed_crash, phi_crash);
+
             RobustnessFormula always_crash = new AlwaysRobustnessFormula(
-                    phi_crash,
+                    phi_combined,
                     0,
-                    10
+                    20
             );
 
             double[][] val_crash = new double[10][1];
             for(int i = 0; i<10; i++) {
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(phi_crash).eval(PERTURBATION_SIZE, i, sequence);
-                System.out.println("phi_crash evaluation at step "+i+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(phi_combined).eval(PERTURBATION_SIZE, i, sequence);
+                System.out.println("Evaluation of phi_combined at step "+i+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash[i][0] = 1;
                 } else {
@@ -363,10 +434,9 @@ public class TwoLanesTwoCars {
                 Util.writeToCSV("./three_val_crash_scen3.csv",val_crash);
             }
 
+            TruthValues always = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(always_crash).eval(PERTURBATION_SIZE,0,sequence);
 
-
-
-
+            System.out.println("Evaluation of robustness in Scenario "+SCENARIO+": "+always);
 
         }
         catch (RuntimeException e) {
@@ -401,8 +471,8 @@ public class TwoLanesTwoCars {
             values.put(other_x, OTHER_INIT_X_1);
             values.put(other_y, OTHER_INIT_Y_1);
 
-            values.put(my_lane, (MY_INIT_Y_1 <= 3) ? 0.0 : 1.0);
-            values.put(other_lane, (OTHER_INIT_Y_1 <= 3) ? 0.0 : 1.0);
+            values.put(my_lane, (MY_INIT_Y_1 <= 4) ? 0.0 : 1.0);
+            values.put(other_lane, (OTHER_INIT_Y_1 <= 4) ? 0.0 : 1.0);
 
             values.put(my_position, (MY_INIT_X_1 <= OTHER_INIT_X_1) ? -1.0 : 1.0);
 
@@ -420,8 +490,8 @@ public class TwoLanesTwoCars {
                 values.put(other_x, OTHER_INIT_X_2);
                 values.put(other_y, OTHER_INIT_Y_2);
 
-                values.put(my_lane, (MY_INIT_Y_2 <= 3) ? 0.0 : 1.0);
-                values.put(other_lane, (OTHER_INIT_Y_2 <= 3) ? 0.0 : 1.0);
+                values.put(my_lane, (MY_INIT_Y_2 <= 4) ? 0.0 : 1.0);
+                values.put(other_lane, (OTHER_INIT_Y_2 <= 4) ? 0.0 : 1.0);
 
                 values.put(my_position, (MY_INIT_X_2 <= OTHER_INIT_X_2) ? -1.0 : 1.0);
 
@@ -438,8 +508,8 @@ public class TwoLanesTwoCars {
                 values.put(other_x, OTHER_INIT_X_3);
                 values.put(other_y, OTHER_INIT_Y_3);
 
-                values.put(my_lane, (MY_INIT_Y_3 <= 3) ? 0.0 : 1.0);
-                values.put(other_lane, (OTHER_INIT_Y_3 <= 3) ? 0.0 : 1.0);
+                values.put(my_lane, (MY_INIT_Y_3 <= 4) ? 0.0 : 1.0);
+                values.put(other_lane, (OTHER_INIT_Y_3 <= 4) ? 0.0 : 1.0);
 
                 values.put(my_position, (MY_INIT_X_3 <= OTHER_INIT_X_3) ? -1.0 : 1.0);
 
@@ -454,6 +524,7 @@ public class TwoLanesTwoCars {
         }
         values.put(safety_gap, initialSafetyGap);
         values.put(crash,0.0);
+        //values.put(flag,0.0);
 
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
@@ -477,6 +548,10 @@ public class TwoLanesTwoCars {
         ControllerRegistry registry = new ControllerRegistry();
 
         registry.set("Control",
+                Controller.ifThenElse(
+                        DataState.greaterThan(my_timer,0),
+                        Controller.doTick(registry.reference("Controller")
+                        ),
                 Controller.ifThenElse(
                         DataState.equalsTo(my_lane,1),
                         Controller.ifThenElse(
@@ -543,7 +618,7 @@ public class TwoLanesTwoCars {
                                         )
                                 )
                         )
-                )
+                ))
         );
 
         registry.set("Idling",
@@ -598,10 +673,11 @@ public class TwoLanesTwoCars {
         );
 
         return new ExecController(registry.reference("Control"));
-
     }
 
-    public static List<DataStateUpdate> getEnvironmentUpdates(RandomGenerator rg, DataState state) {
+    // ENVIRONMENT FUNCTION FOR SCENARIO 2
+
+    public static List<DataStateUpdate> getEnvironmentUpdates_1(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
 
         double my_new_acc;
@@ -619,22 +695,15 @@ public class TwoLanesTwoCars {
 
         double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
         double my_new_x = state.get(my_x) + my_travel_x;
-        //double my_travel_y = (my_new_acc/2 + state.get(my_speed))*Math.sin((Math.PI/9)*state.get(my_move));
         double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
-        double my_new_lane = state.get(my_lane);
-        if (state.get(my_lane)==0 && my_new_y > 4){
+        double my_new_lane;
+        if (my_new_y >= 4){
             my_new_lane = 1;
         } else {
-            if (state.get(my_lane)==1 && my_new_y < 4){
-                my_new_lane = 0;
-            }
+            my_new_lane = 0;
         }
-        double my_new_speed;
-        if (SCENARIO == 3){
-            my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED);
-        } else {
-            my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED-5);
-        }
+        double my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED);
+
         updates.add(new DataStateUpdate(my_speed, my_new_speed));
         updates.add(new DataStateUpdate(my_x,my_new_x));
         updates.add(new DataStateUpdate(my_y,my_new_y));
@@ -642,16 +711,41 @@ public class TwoLanesTwoCars {
 
         double other_new_timer;
         double other_new_acc;
-        double other_new_move = state.get(other_move);
-        if (SCENARIO == 1){
-            if (state.get(other_timer) == 0){
-                other_new_timer = RESPONSE_TIME-1;
-                if (state.get(my_lane)==state.get(other_lane) && state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
-                    other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+        double other_new_move;
+
+        if (state.get(other_timer) == 0){
+            other_new_timer = RESPONSE_TIME-1;
+            if (state.get(other_lane) ==1){
+                if (state.get(dist)>state.get(safety_gap) || state.get(my_position)==-1){
+                    other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
+                    other_new_move = LANE_RIGHT;
                 } else {
+                    other_new_move = 0.0;
+                    if (state.get(dist)>state.get(safety_gap)){
+                        double token = rg.nextDouble();
+                        if (token >= 0.50){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        } else {
+                            if (token >= 0.20) {
+                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                            } else {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                            }
+                        }
+                    } else {
+                        if (state.get(my_position)==1){
+                            other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                        } else {
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        }
+                    }
+                }
+            } else {
+                other_new_move = 0.0;
+                if (state.get(dist)>state.get(safety_gap)){
                     double token = rg.nextDouble();
-                    if (token >= 0.40){
-                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
+                    if (token >= 0.50){
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
                     } else {
                         if (token >= 0.20) {
                             other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
@@ -659,111 +753,327 @@ public class TwoLanesTwoCars {
                             other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                         }
                     }
-                }
-            } else {
-                other_new_timer = state.get(other_timer)-1;
-                other_new_acc = state.get(other_acc);
-            }
-        } else if(SCENARIO == 2) {
-            if (state.get(other_timer) == 0){
-                other_new_timer = RESPONSE_TIME-1;
-                if (state.get(other_move)==0){
-                    if (state.get(my_lane)==state.get(other_lane) && state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
-                    other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
-                    } else {
-                        double token = rg.nextDouble();
-                        if (token >= 0.40){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
-                        } else {
-                            if (token >= 0.20) {
-                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
-                            } else {
-                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
-                            }
-                        }
-                    }
                 } else {
-                    other_new_move = 0;
-                    if (state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
+                    if (state.get(my_position)==1) {
                         other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                     } else {
-                        double token = rg.nextDouble();
-                        if (token >= 0.40){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
-                        } else {
-                            if (token >= 0.20) {
-                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
-                            } else {
-                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
-                            }
-                        }
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
                     }
                 }
-            } else {
-                other_new_timer = state.get(other_timer)-1;
-                other_new_acc = state.get(other_acc);
-                other_new_move = state.get(other_move);
             }
         } else {
-            if (state.get(other_timer) == 0){
-                other_new_timer = RESPONSE_TIME-1;
-                if (state.get(other_move)==0){
-                    if (state.get(my_lane)==state.get(other_lane) && state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
-                        other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+            other_new_timer = state.get(other_timer)-1;
+            other_new_acc = state.get(other_acc);
+            other_new_move = state.get(other_move);
+        }
+        updates.add(new DataStateUpdate(other_acc,other_new_acc));
+        updates.add(new DataStateUpdate(other_timer,other_new_timer));
+        updates.add(new DataStateUpdate(other_move,other_new_move));
+
+        double other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED-5);
+
+        double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
+        double other_new_x = state.get(other_x) + other_travel_x;
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_lane;
+        if (other_new_y >= 4){
+            other_new_lane = 1;
+        } else {
+            other_new_lane = 0;
+        }
+
+        updates.add(new DataStateUpdate(other_speed, other_new_speed));
+        updates.add(new DataStateUpdate(other_x,other_new_x));
+        updates.add(new DataStateUpdate(other_y,other_new_y));
+        updates.add(new DataStateUpdate(other_lane,other_new_lane));
+
+        double new_dist = Math.sqrt(Math.pow((other_new_x-my_new_x),2) + Math.pow((other_new_y-my_new_y),2));
+        updates.add(new DataStateUpdate(dist, new_dist));
+
+        double my_new_position = (my_new_x>= other_new_x)?1:-1;
+        updates.add(new DataStateUpdate(my_position,my_new_position));
+
+        double new_safety_gap;
+        if(my_new_position==-1){
+            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,my_new_speed,other_new_speed);
+        } else {
+            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,my_new_speed);
+        }
+        updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
+
+        double my_new_timer = state.get(my_timer) - 1;
+        updates.add(new DataStateUpdate(my_timer, my_new_timer));
+
+        if(my_new_lane==other_new_lane && Math.abs(my_new_x-other_new_x)<= VEHICLE_LENGTH){
+            updates.add(new DataStateUpdate(crash,1));
+        } else {
+            if (my_new_lane!=other_new_lane && Math.abs(my_new_x-other_new_x)<= VEHICLE_LENGTH && Math.abs(my_new_y-other_new_y)<= VEHICLE_WIDTH){
+                updates.add(new DataStateUpdate(crash,1));
+            }
+        }
+        return updates;
+    }
+
+
+    // ENVIRONMENT FUNCTION FOR SCENARIO 2
+
+    public static List<DataStateUpdate> getEnvironmentUpdates_2(RandomGenerator rg, DataState state) {
+        List<DataStateUpdate> updates = new LinkedList<>();
+
+        double my_new_acc;
+        if(state.get(intention) == FASTER){ // Controller wants to do action FASTER
+            my_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
+        }else if(state.get(intention) == SLOWER){ // Controller wants to do action SLOWER
+            my_new_acc = - Math.min(MAX_BRAKE, Math.max(MIN_BRAKE, MAX_BRAKE - rg.nextDouble() * SLOW_OFFSET));
+        } else if(state.get(intention) == IDLE) { // Controller wants to do action IDLE
+            my_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET; // Accel "close to 0"
+        } else {
+            System.out.println("Controller wants to do something else besides FASTER, SLOWER or IDLE");
+            my_new_acc = 0.0;
+        }
+        updates.add(new DataStateUpdate(my_acc, my_new_acc));
+
+        double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
+        double my_new_x = state.get(my_x) + my_travel_x;
+        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
+        double my_new_lane;
+        if (my_new_y >= 4){
+            my_new_lane = 1;
+        } else {
+            my_new_lane = 0;
+        }
+        double my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED-5);
+
+        updates.add(new DataStateUpdate(my_speed, my_new_speed));
+        updates.add(new DataStateUpdate(my_x,my_new_x));
+        updates.add(new DataStateUpdate(my_y,my_new_y));
+        updates.add(new DataStateUpdate(my_lane,my_new_lane));
+
+        double other_new_timer;
+        double other_new_acc;
+        double other_new_move;
+
+        if (state.get(other_timer) == 0){
+            other_new_timer = RESPONSE_TIME-1;
+            if (state.get(other_lane) ==1){
+                other_new_move = 0.0;
+                if (state.get(dist)>state.get(safety_gap)){
+                    double token = rg.nextDouble();
+                    if (token >= 0.50){
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
                     } else {
-                        double token = rg.nextDouble();
-                        if (token >= 0.40){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
-                        } else {
-                            other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
-                            if (state.get(dist) > state.get(safety_gap)) {
-                                other_new_move = (state.get(other_lane) == 0) ? LANE_LEFT : LANE_RIGHT;
-                            }
-                        }
-                    }
-                } else {
-                    other_new_move = 0;
-                    if (state.get(my_position)==1 && state.get(dist) < state.get(safety_gap)){
-                        other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
-                    } else {
-                        double token = rg.nextDouble();
-                        if (token >= 0.40){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * MAX_ACCELERATION;
-                        } if (token >= 0.20) {
+                        if (token >= 0.20) {
                             other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
                         } else {
                             other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                         }
                     }
+                } else {
+                    if (state.get(my_position)==1){
+                        other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                    } else {
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                    }
                 }
             } else {
-                other_new_move = state.get(other_move);
-                other_new_timer = state.get(other_timer)-1;
-                other_new_acc = state.get(other_acc);
+                if (state.get(dist)>state.get(safety_gap)){
+                    other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                    other_new_move = LANE_LEFT;
+                } else {
+                    if (state.get(dist)>state.get(safety_gap)*9/10 && state.get(my_position)==1) {
+                        other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
+                        other_new_move = LANE_LEFT;
+                    } else {
+                        other_new_move = 0.0;
+                        if (state.get(my_position)==1) {
+                            other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                        } else {
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        }
+                    }
+                }
             }
+        } else {
+            other_new_timer = state.get(other_timer)-1;
+            other_new_acc = state.get(other_acc);
+            other_new_move = state.get(other_move);
         }
-        updates.add(new DataStateUpdate(other_move,other_new_move));
         updates.add(new DataStateUpdate(other_acc,other_new_acc));
         updates.add(new DataStateUpdate(other_timer,other_new_timer));
+        updates.add(new DataStateUpdate(other_move,other_new_move));
 
-        double other_travel_x = (my_new_acc/2 + state.get(other_speed))*Math.cos((Math.PI/9)*state.get(other_move));
+        double other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED);
+
+        double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
         double other_new_x = state.get(other_x) + other_travel_x;
-        //double other_travel_y = (my_new_acc/2 + state.get(other_speed))*Math.sin((Math.PI/9)*state.get(other_move));
-        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*state.get(other_move)));
-        double other_new_lane = state.get(other_lane);
-        if (state.get(other_lane)==0 && other_new_y > 4){
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_lane;
+        if (other_new_y >= 4){
             other_new_lane = 1;
         } else {
-            if (state.get(other_lane)==1 && other_new_y < 4){
-                other_new_lane = 0;
+            other_new_lane = 0;
+        }
+
+        updates.add(new DataStateUpdate(other_speed, other_new_speed));
+        updates.add(new DataStateUpdate(other_x,other_new_x));
+        updates.add(new DataStateUpdate(other_y,other_new_y));
+        updates.add(new DataStateUpdate(other_lane,other_new_lane));
+
+        double new_dist = Math.sqrt(Math.pow((other_new_x-my_new_x),2) + Math.pow((other_new_y-my_new_y),2));
+        updates.add(new DataStateUpdate(dist, new_dist));
+
+        double my_new_position = (my_new_x>= other_new_x)?1:-1;
+        updates.add(new DataStateUpdate(my_position,my_new_position));
+
+        double new_safety_gap;
+        if(my_new_position==-1){
+            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,my_new_speed,other_new_speed);
+        } else {
+            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,my_new_speed);
+        }
+        updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
+
+        double my_new_timer = state.get(my_timer) - 1;
+        updates.add(new DataStateUpdate(my_timer, my_new_timer));
+
+        if(my_new_lane==other_new_lane && Math.abs(my_new_x-other_new_x)<= VEHICLE_LENGTH){
+            updates.add(new DataStateUpdate(crash,1));
+        } else {
+            if (my_new_lane!=other_new_lane && Math.abs(my_new_x-other_new_x)<= VEHICLE_LENGTH && Math.abs(my_new_y-other_new_y)<= VEHICLE_WIDTH){
+                updates.add(new DataStateUpdate(crash,1));
             }
         }
-        double other_new_speed;
-        if (SCENARIO != 2) {
-            other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED - 5);
+        return updates;
+    }
+
+
+    // ENVIRONMENT FUNCTION FOR SCENARIO 3
+
+    public static List<DataStateUpdate> getEnvironmentUpdates_3(RandomGenerator rg, DataState state) {
+        List<DataStateUpdate> updates = new LinkedList<>();
+
+        double my_new_acc;
+        if(state.get(intention) == FASTER){ // Controller wants to do action FASTER
+            my_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
+        }else if(state.get(intention) == SLOWER){ // Controller wants to do action SLOWER
+            my_new_acc = - Math.min(MAX_BRAKE, Math.max(MIN_BRAKE, MAX_BRAKE - rg.nextDouble() * SLOW_OFFSET));
+        } else if(state.get(intention) == IDLE) { // Controller wants to do action IDLE
+            my_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET; // Accel "close to 0"
         } else {
-            other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED);
+            System.out.println("Controller wants to do something else besides FASTER, SLOWER or IDLE");
+            my_new_acc = 0.0;
         }
+        updates.add(new DataStateUpdate(my_acc, my_new_acc));
+
+        double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
+        double my_new_x = state.get(my_x) + my_travel_x;
+        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
+        double my_new_lane;
+        if (my_new_y >= 4){
+            my_new_lane = 1;
+        } else {
+            my_new_lane = 0;
+        }
+        double my_new_speed = Math.min(Math.max(0,state.get(my_speed) + my_new_acc), MAX_SPEED);
+
+        updates.add(new DataStateUpdate(my_speed, my_new_speed));
+        updates.add(new DataStateUpdate(my_x,my_new_x));
+        updates.add(new DataStateUpdate(my_y,my_new_y));
+        updates.add(new DataStateUpdate(my_lane,my_new_lane));
+
+        double other_new_timer;
+        double other_new_acc;
+        double other_new_move;
+
+        if (state.get(other_timer) == 0){
+            other_new_timer = RESPONSE_TIME-1;
+            if (state.get(other_lane) ==1){
+                if ((state.get(dist)>state.get(safety_gap) || state.get(my_position)==-1)){
+                //updates.add(new DataStateUpdate(flag,state.get(flag)+1));
+                other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
+                other_new_move = LANE_RIGHT;
+                } else {
+                    if (state.get(dist)>state.get(safety_gap)){
+                        double token = rg.nextDouble();
+                        if (token >= 0.50){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_move = 0.0;
+                        } else {
+                            if (token >= 0.20) {
+                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                                if (state.get(other_move)!=LANE_LEFT){
+                                    other_new_move = LANE_RIGHT;
+                                } else {
+                                    other_new_move = 0.0;
+                                }
+                            } else {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                                other_new_move = 0.0;
+                            }
+                        }
+                    } else {
+                        other_new_move = 0.0;
+                        if (state.get(my_position)==1){
+                            other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                        } else {
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        }
+                    }
+                }
+            } else {
+                if (state.get(dist)>state.get(safety_gap)){
+                        double token = rg.nextDouble();
+                        if (token >= 0.50){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_move = 0.0;
+                        } else {
+                            if (token >= 0.20) {
+                                other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
+                                if (state.get(other_move)!=LANE_RIGHT){
+                                    other_new_move = LANE_LEFT;
+                                } else {
+                                    other_new_move = 0.0;
+                                }
+                            } else {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                                other_new_move = 0.0;
+                            }
+                        }
+                } else {
+                        if (state.get(dist)>state.get(safety_gap)*9/10 && state.get(my_position)==1) {
+                            other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
+                            other_new_move = LANE_LEFT;
+                        } else {
+                            other_new_move = 0.0;
+                            if (state.get(my_position)==1) {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                            } else {
+                                other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            }
+                        }
+                }
+            }
+        } else {
+            other_new_timer = state.get(other_timer)-1;
+            other_new_acc = state.get(other_acc);
+            other_new_move = state.get(other_move);
+        }
+        updates.add(new DataStateUpdate(other_acc,other_new_acc));
+        updates.add(new DataStateUpdate(other_timer,other_new_timer));
+        updates.add(new DataStateUpdate(other_move,other_new_move));
+
+        double other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED-5);
+
+        double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
+        double other_new_x = state.get(other_x) + other_travel_x;
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_lane;
+        if (other_new_y >= 4){
+            other_new_lane = 1;
+        } else {
+            other_new_lane = 0;
+        }
+
         updates.add(new DataStateUpdate(other_speed, other_new_speed));
         updates.add(new DataStateUpdate(other_x,other_new_x));
         updates.add(new DataStateUpdate(other_y,other_new_y));
@@ -798,20 +1108,53 @@ public class TwoLanesTwoCars {
     }
 
     private static Perturbation get_reckless_driver(){
-        return new AfterPerturbation(0,new IterativePerturbation(7,new AtomicPerturbation(3,TwoLanesTwoCars::reckless_driver)));
+        return new AfterPerturbation(5,new IterativePerturbation(20,new AtomicPerturbation(2,TwoLanesTwoCars::reckless_driver)));
     }
 
     private static DataState reckless_driver(RandomGenerator rg, DataState state){
         List<DataStateUpdate> updates = new LinkedList<>();
-        if(state.get(dist) > state.get(safety_gap)/4) {
+        if(state.get(dist) > state.get(safety_gap)/RESPONSE_TIME) {
             double token = rg.nextDouble();
-            updates.add(new DataStateUpdate(other_acc,IDLE));
-            if (token > 0.5) {
+            double other_new_move;
+            if (token > 0.4) {
                 if (state.get(other_lane) == 0){
-                    updates.add(new DataStateUpdate(other_move,LANE_LEFT));
+                    other_new_move = LANE_LEFT;
                 } else {
-                    updates.add(new DataStateUpdate(other_move,LANE_RIGHT));
+                    other_new_move = LANE_RIGHT;
                 }
+                double other_new_speed;
+                double other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
+                if (SCENARIO==2){
+                    other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED);
+                } else {
+                    other_new_speed = Math.min(Math.max(0, state.get(other_speed) + other_new_acc), MAX_SPEED-5);
+                }
+                double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
+                double other_new_x = state.get(other_x) + other_travel_x;
+                double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + 3*other_new_move));
+                double other_new_lane;
+                if (other_new_y >= 4){
+                    other_new_lane = 1;
+                } else {
+                    other_new_lane = 0;
+                }
+                updates.add(new DataStateUpdate(other_move,other_new_move));
+                updates.add(new DataStateUpdate(other_speed, other_new_speed));
+                updates.add(new DataStateUpdate(other_x,other_new_x));
+                updates.add(new DataStateUpdate(other_y,other_new_y));
+                updates.add(new DataStateUpdate(other_lane,other_new_lane));
+                double new_dist = Math.sqrt(Math.pow((other_new_x-state.get(my_x)),2) + Math.pow((other_new_y-state.get(my_y)),2));
+                updates.add(new DataStateUpdate(dist, new_dist));
+                double my_new_position = (state.get(my_x)>= other_new_x)?1:-1;
+                updates.add(new DataStateUpdate(my_position,my_new_position));
+                double new_safety_gap;
+                if(my_new_position==-1){
+                    new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,state.get(my_speed),other_new_speed);
+                } else {
+                    new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,state.get(my_speed));
+                }
+                updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
+                //updates.add(new DataStateUpdate(other_timer,RESPONSE_TIME-1));
             } else {
                 updates.add(new DataStateUpdate(dist,state.get(dist)-rg.nextDouble()*DIST_OFFSET));
             }
