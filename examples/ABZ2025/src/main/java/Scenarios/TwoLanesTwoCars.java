@@ -69,6 +69,7 @@ public class TwoLanesTwoCars {
     private static final double SLOW_OFFSET = 2;
     private static final double IDLE_OFFSET = 0.5;
     private static final double DIST_OFFSET = VEHICLE_LENGTH*VEHICLE_WIDTH;
+    private static final int H = 300;
 
 
     // INITIAL VALUES PER SCENARIO
@@ -127,7 +128,7 @@ public class TwoLanesTwoCars {
         try {
             int EVOLUTION_SEQUENCE_SIZE = 100;
             int PERTURBATION_SIZE = 100;
-            int EXTRA_SIZE = 10000;
+            int EXTRA_SIZE = 100000;
 
             RandomGenerator rand = new DefaultRandomGenerator();
             DataState state = getInitialState();
@@ -145,10 +146,12 @@ public class TwoLanesTwoCars {
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, EVOLUTION_SEQUENCE_SIZE);
 
             ArrayList<String> L = new ArrayList<>();
-            //L.add("my_x");
+            L.add("my_x");
             L.add("my_y");
-            //L.add("other_x");
+            L.add("other_x");
             L.add("other_y");
+            //L.add("my_move");
+            //L.add("other_move");
             //L.add("intention");
             //L.add("my_acc");
             //L.add("my_speed");
@@ -167,9 +170,9 @@ public class TwoLanesTwoCars {
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds -> ds.get(my_x));
             F.add(ds -> ds.get(my_y));
-            //F.add(ds -> ds.get(my_move));
             F.add(ds -> ds.get(other_x));
             F.add(ds -> ds.get(other_y));
+            //F.add(ds -> ds.get(my_move));
             //F.add(ds -> ds.get(other_move));
             //F.add(ds->ds.get(intention));
             //F.add(ds->ds.get(my_acc));
@@ -185,7 +188,6 @@ public class TwoLanesTwoCars {
             //F.add(ds->ds.get(other_lane));
             F.add(ds->ds.get(crash));
 
-            int H = 100;
 
             System.out.println("Simulation of single nominal behaviour in scenario: "+SCENARIO);
             printLData(rand, L, F, system, H, 1);
@@ -408,7 +410,7 @@ public class TwoLanesTwoCars {
             RobustnessFormula always_crash = new AlwaysRobustnessFormula(
                     phi_combined,
                     0,
-                    20
+                    100
             );
 
             double[][] val_crash = new double[10][1];
@@ -434,7 +436,7 @@ public class TwoLanesTwoCars {
                 Util.writeToCSV("./three_val_crash_scen3.csv",val_crash);
             }
 
-            TruthValues always = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(always_crash).eval(PERTURBATION_SIZE,0,sequence);
+            Boolean always = new BooleanSemanticsVisitor().eval(always_crash).eval(PERTURBATION_SIZE,0,sequence);
 
             System.out.println("Evaluation of robustness in Scenario "+SCENARIO+": "+always);
 
@@ -524,7 +526,6 @@ public class TwoLanesTwoCars {
         }
         values.put(safety_gap, initialSafetyGap);
         values.put(crash,0.0);
-        //values.put(flag,0.0);
 
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
@@ -602,7 +603,7 @@ public class TwoLanesTwoCars {
                                 Controller.ifThenElse(
                                         DataState.equalsTo(other_lane,0),
                                         Controller.ifThenElse(
-                                                (rg,ds) -> ds.get(dist) > ds.get(safety_gap)*0.9,
+                                                (rg,ds) -> ds.get(dist) > ds.get(safety_gap)*0.8,
                                                 Controller.doAction( // LANE_LEFT
                                                         (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move,LANE_LEFT), new DataStateUpdate(my_timer, RESPONSE_TIME)),
                                                         registry.reference("Moving_left")
@@ -675,7 +676,7 @@ public class TwoLanesTwoCars {
         return new ExecController(registry.reference("Control"));
     }
 
-    // ENVIRONMENT FUNCTION FOR SCENARIO 2
+    // ENVIRONMENT FUNCTION FOR SCENARIO 1
 
     public static List<DataStateUpdate> getEnvironmentUpdates_1(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
@@ -724,7 +725,7 @@ public class TwoLanesTwoCars {
                     if (state.get(dist)>state.get(safety_gap)){
                         double token = rg.nextDouble();
                         if (token >= 0.50){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                         } else {
                             if (token >= 0.20) {
                                 other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
@@ -736,7 +737,7 @@ public class TwoLanesTwoCars {
                         if (state.get(my_position)==1){
                             other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                         } else {
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                         }
                     }
                 }
@@ -745,7 +746,7 @@ public class TwoLanesTwoCars {
                 if (state.get(dist)>state.get(safety_gap)){
                     double token = rg.nextDouble();
                     if (token >= 0.50){
-                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                     } else {
                         if (token >= 0.20) {
                             other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
@@ -757,14 +758,19 @@ public class TwoLanesTwoCars {
                     if (state.get(my_position)==1) {
                         other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                     } else {
-                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                     }
                 }
             }
         } else {
             other_new_timer = state.get(other_timer)-1;
             other_new_acc = state.get(other_acc);
-            other_new_move = state.get(other_move);
+            if ((state.get(other_y) >= 6 && state.get(other_move)==LANE_LEFT) ||
+                    (state.get(other_y) <= 2 && state.get(other_move)==LANE_RIGHT)) {
+                other_new_move = 0;
+            } else {
+                other_new_move = state.get(other_move);
+            }
         }
         updates.add(new DataStateUpdate(other_acc,other_new_acc));
         updates.add(new DataStateUpdate(other_timer,other_new_timer));
@@ -860,7 +866,7 @@ public class TwoLanesTwoCars {
                 if (state.get(dist)>state.get(safety_gap)){
                     double token = rg.nextDouble();
                     if (token >= 0.50){
-                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                     } else {
                         if (token >= 0.20) {
                             other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
@@ -872,7 +878,7 @@ public class TwoLanesTwoCars {
                     if (state.get(my_position)==1){
                         other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                     } else {
-                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                     }
                 }
             } else {
@@ -880,7 +886,7 @@ public class TwoLanesTwoCars {
                     other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
                     other_new_move = LANE_LEFT;
                 } else {
-                    if (state.get(dist)>state.get(safety_gap)*9/10 && state.get(my_position)==1) {
+                    if (state.get(dist)>state.get(safety_gap)*0.8 && state.get(my_position)==1) {
                         other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
                         other_new_move = LANE_LEFT;
                     } else {
@@ -888,7 +894,7 @@ public class TwoLanesTwoCars {
                         if (state.get(my_position)==1) {
                             other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                         } else {
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                         }
                     }
                 }
@@ -896,7 +902,12 @@ public class TwoLanesTwoCars {
         } else {
             other_new_timer = state.get(other_timer)-1;
             other_new_acc = state.get(other_acc);
-            other_new_move = state.get(other_move);
+            if ((state.get(other_y) >= 6 && state.get(other_move)==LANE_LEFT) ||
+                    (state.get(other_y) <= 2 && state.get(other_move)==LANE_RIGHT)) {
+                other_new_move = 0;
+            } else {
+                other_new_move = state.get(other_move);
+            }
         }
         updates.add(new DataStateUpdate(other_acc,other_new_acc));
         updates.add(new DataStateUpdate(other_timer,other_new_timer));
@@ -987,7 +998,7 @@ public class TwoLanesTwoCars {
 
         if (state.get(other_timer) == 0){
             other_new_timer = RESPONSE_TIME-1;
-            if (state.get(other_lane) ==1){
+            if (state.get(other_lane)==1){
                 if ((state.get(dist)>state.get(safety_gap) || state.get(my_position)==-1)){
                 //updates.add(new DataStateUpdate(flag,state.get(flag)+1));
                 other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
@@ -995,8 +1006,8 @@ public class TwoLanesTwoCars {
                 } else {
                     if (state.get(dist)>state.get(safety_gap)){
                         double token = rg.nextDouble();
-                        if (token >= 0.50){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        if (token >= 0.60){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                             other_new_move = 0.0;
                         } else {
                             if (token >= 0.20) {
@@ -1016,31 +1027,31 @@ public class TwoLanesTwoCars {
                         if (state.get(my_position)==1){
                             other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                         } else {
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                         }
                     }
                 }
             } else {
                 if (state.get(dist)>state.get(safety_gap)){
                         double token = rg.nextDouble();
-                        if (token >= 0.50){
-                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                        if (token >= 0.45){
+                            other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                             other_new_move = 0.0;
                         } else {
                             if (token >= 0.20) {
+                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
+                                other_new_move = 0.0;
+                            } else {
                                 other_new_acc = rg.nextDouble() * (2 * IDLE_OFFSET) - IDLE_OFFSET;
                                 if (state.get(other_move)!=LANE_RIGHT){
                                     other_new_move = LANE_LEFT;
                                 } else {
                                     other_new_move = 0.0;
                                 }
-                            } else {
-                                other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
-                                other_new_move = 0.0;
                             }
                         }
                 } else {
-                        if (state.get(dist)>state.get(safety_gap)*9/10 && state.get(my_position)==1) {
+                        if (state.get(dist)>state.get(safety_gap)*0.8 && state.get(my_position)==1 && state.get(my_lane)==0) {
                             other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
                             other_new_move = LANE_LEFT;
                         } else {
@@ -1048,7 +1059,7 @@ public class TwoLanesTwoCars {
                             if (state.get(my_position)==1) {
                                 other_new_acc = - (rg.nextDouble() * (MAX_BRAKE - MIN_BRAKE) + MIN_BRAKE);
                             } else {
-                                other_new_acc = MAX_ACCELERATION - rg.nextDouble() * 2*FAST_OFFSET;
+                                other_new_acc = MAX_ACCELERATION - rg.nextDouble() * FAST_OFFSET;
                             }
                         }
                 }
@@ -1056,7 +1067,12 @@ public class TwoLanesTwoCars {
         } else {
             other_new_timer = state.get(other_timer)-1;
             other_new_acc = state.get(other_acc);
-            other_new_move = state.get(other_move);
+            if ((state.get(other_y) >= 6 && state.get(other_move)==LANE_LEFT) ||
+                    (state.get(other_y) <= 2 && state.get(other_move)==LANE_RIGHT)) {
+                other_new_move = 0;
+            } else {
+                other_new_move = state.get(other_move);
+            }
         }
         updates.add(new DataStateUpdate(other_acc,other_new_acc));
         updates.add(new DataStateUpdate(other_timer,other_new_timer));
@@ -1108,12 +1124,12 @@ public class TwoLanesTwoCars {
     }
 
     private static Perturbation get_reckless_driver(){
-        return new AfterPerturbation(5,new IterativePerturbation(20,new AtomicPerturbation(2,TwoLanesTwoCars::reckless_driver)));
+        return new AfterPerturbation(5,new IterativePerturbation(50,new AtomicPerturbation(2,TwoLanesTwoCars::reckless_driver)));
     }
 
     private static DataState reckless_driver(RandomGenerator rg, DataState state){
         List<DataStateUpdate> updates = new LinkedList<>();
-        if(state.get(dist) > state.get(safety_gap)/RESPONSE_TIME) {
+        if(state.get(dist) > state.get(safety_gap)*0.25) {
             double token = rg.nextDouble();
             double other_new_move;
             if (token > 0.4) {
@@ -1156,8 +1172,10 @@ public class TwoLanesTwoCars {
                 updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
                 //updates.add(new DataStateUpdate(other_timer,RESPONSE_TIME-1));
             } else {
-                updates.add(new DataStateUpdate(dist,state.get(dist)-rg.nextDouble()*DIST_OFFSET));
+                updates.add(new DataStateUpdate(dist,state.get(dist)+rg.nextDouble()*DIST_OFFSET));
             }
+        } else {
+            updates.add(new DataStateUpdate(dist,state.get(dist)+rg.nextDouble()*DIST_OFFSET));
         }
         return state.apply(updates);
     }
