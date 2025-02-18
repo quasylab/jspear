@@ -67,12 +67,12 @@ public class SingleLaneTwoCars {
     private static final double IDLE_DELTA = 1;
 
     // INITIAL VALUES
-    private static final double INIT_SPEED_V1 = 0;
+    private static final double INIT_SPEED_V1 = 15;
     private static final double INIT_DISTANCE_V1_V2 = 100;
     private static final double INIT_ACCEL_V1 = 0;
 
-    private static final double INIT_SPEED_V2 = 0;
-    private static final double INIT_ACCEL_V2 = 1;
+    private static final double INIT_SPEED_V2 = 15;
+    private static final double INIT_ACCEL_V2 = 5;
 
     // PERTURBATION PARAMETERS
     private static final int STARTING_STEP = 4;
@@ -82,7 +82,7 @@ public class SingleLaneTwoCars {
     private static final double BRAKE_CHECK_CHANCE = 0.8;
 
     // ROBUSTNESS FORMULAE PARAMETERS
-    private static final double ETA_CRASH = 0.3; // Maximum acceptable risk of collision
+    private static final double ETA_CRASH = 0.05; // Maximum acceptable risk of collision
     private static final double ETA_SAFETY_GAP_VIOLATION = 0.2; // Maximum acceptable risk of violating safety gap
 
     // ENVIRONMENT VARIABLE INDEXES
@@ -267,7 +267,8 @@ public class SingleLaneTwoCars {
         double new_s_speed_V1 = Math.min(Math.max(0,state.get(s_speed_V1) + new_accel_V1), MAX_SPEED);
         updates.add(new DataStateUpdate(s_speed_V1, new_s_speed_V1));
 
-        double new_accel_V2 = INIT_ACCEL_V2;
+        //double off = rg.nextDouble()*MAX_ACCEL_OFFSET;
+        double new_accel_V2 =  rg.nextDouble()*MAX_ACCELERATION;
         updates.add(new DataStateUpdate(accel_V2, new_accel_V2));
         double travel_V2 = state.get(accel_V2)/2 + state.get(s_speed_V2);
         double new_s_speed_V2 = Math.min(Math.max(0,state.get(s_speed_V2) + state.get(accel_V2)),MAX_SPEED);
