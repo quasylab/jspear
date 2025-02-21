@@ -121,7 +121,7 @@ controllerCaseStatment:
 ;
 
 controllerExpression:
-    aiState = ID                                                      # controllerExpressionReference
+    state = ID                                                      # controllerExpressionReference
     | left= controllerExpression '||' right=controllerExpression    # controllerExpressionParallel
 ;
 

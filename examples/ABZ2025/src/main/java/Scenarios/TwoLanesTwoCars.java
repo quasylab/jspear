@@ -53,12 +53,12 @@ import java.util.*;
  */
 public class TwoLanesTwoCars {
 
-    private static final int SCENARIO = 3; // Set this parameter to 1,2,3 to choose between the three possible scenarios described in the paper
+    private static final int SCENARIO = 1; // Set this parameter to 1,2,3 to choose between the three possible scenarios described in the paper
 
     // VEHICLE DIMENSIONS
     private static final double VEHICLE_LENGTH = 5;
     private static final double VEHICLE_WIDTH = 2;
-    private static final double RESPONSE_TIME = 2;
+    private static final double TIMER = 2;
 
     // VARIABLE BOUNDS
     private static final double MAX_SPEED = 40;
@@ -67,7 +67,7 @@ public class TwoLanesTwoCars {
     private static final double MAX_BRAKE = 5;
     private static final double MIN_BRAKE = 3;
     private static final double SLOW_OFFSET = 2;
-    private static final double IDLE_OFFSET = 0.5;
+    private static final double IDLE_OFFSET = 0.4;
     private static final double DIST_OFFSET = VEHICLE_LENGTH*VEHICLE_WIDTH;
     private static final int H = 300;
 
@@ -112,8 +112,6 @@ public class TwoLanesTwoCars {
     private static final int safety_gap = 17;
     private static final int crash = 18;
 
-    //private static final int flag = 19;
-
     private static final int NUMBER_OF_VARIABLES = 19;
 
     // POSSIBLE CONTROLLER ACTIONS
@@ -124,7 +122,6 @@ public class TwoLanesTwoCars {
     private static final double LANE_LEFT = 1;
 
     public TwoLanesTwoCars() throws IOException{
-
         try {
             int EVOLUTION_SEQUENCE_SIZE = 100;
             int PERTURBATION_SIZE = 100;
@@ -150,44 +147,18 @@ public class TwoLanesTwoCars {
             L.add("my_y");
             L.add("other_x");
             L.add("other_y");
-            //L.add("my_move");
-            //L.add("other_move");
-            //L.add("intention");
-            //L.add("my_acc");
-            //L.add("my_speed");
-            //L.add("other_acc");
-            //L.add("other_speed");
-            //L.add("my_position");
-            //L.add("my_timer");
-            //L.add("other_timer");
             L.add("dist");
-            L.add("safety_gap");
-            //L.add("my_lane");
-            //L.add("other_lane");
+            L.add("RSS_gap");
             L.add("crash");
-
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds -> ds.get(my_x));
             F.add(ds -> ds.get(my_y));
             F.add(ds -> ds.get(other_x));
             F.add(ds -> ds.get(other_y));
-            //F.add(ds -> ds.get(my_move));
-            //F.add(ds -> ds.get(other_move));
-            //F.add(ds->ds.get(intention));
-            //F.add(ds->ds.get(my_acc));
-            //F.add(ds->ds.get(my_speed));
-            //F.add(ds -> ds.get(other_acc));
-            //F.add(ds -> ds.get(other_speed));
-            //F.add(ds -> ds.get(my_position));
-            //F.add(ds->ds.get(my_timer));
-            //F.add(ds->ds.get(other_timer));
             F.add(ds -> ds.get(dist));
             F.add(ds -> ds.get(safety_gap));
-            //F.add(ds->ds.get(my_lane));
-            //F.add(ds->ds.get(other_lane));
             F.add(ds->ds.get(crash));
-
 
             System.out.println("Simulation of single nominal behaviour in scenario: "+SCENARIO);
             printLData(rand, L, F, system, H, 1);
@@ -195,9 +166,7 @@ public class TwoLanesTwoCars {
             System.out.println("Simulation of single perturbed behaviour in scenario: "+SCENARIO);
             printLData(rand, L, F, get_reckless_driver(), system, H, 1);
 
-
-
-            // VISUALISATION OF SINGLE TRAJECTORY NOMINAL SYSTEM
+            // trajectories
 
             double[][] my_trajectory = new double[H][2];
             double[][] other_trajectory = new double[H][2];
@@ -261,7 +230,7 @@ public class TwoLanesTwoCars {
 
             EvolutionSequence perturbedSequence = sequence.apply(get_reckless_driver(),0,PERTURBATION_SIZE);
 
-            DistanceExpression crash_speed = new AtomicDistanceExpression(TwoLanesTwoCars::rho_crash_speed,(v1,v2)->Math.abs(v1-v2));
+            DistanceExpression crash_speed = new AtomicDistanceExpression(TwoLanesTwoCars::rho_si,(v1, v2)->Math.abs(v1-v2));
 
             double[][] direct_evaluation_crash_speed = new double[H][1];
 
@@ -289,7 +258,7 @@ public class TwoLanesTwoCars {
             EvolutionSequence step4_pert = sequence.apply(get_reckless_driver(),4,PERTURBATION_SIZE);
             EvolutionSequence step5_pert = sequence.apply(get_reckless_driver(),5,PERTURBATION_SIZE);
 
-            DistanceExpression crash = new AtomicDistanceExpression(TwoLanesTwoCars::rho_crash_probability,(v1,v2)->Math.abs(v1-v2));
+            DistanceExpression crash = new AtomicDistanceExpression(TwoLanesTwoCars::rho_crash,(v1, v2)->Math.abs(v1-v2));
 
             double[][] step1_crash = new double[H][1];
             double[][] step2_crash = new double[H][1];
@@ -376,9 +345,11 @@ public class TwoLanesTwoCars {
 
             // VERIFICATION
 
+            // collision avoidance
+
             double eta = 0.01;
 
-            DistanceExpression max_crash_speed = new MaxIntervalDistanceExpression(
+            DistanceExpression max_si = new MaxIntervalDistanceExpression(
                     crash_speed,
                     0,
                     H
@@ -391,9 +362,9 @@ public class TwoLanesTwoCars {
             );
 
 
-            RobustnessFormula phi_speed_crash = new AtomicRobustnessFormula(
+            RobustnessFormula phi_si = new AtomicRobustnessFormula(
                     get_reckless_driver(),
-                    max_crash_speed,
+                    max_si,
                     RelationOperator.LESS_OR_EQUAL_THAN,
                     eta
             );
@@ -405,9 +376,9 @@ public class TwoLanesTwoCars {
                     eta
             );
 
-            RobustnessFormula phi_combined = new ConjunctionRobustnessFormula(phi_speed_crash, phi_crash);
+            RobustnessFormula phi_combined = new ConjunctionRobustnessFormula(phi_si, phi_crash);
 
-            RobustnessFormula always_crash = new AlwaysRobustnessFormula(
+            RobustnessFormula phi_SAF = new AlwaysRobustnessFormula(
                     phi_combined,
                     0,
                     100
@@ -436,9 +407,70 @@ public class TwoLanesTwoCars {
                 Util.writeToCSV("./three_val_crash_scen3.csv",val_crash);
             }
 
-            Boolean always = new BooleanSemanticsVisitor().eval(always_crash).eval(PERTURBATION_SIZE,0,sequence);
+            Boolean SAF = new BooleanSemanticsVisitor().eval(phi_SAF).eval(PERTURBATION_SIZE,0,sequence);
 
-            System.out.println("Evaluation of robustness in Scenario "+SCENARIO+": "+always);
+            System.out.println("Evaluation of SAF robustness in Scenario "+SCENARIO+" with response time "+ TIMER +": "+SAF);
+
+            // don't go off-road
+
+            DistanceExpression atomic_r2l = new AtomicDistanceExpression(TwoLanesTwoCars::rho_r2l,(v1,v2)->Math.abs(v1-v2));
+
+            RobustnessFormula phi_R2L = new AlwaysRobustnessFormula(
+                    new AtomicRobustnessFormula(
+                            get_reckless_driver(),
+                            atomic_r2l,
+                            RelationOperator.LESS_OR_EQUAL_THAN,
+                            0
+                    ),
+                    0,
+                    300
+            );
+
+            Boolean R2L = new BooleanSemanticsVisitor().eval(phi_R2L).eval(PERTURBATION_SIZE,0,sequence);
+
+            System.out.println("Evaluation of R2L robustness in Scenario "+SCENARIO+" with response time "+ TIMER +": "+R2L);
+
+            // kip it right
+
+            DistanceExpression atomic_kir = new AtomicDistanceExpression(TwoLanesTwoCars::rho_kir,(v1,v2)->Math.abs(v1-v2));
+
+            RobustnessFormula phi_KIR = new AlwaysRobustnessFormula(
+                    new AtomicRobustnessFormula(
+                            get_reckless_driver(),
+                            atomic_kir,
+                            RelationOperator.LESS_OR_EQUAL_THAN,
+                            0
+                    ),
+                    0,
+                    300
+            );
+
+            Boolean KIR = new BooleanSemanticsVisitor().eval(phi_KIR).eval(PERTURBATION_SIZE,0,sequence);
+
+            System.out.println("Evaluation of KIR robustness in Scenario "+SCENARIO+" with response time "+ TIMER +": "+KIR);
+
+            DistanceExpression max_so = new MaxIntervalDistanceExpression(
+                    new AtomicDistanceExpression(TwoLanesTwoCars::rho_so,(v1,v2)->Math.abs(v1-v2)),
+                    0,
+                    300
+            );
+
+            RobustnessFormula phi_SO = new AlwaysRobustnessFormula(
+                    new AtomicRobustnessFormula(
+                            get_reckless_driver(),
+                            max_so,
+                            RelationOperator.LESS_OR_EQUAL_THAN,
+                            0.1
+                    ),
+                    0,
+                    200
+            );
+
+            // safe overtake
+
+            Boolean SO = new BooleanSemanticsVisitor().eval(phi_SO).eval(PERTURBATION_SIZE,0,sequence);
+
+            System.out.println("Evaluation of SO robustness in Scenario "+SCENARIO+" with response time "+ TIMER +": "+SO);
 
         }
         catch (RuntimeException e) {
@@ -446,6 +478,7 @@ public class TwoLanesTwoCars {
         }
     }
 
+    // INITIAL DATA STATE
 
     private DataState getInitialState() {
         Map<Integer, Double> values = new HashMap<>();
@@ -464,7 +497,7 @@ public class TwoLanesTwoCars {
             values.put(other_move, LANE_LEFT);
         }
         values.put(my_timer,0.0);
-        values.put(other_timer,RESPONSE_TIME-1);
+        values.put(other_timer, TIMER -1);
 
         double initialSafetyGap;
         if (SCENARIO ==1) {
@@ -481,9 +514,9 @@ public class TwoLanesTwoCars {
             values.put(dist, Math.sqrt(Math.pow((OTHER_INIT_X_1 - MY_INIT_X_1), 2) + Math.pow((OTHER_INIT_Y_1 - MY_INIT_Y_1), 2)));
 
             if (MY_INIT_X_1 <= OTHER_INIT_X_1) {
-                initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, MY_INIT_SPEED, OTHER_INIT_SPEED);
+                initialSafetyGap = calculateRSSSafetyDistance(MY_INIT_SPEED, OTHER_INIT_SPEED);
             } else {
-                initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, OTHER_INIT_SPEED, MY_INIT_SPEED);
+                initialSafetyGap = calculateRSSSafetyDistance(OTHER_INIT_SPEED, MY_INIT_SPEED);
             }
         } else {
             if (SCENARIO == 2) {
@@ -500,9 +533,9 @@ public class TwoLanesTwoCars {
                 values.put(dist, Math.sqrt(Math.pow((OTHER_INIT_X_2 - MY_INIT_X_2), 2) + Math.pow((OTHER_INIT_Y_2 - MY_INIT_Y_2), 2)));
 
                 if (MY_INIT_X_2 <= OTHER_INIT_X_2) {
-                    initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, MY_INIT_SPEED, OTHER_INIT_SPEED);
+                    initialSafetyGap = calculateRSSSafetyDistance(MY_INIT_SPEED, OTHER_INIT_SPEED);
                 } else {
-                    initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, OTHER_INIT_SPEED, MY_INIT_SPEED);
+                    initialSafetyGap = calculateRSSSafetyDistance(OTHER_INIT_SPEED, MY_INIT_SPEED);
                 }
             } else {
                 values.put(my_x, MY_INIT_X_3);
@@ -518,9 +551,9 @@ public class TwoLanesTwoCars {
                 values.put(dist, Math.sqrt(Math.pow((OTHER_INIT_X_3 - MY_INIT_X_3), 2) + Math.pow((OTHER_INIT_Y_3 - MY_INIT_Y_3), 2)));
 
                 if (MY_INIT_X_3 <= OTHER_INIT_X_3) {
-                    initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, MY_INIT_SPEED, OTHER_INIT_SPEED);
+                    initialSafetyGap = calculateRSSSafetyDistance(MY_INIT_SPEED, OTHER_INIT_SPEED);
                 } else {
-                    initialSafetyGap = calculateRSSSafetyDistance(RESPONSE_TIME, OTHER_INIT_SPEED, MY_INIT_SPEED);
+                    initialSafetyGap = calculateRSSSafetyDistance(OTHER_INIT_SPEED, MY_INIT_SPEED);
                 }
             }
         }
@@ -530,18 +563,13 @@ public class TwoLanesTwoCars {
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
     }
 
-    private static double calculateRSSSafetyDistance(double responseTime, double rearVehicleSpeed, double frontVehicleSpeed){
-        /* Formula of safety distance presented by the Responsibility-Sensitive Safety (RSS) model
-         * Shalev-Shwartz, S., Shammah, S., Shashua, A.: On a formal model of safe and scalable self-driving cars.
-         * CoRR abs/1708.06374 (2017), http://arxiv.org/abs/1708.06374
-         */
-        double d1 = responseTime*rearVehicleSpeed;
-        double d2 = 0.5 * MAX_ACCELERATION*responseTime*responseTime;
-        double d3 = Math.pow((rearVehicleSpeed+responseTime*MAX_ACCELERATION),2)/(2*MIN_BRAKE);
+    // FORMULA FOR RSS GAP
+    private static double calculateRSSSafetyDistance(double rearVehicleSpeed, double frontVehicleSpeed){
+        double d1 = TIMER*rearVehicleSpeed;
+        double d2 = 0.5 * MAX_ACCELERATION*TIMER*TIMER;
+        double d3 = Math.pow((rearVehicleSpeed+TIMER*MAX_ACCELERATION),2)/(2*MIN_BRAKE);
         double d4 = - (frontVehicleSpeed*frontVehicleSpeed)/(2*MAX_BRAKE);
         double rssSafetyDistance = Math.max(d1 + d2 + d3 + d4, 0);
-        // The RSS model assumes vehicles as points, but ABZ case study vehicles have dimensions.
-        // We add the distances from each vehicle's center to its front/rear bumpers.
         return rssSafetyDistance + VEHICLE_LENGTH;
     }
 
@@ -558,7 +586,7 @@ public class TwoLanesTwoCars {
                         Controller.ifThenElse(
                                 (rg, ds) -> ds.get(dist) > ds.get(safety_gap),
                                 Controller.doAction( // LANE_RIGHT
-                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move, LANE_RIGHT), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move, LANE_RIGHT), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Moving_right")
                                 ),
                                 Controller.ifThenElse(
@@ -566,11 +594,11 @@ public class TwoLanesTwoCars {
                                         Controller.ifThenElse(
                                                 DataState.equalsTo(other_lane,1),
                                                 Controller.doAction( // LANE_RIGHT
-                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move,LANE_RIGHT), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move,LANE_RIGHT), new DataStateUpdate(my_timer, TIMER)),
                                                         registry.reference("Moving_right")
                                                 ),
                                                 Controller.doAction( // FASTER
-                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer,RESPONSE_TIME)),
+                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer, TIMER)),
                                                                 registry.reference("Idling")
                                                 )
                                         ),
@@ -579,16 +607,16 @@ public class TwoLanesTwoCars {
                                                 Controller.ifThenElse(
                                                         (rg, ds) -> ds.get(dist) == ds.get(safety_gap),
                                                         Controller.doAction( // IDLE
-                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_timer, TIMER)),
                                                                 registry.reference("Idling")
                                                         ),
                                                         Controller.doAction( // SLOWER
-                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                                (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_timer, TIMER)),
                                                                 registry.reference("Idling")
                                                         )
                                                 ),
                                                 Controller.doAction( // FASTER
-                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer, TIMER)),
                                                         registry.reference("Idling")
                                                 )
                                         )
@@ -597,7 +625,7 @@ public class TwoLanesTwoCars {
                         Controller.ifThenElse(
                                 (rg,ds) -> ds.get(dist) > ds.get(safety_gap) || ds.get(my_position) == 1,
                                 Controller.doAction( // FASTER
-                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Idling")
                                 ),
                                 Controller.ifThenElse(
@@ -605,16 +633,16 @@ public class TwoLanesTwoCars {
                                         Controller.ifThenElse(
                                                 (rg,ds) -> ds.get(dist) > ds.get(safety_gap)*0.8,
                                                 Controller.doAction( // LANE_LEFT
-                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move,LANE_LEFT), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_move,LANE_LEFT), new DataStateUpdate(my_timer, TIMER)),
                                                         registry.reference("Moving_left")
                                                 ),
                                                 Controller.doAction( // SLOWER
-                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                        (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_timer, TIMER)),
                                                         registry.reference("Idling")
                                                 )
                                         ),
                                         Controller.doAction( // IDLE
-                                                (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                                (rg, ds) -> List.of(new DataStateUpdate(intention, IDLE), new DataStateUpdate(my_timer, TIMER)),
                                                 registry.reference("Idling")
                                         )
                                 )
@@ -637,17 +665,17 @@ public class TwoLanesTwoCars {
                         Controller.ifThenElse(
                                 (rg,ds) -> ds.get(my_position) == 1 || ds.get(dist) > ds.get(safety_gap),
                                 Controller.doAction( // FASTER
-                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Idling")
                                 ),
                                 Controller.ifThenElse(
                                         (rg,ds) -> ds.get(dist) == ds.get(safety_gap),
                                         Controller.doAction( // IDLE
-                                        (rg,ds)-> List.of(new DataStateUpdate(intention,IDLE), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer,RESPONSE_TIME)),
+                                        (rg,ds)-> List.of(new DataStateUpdate(intention,IDLE), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Idling")
                                         ),
                                         Controller.doAction(// SLOWER
-                                                (rg,ds)-> List.of(new DataStateUpdate(intention,SLOWER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer,RESPONSE_TIME)),
+                                                (rg,ds)-> List.of(new DataStateUpdate(intention,SLOWER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,0), new DataStateUpdate(my_timer, TIMER)),
                                                 registry.reference("Idling")
                                         )
                                 )
@@ -662,11 +690,11 @@ public class TwoLanesTwoCars {
                         Controller.ifThenElse(
                                 DataState.equalsTo(other_lane, 0).and(DataState.equalsTo(my_position,-1)),
                                 Controller.doAction( // FASTER
-                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,1), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                        (rg, ds) -> List.of(new DataStateUpdate(intention, FASTER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,1), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Idling")
                                 ),
                                 Controller.doAction( // SLOWER
-                                        (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,1), new DataStateUpdate(my_timer, RESPONSE_TIME)),
+                                        (rg, ds) -> List.of(new DataStateUpdate(intention, SLOWER), new DataStateUpdate(my_move,0), new DataStateUpdate(my_lane,1), new DataStateUpdate(my_timer, TIMER)),
                                         registry.reference("Idling")
                                 )
                         )
@@ -696,7 +724,7 @@ public class TwoLanesTwoCars {
 
         double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
         double my_new_x = state.get(my_x) + my_travel_x;
-        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
+        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/ TIMER)*state.get(my_move)));
         double my_new_lane;
         if (my_new_y >= 4){
             my_new_lane = 1;
@@ -715,7 +743,7 @@ public class TwoLanesTwoCars {
         double other_new_move;
 
         if (state.get(other_timer) == 0){
-            other_new_timer = RESPONSE_TIME-1;
+            other_new_timer = TIMER -1;
             if (state.get(other_lane) ==1){
                 if (state.get(dist)>state.get(safety_gap) || state.get(my_position)==-1){
                     other_new_acc = rg.nextDouble() * (2*IDLE_OFFSET) - IDLE_OFFSET;
@@ -780,7 +808,7 @@ public class TwoLanesTwoCars {
 
         double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
         double other_new_x = state.get(other_x) + other_travel_x;
-        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/ TIMER)*other_new_move));
         double other_new_lane;
         if (other_new_y >= 4){
             other_new_lane = 1;
@@ -801,9 +829,9 @@ public class TwoLanesTwoCars {
 
         double new_safety_gap;
         if(my_new_position==-1){
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,my_new_speed,other_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(my_new_speed,other_new_speed);
         } else {
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,my_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(other_new_speed,my_new_speed);
         }
         updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
 
@@ -841,7 +869,7 @@ public class TwoLanesTwoCars {
 
         double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
         double my_new_x = state.get(my_x) + my_travel_x;
-        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
+        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/ TIMER)*state.get(my_move)));
         double my_new_lane;
         if (my_new_y >= 4){
             my_new_lane = 1;
@@ -860,7 +888,7 @@ public class TwoLanesTwoCars {
         double other_new_move;
 
         if (state.get(other_timer) == 0){
-            other_new_timer = RESPONSE_TIME-1;
+            other_new_timer = TIMER -1;
             if (state.get(other_lane) ==1){
                 other_new_move = 0.0;
                 if (state.get(dist)>state.get(safety_gap)){
@@ -917,7 +945,7 @@ public class TwoLanesTwoCars {
 
         double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
         double other_new_x = state.get(other_x) + other_travel_x;
-        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/ TIMER)*other_new_move));
         double other_new_lane;
         if (other_new_y >= 4){
             other_new_lane = 1;
@@ -938,9 +966,9 @@ public class TwoLanesTwoCars {
 
         double new_safety_gap;
         if(my_new_position==-1){
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,my_new_speed,other_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(my_new_speed,other_new_speed);
         } else {
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,my_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(other_new_speed,my_new_speed);
         }
         updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
 
@@ -978,7 +1006,7 @@ public class TwoLanesTwoCars {
 
         double my_travel_x = (my_new_acc/2 + state.get(my_speed))*Math.cos((Math.PI/9)*state.get(my_move));
         double my_new_x = state.get(my_x) + my_travel_x;
-        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/RESPONSE_TIME)*state.get(my_move)));
+        double my_new_y = Math.min(8,Math.max(0,state.get(my_y) + (4/ TIMER)*state.get(my_move)));
         double my_new_lane;
         if (my_new_y >= 4){
             my_new_lane = 1;
@@ -997,7 +1025,7 @@ public class TwoLanesTwoCars {
         double other_new_move;
 
         if (state.get(other_timer) == 0){
-            other_new_timer = RESPONSE_TIME-1;
+            other_new_timer = TIMER -1;
             if (state.get(other_lane)==1){
                 if ((state.get(dist)>state.get(safety_gap) || state.get(my_position)==-1)){
                 //updates.add(new DataStateUpdate(flag,state.get(flag)+1));
@@ -1082,7 +1110,7 @@ public class TwoLanesTwoCars {
 
         double other_travel_x = (other_new_acc/2 + other_new_speed)*Math.cos((Math.PI/9)*other_new_move);
         double other_new_x = state.get(other_x) + other_travel_x;
-        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/RESPONSE_TIME)*other_new_move));
+        double other_new_y = Math.min(8,Math.max(0,state.get(other_y) + (4/ TIMER)*other_new_move));
         double other_new_lane;
         if (other_new_y >= 4){
             other_new_lane = 1;
@@ -1103,9 +1131,9 @@ public class TwoLanesTwoCars {
 
         double new_safety_gap;
         if(my_new_position==-1){
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,my_new_speed,other_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(my_new_speed,other_new_speed);
         } else {
-            new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,my_new_speed);
+            new_safety_gap = calculateRSSSafetyDistance(other_new_speed,my_new_speed);
         }
         updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
 
@@ -1122,6 +1150,8 @@ public class TwoLanesTwoCars {
 
         return updates;
     }
+
+    // RECKLESS DRIVER PERTURBATION
 
     private static Perturbation get_reckless_driver(){
         return new AfterPerturbation(5,new IterativePerturbation(50,new AtomicPerturbation(2,TwoLanesTwoCars::reckless_driver)));
@@ -1165,9 +1195,9 @@ public class TwoLanesTwoCars {
                 updates.add(new DataStateUpdate(my_position,my_new_position));
                 double new_safety_gap;
                 if(my_new_position==-1){
-                    new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,state.get(my_speed),other_new_speed);
+                    new_safety_gap = calculateRSSSafetyDistance(state.get(my_speed),other_new_speed);
                 } else {
-                    new_safety_gap = calculateRSSSafetyDistance(RESPONSE_TIME,other_new_speed,state.get(my_speed));
+                    new_safety_gap = calculateRSSSafetyDistance(other_new_speed,state.get(my_speed));
                 }
                 updates.add(new DataStateUpdate(safety_gap, new_safety_gap));
                 //updates.add(new DataStateUpdate(other_timer,RESPONSE_TIME-1));
@@ -1180,7 +1210,9 @@ public class TwoLanesTwoCars {
         return state.apply(updates);
     }
 
-    public static double rho_crash_speed(DataState state) {
+    // PENALTY FUNCTIONS
+
+    public static double rho_si(DataState state) {
         if (state.get(crash) == 1){
             return 0.5*Math.sqrt(state.get(my_speed)*state.get(my_speed) + state.get(other_speed)*state.get(other_speed) - 2*state.get(my_speed)*state.get(other_speed))/MAX_SPEED;
         }
@@ -1189,11 +1221,35 @@ public class TwoLanesTwoCars {
         }
     }
 
-    public static double rho_crash_probability(DataState state) {
+    public static double rho_crash(DataState state) {
         return state.get(crash);
     }
 
+    public static double rho_r2l(DataState state){
+        if (state.get(my_lane)>6 || state.get(my_lane)<2){
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 
+    public static double rho_so(DataState state){
+        if (state.get(my_timer)== TIMER -1 && state.get(my_move)==1 && state.get(other_y)%2==0 && state.get(other_lane)==1){
+            return Math.max(0,(state.get(safety_gap)-state.get(dist))/state.get(safety_gap));
+        } else {
+            return 0;
+        }
+    }
+    public static double rho_kir(DataState state){
+        if (state.get(my_timer)== TIMER -1 && state.get(my_move)==1 && state.get(other_y)%2==0 && state.get(other_lane)==1){
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+
+    // Utility methods
 
     private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
         System.out.println(label);

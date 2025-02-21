@@ -68,7 +68,7 @@ public class AiState {
         return this.getCarState().length();
     }
 
-    protected int getCrashes() {
+    public int getCrashes() {
         return state.getInt("crashes");
     }
 
