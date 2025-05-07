@@ -82,46 +82,15 @@ public class Smart_hospital {
     public static void main(String[] args) throws IOException {
         try {
 
-            RandomGenerator rand = new DefaultRandomGenerator();
-
             /*
-
             INITIAL CONFIGURATION
-
-            In order to perform simulations/analysis/model checking for a particular system, we need to create its
-            initial configuration, which is an instance of <code>ControlledSystem>/code>
-
             */
 
-
-            /*
-            One of the elements of a system configuration is the "controller", i.e. an instance of <code>Controller</code>.
-            Here, the controller named <code>robot</code> is returned by static method <code>getController</code>.
-             */
+            RandomGenerator rand = new DefaultRandomGenerator();
 
             Controller robot = getController();
 
-            /*
-            Another element of a system configuration is the "data state", i.e. an instance of <code>DataState</code>,
-            which models the state of the data.
-            Instances of <code>DataState</code> contains values for variables representing the quantities of the
-            system.
-            The initial state <code>state</code> is constructed by exploiting the static method
-            <code>getInitialState</code>, which will be defined later and assigns the initial value to all
-            variables defined above.
-             */
-
             DataState state = getInitialState();
-
-            /*
-            We define the <code>ControlledSystem</code> <code>system</code>, which will be the starting configuration from
-            which the evolution sequence will be constructed.
-            This configuration consists of 3 elements:
-            - the controller <code>robot</code> defined above,
-            - a random function over data states, which implements interface <code>DataStateFunction</code> and maps a
-            random generator <code>rg</code> and a data state <code>ds</code> to a new data state,
-            - the data state <code>state</state> defined above.
-             */
 
             ControlledSystem system = new ControlledSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
 
@@ -131,41 +100,17 @@ public class Smart_hospital {
 
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
 
-            /*
-            Below we define a feedback, namely an element of <code>Feedback</code>.
-            In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
-            evolution step its body is applied, where the body is the <code>AtomicFeedback</code>
-            <code>feedbackSpeedAndDir</code>, which is derived by the evolution sequence <code>sequence</code> and applies
-            at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
-             */
             Feedback feedbackDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Smart_hospital::feedbackDirFunction));
 
-            /*
-            Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
-            is a version of <code>system</code> equipped by feedback <code>feedbackSpeedAndDir</code>.
-             */
             FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackDir);
 
             EvolutionSequence feedbackSequence = new EvolutionSequence(rand, rg -> feedbackSystem, sizeNominalSequence);
-
-            PerturbedSystem perturbedSystem = new PerturbedSystem(system, ChangeDir(0.0,300));
-            PerturbedSystem perturbedFeedbackSystem = new PerturbedSystem(feedbackSystem, ChangeDir(0.0,300));
 
             /*
             USING THE SIMULATOR
              */
 
             int N = 300;
-
-            ArrayList<String> L = new ArrayList<>();
-            L.add("x");
-            L.add("y");
-            L.add("theta");
-            L.add("speed");
-            L.add("waypoint");
-            L.add("diff_angle");
-            L.add("got_med");
-            L.add("failure");
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(x));
@@ -177,13 +122,6 @@ public class Smart_hospital {
             F.add(ds->(int)ds.get(get_medicine));
             F.add(ds->(int)ds.get(fail));
 
-            //printDataPar(rand,L,F,system,perturbedSystem,perturbedFeedbackSystem,N,sizeNominalSequence*scale);
-
-
-            /*
-            PROPERTIES
-            */
-
             double[][] position_system = new double[N][2];
             double[][] position_perturbed_feedback_system = new double[N][2];
 
@@ -192,7 +130,6 @@ public class Smart_hospital {
 
             double[][] fail_system = new double[N][1];
             double[][] fail_perturbed_feedback_system = new double[N][1];
-
 
             double[][] data = SystemState.sample(rand, F, system, N, sizeNominalSequence);
             for (int i = 0; i<N; i++){
@@ -333,52 +270,12 @@ public class Smart_hospital {
             Util.writeToCSV("./get_med_feedback_30.csv",get_med_perturbed_feedback_system);
             Util.writeToCSV("./fail_feedback_30.csv",fail_perturbed_feedback_system);
 
-
             /*
-
-            ESTIMATING BEHAVIORAL DISTANCES BETWEEN EVOLUTION SEQUENCES
-
-            Now we generate again three sequences:
-            1. a nominal sequence
-            2. a perturbed sequence for the system without feedback
-            3. a perturbed sequence for the system equipped with feedback.
-            Then, we quantify the differences between the evolutions sequences #1 and #2, which corresponds
-            to quantifying the behavioural distance between the nominal and the perturbed system without feedback,
-            and between the evolutions sequences #1 and #3, which corresponds to quantifying the behavioural distance
-            between the nominal and the perturbed system equipped with feedback.
-            The differences are expressed with respect to the points in the plane reached by the systems.
-             */
-
-            /*
-            The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
-            obtained from the evolution sequence <code>sequence</code> by applying a perturbation, where:
-            - as above, the perturbation is  <code>perturbation</code>
-            - the perturbation is applied at step 0
-            - the sample sets of configurations in <code>perturbedSequence</code> have a cardinality which corresponds to that
-            of <code>sequence</code> multiplied by <code>scale>/code>
-            Moreover, we create also the evolution sequence <code>perturbedFeedbackSequence</code>, which is
-            obtained from the evolution sequence <code>feedbackSequence</code> by applying <code>perturbation</code>
+            EVALUATIONS OF DISTANCES
             */
 
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(ChangeDir(1.25,5),0,scale);
 
-            /*
-            The following lines of code first defines an atomic distance between evolution sequences, named
-            <code>distP2P</code>. Then, these distances are evaluated, time-point by time-point, over
-            evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
-            and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
-            Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
-            Technically, <code>distP2P</code> is an atomic distance in the sense that it is an instance of
-            class <code>AtomicDistanceExpression</code>, which consists in a data state expression,
-            which maps a data state to a number, or rank, and a binary operator. As already discussed, in this case,
-            given two configurations, the data state expression allow us to get the normalised distance from the origin,
-            which is a value in [0,1], from both configuration, and the binary operator gives us their difference, which,
-            intuitively, is the difference between the two configurations with respect to their position.
-            This distance will be lifted to two sample sets of configurations, those obtained from the compared
-            sequences at the same step.
-             */
-
-            /*
             AtomicDistanceExpression distSpeed = new AtomicDistanceExpression(ds->(ds.get(p_speed)/MAX_SPEED), (v1, v2) -> Math.abs(v2-v1));
 
             double[][] direct_evaluation_atomic_distSpeed = new double[N][1];
@@ -398,7 +295,7 @@ public class Smart_hospital {
             }
 
             Util.writeToCSV("./atomic_theta_nf.csv",direct_evaluation_atomic_distTheta);
-            */
+
 
             DistanceExpression flagDist = new AtomicDistanceExpression(ds->(ds.get(flag)), (v1, v2) -> Math.abs(v2-v1));
             DistanceExpression flag_left = new ThresholdDistanceExpression(flagDist,RelationOperator.LESS_THAN,1.0);
