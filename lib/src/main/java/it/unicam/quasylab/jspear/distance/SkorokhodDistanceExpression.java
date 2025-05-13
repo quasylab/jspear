@@ -1,0 +1,295 @@
+/*
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
+ *
+ *                Copyright (C) 2023.
+ *
+ * See the NOTICE file distributed with this work for additional information
+ * regarding copyright ownership.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *             http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package it.unicam.quasylab.jspear.distance;
+
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.ToDoubleFunction;
+
+import org.apache.commons.math3.random.RandomGenerator;
+
+import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.ds.DataStateExpression;
+
+/**
+ * Class AtomicDistanceExpression implements the atomic distance expression
+ * evaluating the Wasserstein lifting of the ground distance, obtained from
+ * the given penalty function over data states and the given distance over reals,
+ * between the distributions reached at a given time step
+ * by two given evolution sequences.
+ */
+public final class SkorokhodDistanceExpression implements DistanceExpression {
+
+    private final DataStateExpression rho;
+    private final ToDoubleFunction<Integer> rho2; // used to normalize time in addition to distance
+    private final DoubleBinaryOperator distance;
+    
+    private int previousOffset;
+    private final int scanWidth;
+    private final boolean direction;
+    private final int rightBound;
+    private final int scanFromStep;
+
+    private final int[] usedOffsets;
+
+    /**
+     * Generates the atomic distance expression that will use the given penalty function
+     * and the given distance over reals for the evaluation of the ground distance on data states.
+     * @param rho the penalty function
+     * @param distance ground distance on reals.
+     * @param rho2 for normalizing time
+     * @param leftBound step from which to start evaluating: returns normal distance before.
+     * @param rightBound number of steps to be simulated
+     * @param direction direction to allow time jumps toward, true = forward, false = backward.
+     * @param maxJumpSize maximum number of steps to jump in one evaluation / Number of adjacent steps to be considered
+     */
+    public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, ToDoubleFunction<Integer> rho2, int leftBound, int rightBound, boolean direction, int maxJumpSize) {
+        this.rho = rho;
+        this.rho2 = rho2;
+        this.distance = distance;
+        this.direction = direction;
+        this.previousOffset = 0;
+        this.scanWidth = maxJumpSize;
+        this.rightBound = rightBound;
+        this.scanFromStep = leftBound;
+
+        this.usedOffsets = new int[rightBound];
+    }
+
+    /**
+     * Generates the atomic distance expression that will use the given penalty function
+     * and the given distance over reals for the evaluation of the ground distance on data states.
+     * All steps in sequence will be considered by setting scanWidth to Integer.MAX_VALUE
+     * @param rho the penalty function
+     * @param distance ground distance on reals.
+     * @param rho2 for normalizing time
+     * @param leftBound step from which to start evaluating: returns normal distance before.
+     * @param rightBound number of steps to be simulated
+     * @param direction direction to allow time jumps toward, true = forward, false = backward.
+     */
+    public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, ToDoubleFunction<Integer> rho2, int leftBound, int rightBound, boolean direction) {
+        this.rho = rho;
+        this.rho2 = rho2;
+        this.distance = distance;
+        this.direction = direction;
+        this.previousOffset = 0;
+        this.scanWidth = Integer.MAX_VALUE;
+        this.rightBound = rightBound;
+        this.scanFromStep = leftBound;
+
+        this.usedOffsets = new int[rightBound];
+    }
+
+    /**
+     * Evaluates the Wasserstein lifting of this ground distance
+     * between the distributions reached at a given time step
+     * by two given evolution sequences.
+     *
+     * @param step time step at which the atomic is evaluated
+     * @param seq1 an evolution sequence
+     * @param seq2 an evolution sequence
+     * @return the Wasserstein lifting of the ground distance over data states obtained
+     * from <code>this.distance</code> and <code>this.rho</code> between
+     * the distribution reached by <code>seq1</code> and that reached by <code>seq2</code>
+     * at time <code>step</code>.
+     */
+    @Override
+    public double compute(int step, EvolutionSequence seq1, EvolutionSequence seq2) {
+
+        int offset = FindOffset(step, seq1, seq2);
+
+        // for analysis
+        this.usedOffsets[step] = offset;
+        int seq2Step = step + offset;
+
+        return seq1.get(step).distance(this.rho, this.distance, seq2.get(seq2Step));
+    }
+
+    @Override
+    public double[] evalCI(RandomGenerator rg, int step, EvolutionSequence seq1, EvolutionSequence seq2, int m, double z){
+        throw new UnsupportedOperationException("Not implemented yet");
+
+        // double[] res = new double[3];
+        // res[0] = seq1.get(step).distance(this.rho, this.distance, seq2.get(step));
+        // ToDoubleBiFunction<double[],double[]> bootDist = (a,b)->IntStream.range(0, a.length).parallel()
+        //         .mapToDouble(i -> IntStream.range(0, b.length/a.length).mapToDouble(j -> distance.applyAsDouble(a[i],b[i * (b.length/a.length) + j])).sum())
+        //         .sum() / b.length;
+        // double[] partial = seq1.get(step).bootstrapDistance(rg, this.rho, bootDist, seq2.get(step),m,z);
+        // res[1] = partial[0];
+        // res[2] = partial[1];
+        // return res;
+    }
+
+    /**
+     * Finds offset from which sequence 2 should be sampled
+     * 
+     * @param step time step at which the atomic is evaluated
+     * @param seq1 an evolution sequence
+     * @param seq2 the other evolution sequence
+     * @return the offset at which sequence 2 should be sampled when measuring wasserstein distance between both sequences.
+     */
+    private int FindOffset(int step, EvolutionSequence seq1, EvolutionSequence seq2)
+    {
+        // TODO: Improve logic
+        // TODO: Test negative direction
+
+        // Do not consider an offset
+        if (step < this.scanFromStep)
+        {
+            return 0;
+        }
+
+        // if this is one of the last steps in the simulation.
+        if (step + previousOffset >= rightBound)
+        {
+            // TODO: Discuss correct behavior. For now, just compare to closest valid state. Returning UNKNOWN could be better.
+
+            return (rightBound - 1) - step; // return offset so that sampled step is the last one in sequence 2.
+        }
+
+        // if not forward direction, simply swap the sequences.
+        if (!direction) 
+        {
+            EvolutionSequence temp = seq1;
+            seq1 = seq2;
+            seq2 = temp;
+        }
+
+        int offset = previousOffset;
+        double shortestNorm = Double.MAX_VALUE;
+
+        // disallow picking an offset earlier than a previously used offset, so start sampling from the previous offset.
+        // then, find shortest normalized distance, taking both wasserstein distance, and time distance into account.
+        // stop scanning when all seq2 steps were analyzed, or scanWidth is reached.
+        for (int i = previousOffset; i <= previousOffset + this.scanWidth; i++) {
+
+            System.out.print(i); // for debug
+            System.out.print(" ");
+
+            double sampledDistance = seq1.get(step).distance(this.rho, this.distance, seq2.get(step + i));
+            double timeOffset = rho2.applyAsDouble(i);
+
+            // pythagoras ^ 2 :
+            double normSquared = sampledDistance * sampledDistance + timeOffset * timeOffset;
+            
+            // if a shorter norm is found, save according data.
+            if (normSquared < shortestNorm)
+            {
+                shortestNorm = normSquared;
+                offset = i;
+            }
+
+            // if next iteration would be out of range of rightbound, scanning is finished, stop for-loop.
+            // Or, if the found norm is 0, a shorter one will not be found. Stop for-loop
+            if (normSquared == 0 || step + i >= rightBound)
+            {
+                i = Integer.MAX_VALUE - 1;
+            }
+        }
+
+        previousOffset = offset;
+        return offset;
+    }
+
+
+    
+    /**
+     * Finds offset from which sequence 2 should be sampled, using skorokhod metric
+     * 
+     * @param step time step at which the atomic is evaluated
+     * @param seq1 an evolution sequence
+     * @param seq2 the other evolution sequence
+     * @return the offset at which sequence 2 should be sampled when measuring wasserstein distance between both sequences using skorokhod metric.
+     */
+    private int FindLambdaSkorokhod(int step, EvolutionSequence seq1, EvolutionSequence seq2)
+    {
+        // TODO: Improve logic
+        // TODO: Test negative direction
+
+        // Do not consider an offset
+        if (step < this.scanFromStep)
+        {
+            return 0;
+        }
+
+        // if this is one of the last steps in the simulation.
+        if (step + previousOffset >= rightBound)
+        {
+            // TODO: Discuss correct behavior. For now, just compare to closest valid state. Returning UNKNOWN could be better.
+
+            return (rightBound - 1) - step; // return offset so that sampled step is the last one in sequence 2.
+        }
+
+        // if not forward direction, simply swap the sequences.
+        if (!direction) 
+        {
+            EvolutionSequence temp = seq1;
+            seq1 = seq2;
+            seq2 = temp;
+        }
+
+        int offset = previousOffset;
+        double smallestmu = Double.MAX_VALUE;
+
+        // disallow picking an offset earlier than a previously used offset, so start sampling from the previous offset.
+        // then, find shortest normalized distance, taking both wasserstein distance, and time distance into account.
+        // stop scanning when all seq2 steps were analyzed, or scanWidth is reached.
+        for (int i = previousOffset; i <= previousOffset + this.scanWidth; i++) {
+
+            System.out.print(i); // for debug
+            System.out.print(" ");
+
+            double sampledDistance = seq1.get(step).distance(this.rho, this.distance, seq2.get(step + i));
+            double timeOffset = rho2.applyAsDouble(i);
+
+            // skorokhod logic:
+            double mu = Math.max(timeOffset, sampledDistance);
+            
+            // if a shorter norm is found, save according data.
+            if (mu < smallestmu)
+            {
+                smallestmu = mu;
+                offset = i;
+            }
+
+            // if next iteration would be out of range of rightbound, scanning is finished, stop for-loop.
+            // Or, if the found norm is 0, a shorter one will not be found. Stop for-loop
+            if (mu == 0 || step + i >= rightBound)
+            {
+                i = Integer.MAX_VALUE - 1;
+            }
+        }
+
+        previousOffset = offset;
+        return offset;
+    }
+
+    /**
+     * Returns array containing the used offset per step that was evaluated
+     * 
+     * @return array containing the used offset per step that was evaluated
+     */
+    public int[] GetOffsetArray()
+    {
+        return this.usedOffsets;
+    }
+}
