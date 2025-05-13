@@ -29,3 +29,9 @@ build
 
 # Ignore csv file
 *.csv
+
+#Ignore pdf file
+*.pdf
+
+# Ignore binaries
+bin

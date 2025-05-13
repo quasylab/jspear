@@ -47,7 +47,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     private final int scanWidth;
     private final boolean direction;
     private final int rightBound;
-    private final int scanFromStep;
+    private final int leftBound;
 
     private final int[] usedOffsets;
 
@@ -57,7 +57,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      * @param rho the penalty function
      * @param distance ground distance on reals.
      * @param rho2 for normalizing time
-     * @param leftBound step from which to start evaluating: returns normal distance before.
+     * @param leftBound step from which to start evaluating: returns regular wasserstein distance before.
      * @param rightBound number of steps to be simulated
      * @param direction direction to allow time jumps toward, true = forward, false = backward.
      * @param maxJumpSize maximum number of steps to jump in one evaluation / Number of adjacent steps to be considered
@@ -70,7 +70,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         this.previousOffset = 0;
         this.scanWidth = maxJumpSize;
         this.rightBound = rightBound;
-        this.scanFromStep = leftBound;
+        this.leftBound = leftBound;
 
         this.usedOffsets = new int[rightBound];
     }
@@ -94,7 +94,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         this.previousOffset = 0;
         this.scanWidth = Integer.MAX_VALUE;
         this.rightBound = rightBound;
-        this.scanFromStep = leftBound;
+        this.leftBound = leftBound;
 
         this.usedOffsets = new int[rightBound];
     }
@@ -115,7 +115,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     @Override
     public double compute(int step, EvolutionSequence seq1, EvolutionSequence seq2) {
 
-        int offset = FindOffset(step, seq1, seq2);
+        int offset = FindLambdaSkorokhod(step, seq1, seq2);
 
         // for analysis
         this.usedOffsets[step] = offset;
@@ -139,78 +139,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         // return res;
     }
 
-    /**
-     * Finds offset from which sequence 2 should be sampled
-     * 
-     * @param step time step at which the atomic is evaluated
-     * @param seq1 an evolution sequence
-     * @param seq2 the other evolution sequence
-     * @return the offset at which sequence 2 should be sampled when measuring wasserstein distance between both sequences.
-     */
-    private int FindOffset(int step, EvolutionSequence seq1, EvolutionSequence seq2)
-    {
-        // TODO: Improve logic
-        // TODO: Test negative direction
-
-        // Do not consider an offset
-        if (step < this.scanFromStep)
-        {
-            return 0;
-        }
-
-        // if this is one of the last steps in the simulation.
-        if (step + previousOffset >= rightBound)
-        {
-            // TODO: Discuss correct behavior. For now, just compare to closest valid state. Returning UNKNOWN could be better.
-
-            return (rightBound - 1) - step; // return offset so that sampled step is the last one in sequence 2.
-        }
-
-        // if not forward direction, simply swap the sequences.
-        if (!direction) 
-        {
-            EvolutionSequence temp = seq1;
-            seq1 = seq2;
-            seq2 = temp;
-        }
-
-        int offset = previousOffset;
-        double shortestNorm = Double.MAX_VALUE;
-
-        // disallow picking an offset earlier than a previously used offset, so start sampling from the previous offset.
-        // then, find shortest normalized distance, taking both wasserstein distance, and time distance into account.
-        // stop scanning when all seq2 steps were analyzed, or scanWidth is reached.
-        for (int i = previousOffset; i <= previousOffset + this.scanWidth; i++) {
-
-            System.out.print(i); // for debug
-            System.out.print(" ");
-
-            double sampledDistance = seq1.get(step).distance(this.rho, this.distance, seq2.get(step + i));
-            double timeOffset = rho2.applyAsDouble(i);
-
-            // pythagoras ^ 2 :
-            double normSquared = sampledDistance * sampledDistance + timeOffset * timeOffset;
-            
-            // if a shorter norm is found, save according data.
-            if (normSquared < shortestNorm)
-            {
-                shortestNorm = normSquared;
-                offset = i;
-            }
-
-            // if next iteration would be out of range of rightbound, scanning is finished, stop for-loop.
-            // Or, if the found norm is 0, a shorter one will not be found. Stop for-loop
-            if (normSquared == 0 || step + i >= rightBound)
-            {
-                i = Integer.MAX_VALUE - 1;
-            }
-        }
-
-        previousOffset = offset;
-        return offset;
-    }
-
-
     
     /**
      * Finds offset from which sequence 2 should be sampled, using skorokhod metric
@@ -218,15 +146,15 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      * @param step time step at which the atomic is evaluated
      * @param seq1 an evolution sequence
      * @param seq2 the other evolution sequence
+     * @param offsetEvaluationCount number of offsets/lambda functions that will be evaluated/considered
      * @return the offset at which sequence 2 should be sampled when measuring wasserstein distance between both sequences using skorokhod metric.
      */
-    private int FindLambdaSkorokhod(int step, EvolutionSequence seq1, EvolutionSequence seq2)
+    private int FindLambdaSkorokhod(int step, EvolutionSequence seq1, EvolutionSequence seq2, int offsetEvaluationCount)
     {
-        // TODO: Improve logic
         // TODO: Test negative direction
 
-        // Do not consider an offset
-        if (step < this.scanFromStep)
+        // Do not consider an offset before leftBound
+        if (step < this.leftBound)
         {
             return 0;
         }
@@ -235,7 +163,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         if (step + previousOffset >= rightBound)
         {
             // TODO: Discuss correct behavior. For now, just compare to closest valid state. Returning UNKNOWN could be better.
-
             return (rightBound - 1) - step; // return offset so that sampled step is the last one in sequence 2.
         }
 
@@ -253,18 +180,21 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         // disallow picking an offset earlier than a previously used offset, so start sampling from the previous offset.
         // then, find shortest normalized distance, taking both wasserstein distance, and time distance into account.
         // stop scanning when all seq2 steps were analyzed, or scanWidth is reached.
-        for (int i = previousOffset; i <= previousOffset + this.scanWidth; i++) {
+        for (int i = previousOffset; i <= previousOffset + offsetEvaluationCount; i++) {
 
             System.out.print(i); // for debug
             System.out.print(" ");
 
-            double sampledDistance = seq1.get(step).distance(this.rho, this.distance, seq2.get(step + i));
-            double timeOffset = rho2.applyAsDouble(i);
+            // find Max distance over time given this lambda/offset:
+            double sampledDistance = EvaluateLambda(step, this.scanWidth ,seq1, seq2, i);
 
+            // calculate time offset that was used:
+            double timeOffset = rho2.applyAsDouble(i);
+            
             // skorokhod logic:
             double mu = Math.max(timeOffset, sampledDistance);
             
-            // if a shorter norm is found, save according data.
+            // if a shorter mu is found, save according data.
             if (mu < smallestmu)
             {
                 smallestmu = mu;
@@ -272,7 +202,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
             }
 
             // if next iteration would be out of range of rightbound, scanning is finished, stop for-loop.
-            // Or, if the found norm is 0, a shorter one will not be found. Stop for-loop
+            // Or, if the found mu is 0, a shorter one will not be found. Stop for-loop
             if (mu == 0 || step + i >= rightBound)
             {
                 i = Integer.MAX_VALUE - 1;
@@ -281,6 +211,47 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
         previousOffset = offset;
         return offset;
+    }
+
+
+    /**
+     * Iterates over the sequences, finding the largest distance between the sequences, given a time translation lambda/offset
+     * 
+     * @param step time step from which the sequences will be evaluated
+     * @param range number of steps that will be evaluated
+     * @param seq1 an evolution sequence
+     * @param seq2 the other evolution sequence
+     * @param offset the time translation lambda as a constant offset
+     * @return the largest found wasserstein distance between the sequences, given the time translation lambda
+     */
+    private double EvaluateLambda(int step, int range, EvolutionSequence seq1, EvolutionSequence seq2, int offset)
+    {
+        // TODO: handle negative direction
+
+        double maxDistance = 0;
+
+        for (int i = 0; i < range; i++) 
+        {
+            // skip this evaluation if it would sample a negative step
+            if (step + i + offset < 0) {
+                continue;
+            }
+
+            double sampledDistance = seq1.get(step + i).distance(this.rho, this.distance, seq2.get(step + i + offset));
+
+            if (sampledDistance > maxDistance)
+            {
+                maxDistance = sampledDistance;
+            }
+
+            // if next iteration would be out of range of rightbound, scanning is finished, stop for-loop.
+            if (step + i + offset >= rightBound)
+            {
+                i = Integer.MAX_VALUE - 1;
+            }
+        }
+
+        return maxDistance;
     }
 
     /**
