@@ -33,7 +33,7 @@ import java.util.function.BiPredicate;
  */
 public class GenerativeChoiceController implements Controller{
 
-    private final int p;
+    private final double p;
     private final Controller leftController;
     private final Controller rightController;
 
@@ -46,7 +46,7 @@ public class GenerativeChoiceController implements Controller{
      * @param leftController the controller chosen with probability <code>p</code>.
      * @param rightController the controller chosen with probability <code>1-p</code>.
      */
-    public GenerativeChoiceController(int p, Controller leftController, Controller rightController) {
+    public GenerativeChoiceController(double p, Controller leftController, Controller rightController) {
         if (p<0 || p>1) {
             throw new IllegalArgumentException("Illegal probability weight!");
         }
