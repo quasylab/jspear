@@ -48,15 +48,26 @@ public final class UntilDisTLFormula implements DisTLFormula {
 
     @Override
     public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        if (parallel) {
-            return IntStream.range(from+step, to+step).sequential().mapToDouble(
-                    i -> Math.min(rightFormula.eval(sampleSize, i, sequence, true),
-                            IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, true)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
-        } else {
-            return IntStream.range(from+step, to+step).sequential().mapToDouble(
-                    i -> Math.min(rightFormula.eval(sampleSize, i, sequence, false),
-                            IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, false)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
+        //if (parallel) {
+        //    return IntStream.range(from+step, to+step).sequential().mapToDouble(
+        //            i -> Math.min(rightFormula.eval(sampleSize, i, sequence, true),
+        //                    IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, true)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
+        //} else {
+        //    return IntStream.range(from+step, to+step).sequential().mapToDouble(
+        //            i -> Math.min(rightFormula.eval(sampleSize, i, sequence, false),
+        //                    IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, false)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
+        //}
+        double res = 1.0;
+        for(int i = from+step; i<to+step; i++) {
+            double resR = rightFormula.eval(sampleSize, i, sequence);
+            double resL = leftFormula.eval(sampleSize,i,sequence);
+            for(int j =from+step; j<i; j++) {
+                double partialL = leftFormula.eval(sampleSize,j,sequence);
+                resL = Math.max(resL, partialL);
+            }
+            res = Math.min(res,Math.max(resR,resL));
         }
+        return res;
     }
 
     @Override
