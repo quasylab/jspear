@@ -41,22 +41,14 @@ import it.unicam.quasylab.jspear.TimedSystem;
 import it.unicam.quasylab.jspear.Util;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.NilController;
-import it.unicam.quasylab.jspear.distance.DistanceExpression;
-import it.unicam.quasylab.jspear.distance.MaxDistanceExpression;
-import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
 import it.unicam.quasylab.jspear.distance.SkorokhodDistanceExpression;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
-import it.unicam.quasylab.jspear.ds.RelationOperator;
 import it.unicam.quasylab.jspear.perturbation.AtomicPerturbation;
 import it.unicam.quasylab.jspear.perturbation.IterativePerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import it.unicam.quasylab.jspear.perturbation.SequentialPerturbation;
-import it.unicam.quasylab.jspear.robtl.AtomicRobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.ThreeValuedSemanticsVisitor;
-import it.unicam.quasylab.jspear.robtl.TruthValues;
 
 public class Main {
 
@@ -397,7 +389,7 @@ public class Main {
             and sample sets by class <code>SampleSet</code>.
             In this context, <code>size</code> is the cardinality of those sample sets.
             */
-            int size = 100;
+            int size = 10; // was 100
 
             /*
             The evolution sequence <code>sequence></code> created by the following instruction consists in a sequence of
@@ -477,7 +469,6 @@ public class Main {
             obtained at that time unit.
 
             */
-            System.out.println("UPDATED VERSION v2");
             System.out.println("");
             System.out.println("Simulation of nominal and perturbed system");
             System.out.println("");
@@ -495,7 +486,7 @@ public class Main {
 
 
 
-            // double[][] plot_z1 = new double[N][1];   BLIEP
+            double[][] plot_z1 = new double[N][1];
             // double[][] plot_z2 = new double[N][1];
             // double[][] plot_z3 = new double[N][1];
 
@@ -503,17 +494,17 @@ public class Main {
             // double[][] plot_x2 = new double[N][1];
             // double[][] plot_x3 = new double[N][1];
 
-            // double[][] data = SystemState.sample(rand, F, system, N, size);
-            // for (int i = 0; i<N; i++){
-            //     plot_z1[i][0] = data[i][3];
+            double[][] data = SystemState.sample(rand, F, system, N, size);
+            for (int i = 0; i<N; i++){
+                plot_z1[i][0] = data[i][3];
             //     plot_z2[i][0] = data[i][7];
             //     plot_z3[i][0] = data[i][11];
 
             //     plot_x1[i][0] = data[i][2];
             //     plot_x2[i][0] = data[i][6];
             //     plot_x3[i][0] = data[i][10];
-            // }
-            // Util.writeToCSV("./new_plotZ1.csv",plot_z1);
+            }
+            Util.writeToCSV("./new_plotZ1.csv",plot_z1);
             // Util.writeToCSV("./new_plotZ2.csv",plot_z2);
             // Util.writeToCSV("./new_plotZ3.csv",plot_z3);
 
@@ -521,7 +512,7 @@ public class Main {
             // Util.writeToCSV("./new_plotX2.csv",plot_x2);
             // Util.writeToCSV("./new_plotX3.csv",plot_x3);
 
-            // double[][] plot_pz1 = new double[N][1];
+            double[][] plot_pz1 = new double[N][1];
             // double[][] plot_pz2 = new double[N][1];
             // double[][] plot_pz3 = new double[N][1];
 
@@ -529,17 +520,17 @@ public class Main {
             // double[][] plot_px2 = new double[N][1];
             // double[][] plot_px3 = new double[N][1];
 
-            // double[][] pdata = SystemState.sample(rand, F, itZ1TranslRate(x,w1,w2,replica), system, N, size);
-            // for (int i = 0; i<N; i++){
-            //     plot_pz1[i][0] = pdata[i][3];
+            double[][] pdata = SystemState.sample(rand, F, itZ1TranslRate(x,w1,w2,replica), system, N, size);
+            for (int i = 0; i<N; i++){
+                plot_pz1[i][0] = pdata[i][3];
             //     plot_pz2[i][0] = pdata[i][7];
             //     plot_pz3[i][0] = pdata[i][11];
 
             //     plot_px1[i][0] = pdata[i][2];
             //     plot_px2[i][0] = pdata[i][6];
             //     plot_px3[i][0] = pdata[i][10];
-            // }
-            // Util.writeToCSV("./new_pplotZ1.csv",plot_pz1);
+            }
+            Util.writeToCSV("./new_pplotZ1.csv",plot_pz1);
             // Util.writeToCSV("./new_pplotZ2.csv",plot_pz2);
             // Util.writeToCSV("./new_pplotZ3.csv",plot_pz3);
 
@@ -612,8 +603,8 @@ public class Main {
             double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, w1+w2, 2*N, itZ1TranslRate(x,w1,w2,replica));
 
             double normalisationZ1 = Math.max(dataMax[Z1],dataMax_p[Z1])*1.1;
-            double normalisationZ2 = Math.max(dataMax[Z2],dataMax_p[Z1])*1.1;
-            double normalisationZ3 = Math.max(dataMax[Z3],dataMax_p[Z2])*1.1;
+            // double normalisationZ2 = Math.max(dataMax[Z2],dataMax_p[Z1])*1.1;
+            // double normalisationZ3 = Math.max(dataMax[Z3],dataMax_p[Z2])*1.1;
 
 
 
@@ -649,26 +640,27 @@ public class Main {
             int leftBound = 0;
             int rightBound = 1000;
             int normalisationTime = 1000;
-            int maxJumpSize = 100; // mainly to speed up simulation
+            int scanWidth = 300;
             int scanFromStep = 0;
+            int offsetEvaluationCount = 50;
             
             SkorokhodDistanceExpression skorokhodZ1 = new SkorokhodDistanceExpression(ds->ds.get(Z1)/normalisationZ1,
                                                                                         (v1, v2) -> Math.abs(v2-v1),
                                                                                         offset->((double)offset/(double)normalisationTime),
                                                                                         scanFromStep,
-                                                                                        rightBound,true,maxJumpSize);
+                                                                                        rightBound,false, offsetEvaluationCount, scanWidth);
 
-            SkorokhodDistanceExpression skorokhodZ2 = new SkorokhodDistanceExpression(ds->ds.get(Z2)/normalisationZ2,
-                                                                                        (v1, v2) -> Math.abs(v2-v1),
-                                                                                        offset->((double)offset/(double)normalisationTime),
-                                                                                        scanFromStep,
-                                                                                        rightBound,true,maxJumpSize);
+            // SkorokhodDistanceExpression skorokhodZ2 = new SkorokhodDistanceExpression(ds->ds.get(Z2)/normalisationZ2,
+            //                                                                             (v1, v2) -> Math.abs(v2-v1),
+            //                                                                             offset->((double)offset/(double)normalisationTime),
+            //                                                                             scanFromStep,
+            //                                                                             rightBound,true, offsetEvaluationCount, scanWidth);
 
-            SkorokhodDistanceExpression skorokhodZ3 = new SkorokhodDistanceExpression(ds->ds.get(Z3)/normalisationZ3,
-                                                                                        (v1, v2) -> Math.abs(v2-v1),
-                                                                                        offset->((double)offset/(double)normalisationTime),
-                                                                                        scanFromStep,
-                                                                                        rightBound,true,maxJumpSize);
+            // SkorokhodDistanceExpression skorokhodZ3 = new SkorokhodDistanceExpression(ds->ds.get(Z3)/normalisationZ3,
+            //                                                                             (v1, v2) -> Math.abs(v2-v1),
+            //                                                                             offset->((double)offset/(double)normalisationTime),
+            //                                                                             scanFromStep,
+            //                                                                             rightBound,true, offsetEvaluationCount, scanWidth);
 
             // AtomicDistanceExpression atomicZ1 = new AtomicDistanceExpression(ds->ds.get(Z1)/normalisationZ1,(v1, v2) -> Math.abs(v2-v1));
 
@@ -677,8 +669,8 @@ public class Main {
             // AtomicDistanceExpression atomicZ3 = new AtomicDistanceExpression(ds->ds.get(Z3)/normalisationZ3,(v1, v2) -> Math.abs(v2-v1));
 
             double[][] direct_evaluation_atomic_Z1 = new double[rightBound-leftBound][1];
-            double[][] direct_evaluation_atomic_Z2 = new double[rightBound-leftBound][1];
-            double[][] direct_evaluation_atomic_Z3 = new double[rightBound-leftBound][1];
+            // double[][] direct_evaluation_atomic_Z2 = new double[rightBound-leftBound][1];
+            // double[][] direct_evaluation_atomic_Z3 = new double[rightBound-leftBound][1];
 
             for (int i = 0; i<(rightBound-leftBound); i++){
                 System.out.println("\n step: "+ i);
@@ -727,43 +719,43 @@ public class Main {
             int leftRBound=800;
             int rightRBound=900;
 
-            DistanceExpression dMax = new MaxDistanceExpression(
-                skorokhodZ1,
-                    new MaxDistanceExpression(skorokhodZ2, skorokhodZ3)
-            );
+            // DistanceExpression dMax = new MaxDistanceExpression(
+            //     skorokhodZ1,
+            //         new MaxDistanceExpression(skorokhodZ2, skorokhodZ3)
+            // );
 
             // DistanceExpression dMax = new MaxDistanceExpression(
             //         atomicZ1,
             //         new MaxDistanceExpression(atomicZ2, atomicZ3)
             // );
 
-            DistanceExpression intdMax = new MaxIntervalDistanceExpression(
-                    dMax,
-                    leftRBound,
-                    rightRBound
-            );
+            // DistanceExpression intdMax = new MaxIntervalDistanceExpression(
+            //         dMax,
+            //         leftRBound,
+            //         rightRBound
+            // );
 
 
 
-            double[][] robEvaluations = new double[20][2];
-            RobustnessFormula robustF;
-            int index=0;
-            double thresholdB = 1;
-            for(int i = 0; i < 20 ; i++){
-                double threshold = thresholdB + i;
-                threshold = threshold / 100;
-                robustF = new AtomicRobustnessFormula(itZ1TranslRate(x,w1,w2,replica),
-                        intdMax,
-                        RelationOperator.LESS_OR_EQUAL_THAN,
-                        threshold);
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(robustF).eval(5, 0, sequence);
-                System.out.println(" ");
-                System.out.println("\n robustF evaluation at " + threshold + ": " + value);
-                robEvaluations[index][1]=value.valueOf();
-                robEvaluations[index][0]=threshold;
-                index++;
-            }
-            Util.writeToCSV("./evalR.csv",robEvaluations);
+            // double[][] robEvaluations = new double[20][2];
+            // RobustnessFormula robustF;
+            // int index=0;
+            // double thresholdB = 1;
+            // for(int i = 0; i < 20 ; i++){
+            //     double threshold = thresholdB + i;
+            //     threshold = threshold / 100;
+            //     robustF = new AtomicRobustnessFormula(itZ1TranslRate(x,w1,w2,replica),
+            //             intdMax,
+            //             RelationOperator.LESS_OR_EQUAL_THAN,
+            //             threshold);
+            //     TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(robustF).eval(5, 0, sequence);
+            //     System.out.println(" ");
+            //     System.out.println("\n robustF evaluation at " + threshold + ": " + value);
+            //     robEvaluations[index][1]=value.valueOf();
+            //     robEvaluations[index][0]=threshold;
+            //     index++;
+            // }
+            // Util.writeToCSV("./evalR.csv",robEvaluations);
 
 
 

@@ -44,10 +44,11 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     private final DoubleBinaryOperator distance;
     
     private int previousOffset;
-    private final int scanWidth;
     private final boolean direction;
     private final int rightBound;
     private final int leftBound;
+    private final int offsetEvaluationCount;
+    private final int scanWidth;
 
     private final int[] usedOffsets;
 
@@ -60,41 +61,19 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      * @param leftBound step from which to start evaluating: returns regular wasserstein distance before.
      * @param rightBound number of steps to be simulated
      * @param direction direction to allow time jumps toward, true = forward, false = backward.
-     * @param maxJumpSize maximum number of steps to jump in one evaluation / Number of adjacent steps to be considered
+     * @param offsetEvaluationCount number of offsets/lambda functions that will be evaluated/considered
+     * @param scanWidth number of steps that will be evaluated when determining max distance according to lambda function
      */
-    public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, ToDoubleFunction<Integer> rho2, int leftBound, int rightBound, boolean direction, int maxJumpSize) {
+    public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, ToDoubleFunction<Integer> rho2, int leftBound, int rightBound, boolean direction, int offsetEvaluationCount, int scanWidth) {
         this.rho = rho;
         this.rho2 = rho2;
         this.distance = distance;
         this.direction = direction;
         this.previousOffset = 0;
-        this.scanWidth = maxJumpSize;
+        this.offsetEvaluationCount = offsetEvaluationCount;
         this.rightBound = rightBound;
         this.leftBound = leftBound;
-
-        this.usedOffsets = new int[rightBound];
-    }
-
-    /**
-     * Generates the atomic distance expression that will use the given penalty function
-     * and the given distance over reals for the evaluation of the ground distance on data states.
-     * All steps in sequence will be considered by setting scanWidth to Integer.MAX_VALUE
-     * @param rho the penalty function
-     * @param distance ground distance on reals.
-     * @param rho2 for normalizing time
-     * @param leftBound step from which to start evaluating: returns normal distance before.
-     * @param rightBound number of steps to be simulated
-     * @param direction direction to allow time jumps toward, true = forward, false = backward.
-     */
-    public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, ToDoubleFunction<Integer> rho2, int leftBound, int rightBound, boolean direction) {
-        this.rho = rho;
-        this.rho2 = rho2;
-        this.distance = distance;
-        this.direction = direction;
-        this.previousOffset = 0;
-        this.scanWidth = Integer.MAX_VALUE;
-        this.rightBound = rightBound;
-        this.leftBound = leftBound;
+        this.scanWidth = scanWidth;
 
         this.usedOffsets = new int[rightBound];
     }
@@ -115,13 +94,27 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     @Override
     public double compute(int step, EvolutionSequence seq1, EvolutionSequence seq2) {
 
-        int offset = FindLambdaSkorokhod(step, seq1, seq2);
+        double _distance;
+
+        int _offset = FindLambdaSkorokhod(step, seq1, seq2, this.offsetEvaluationCount);
+
+        int offset1 = 0;
+        int offset2 = 0;
+        if (direction)  // if forward direction, iterate over seq2, else seq 1
+        {
+            offset2 = _offset;
+        }
+        else
+        {
+            offset1 = _offset;
+        }
+
+        _distance = seq1.get(step + offset1).distance(this.rho, this.distance, seq2.get(step + offset2));
 
         // for analysis
-        this.usedOffsets[step] = offset;
-        int seq2Step = step + offset;
+        this.usedOffsets[step] = _offset;
 
-        return seq1.get(step).distance(this.rho, this.distance, seq2.get(seq2Step));
+        return _distance;
     }
 
     @Override
@@ -166,14 +159,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
             return (rightBound - 1) - step; // return offset so that sampled step is the last one in sequence 2.
         }
 
-        // if not forward direction, simply swap the sequences.
-        if (!direction) 
-        {
-            EvolutionSequence temp = seq1;
-            seq1 = seq2;
-            seq2 = temp;
-        }
-
         int offset = previousOffset;
         double smallestmu = Double.MAX_VALUE;
 
@@ -187,6 +172,8 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
             // find Max distance over time given this lambda/offset:
             double sampledDistance = EvaluateLambda(step, this.scanWidth ,seq1, seq2, i);
+
+            System.out.print("max: " + sampledDistance + " | ");    // also debug, best to comment this out to avoid painful eyes
 
             // calculate time offset that was used:
             double timeOffset = rho2.applyAsDouble(i);
@@ -228,6 +215,17 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     {
         // TODO: handle negative direction
 
+        int offset1 = 0;
+        int offset2 = 0;
+        if (direction)  // if forward direction, iterate over seq2, else seq 1
+        {
+            offset2 = offset;
+        }
+        else
+        {
+            offset1 = offset;
+        }
+
         double maxDistance = 0;
 
         for (int i = 0; i < range; i++) 
@@ -237,7 +235,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
                 continue;
             }
 
-            double sampledDistance = seq1.get(step + i).distance(this.rho, this.distance, seq2.get(step + i + offset));
+            double sampledDistance = seq1.get(step + i + offset1).distance(this.rho, this.distance, seq2.get(step + i + offset2));
 
             if (sampledDistance > maxDistance)
             {
@@ -250,7 +248,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
                 i = Integer.MAX_VALUE - 1;
             }
         }
-
         return maxDistance;
     }
 

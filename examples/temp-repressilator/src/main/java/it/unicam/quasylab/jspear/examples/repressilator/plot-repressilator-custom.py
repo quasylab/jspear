@@ -44,45 +44,77 @@ from statistics import mean
 import csv
 
 Protein_Z1 = numpy.genfromtxt("new_plotZ1.csv", names=["prot_Z1"])
-Protein_Z2 = numpy.genfromtxt("new_plotZ2.csv", names=["prot_Z2"])
-Protein_Z3 = numpy.genfromtxt("new_plotZ3.csv", names=["prot_Z3"])
+# # Protein_Z2 = numpy.genfromtxt("new_plotZ2.csv", names=["prot_Z2"])
+# # Protein_Z3 = numpy.genfromtxt("new_plotZ3.csv", names=["prot_Z3"])
 
 pProtein_Z1 = numpy.genfromtxt("new_pplotZ1.csv", names=["pprot_Z1"])
-pProtein_Z2 = numpy.genfromtxt("new_pplotZ2.csv", names=["pprot_Z2"])
-pProtein_Z3 = numpy.genfromtxt("new_pplotZ3.csv", names=["pprot_Z3"])
+# # pProtein_Z2 = numpy.genfromtxt("new_pplotZ2.csv", names=["pprot_Z2"])
+# # pProtein_Z3 = numpy.genfromtxt("new_pplotZ3.csv", names=["pprot_Z3"])
 
-mRNA_X1 = numpy.genfromtxt("new_plotX1.csv", names=["mRNA_X1"])
-mRNA_X2 = numpy.genfromtxt("new_plotX2.csv", names=["mRNA_X2"])
-mRNA_X3 = numpy.genfromtxt("new_plotX3.csv", names=["mRNA_X3"])
+# # mRNA_X1 = numpy.genfromtxt("new_plotX1.csv", names=["mRNA_X1"])
+# # mRNA_X2 = numpy.genfromtxt("new_plotX2.csv", names=["mRNA_X2"])
+# # mRNA_X3 = numpy.genfromtxt("new_plotX3.csv", names=["mRNA_X3"])
 
+# fix, ax = plt.subplots()
+# ax.plot(range(0,1000),Protein_Z1['prot_Z1'],label="Z1")
+# # ax.plot(range(0,1000),Protein_Z2['prot_Z2'],label="Z2")
+# # ax.plot(range(0,1000),Protein_Z3['prot_Z3'],label="Z3")
+# plt.title("Evolution of average protein numbers")
+# legend = ax.legend()
+# plt.savefig("new_protein.png")
+# plt.show()
+
+# fix, ax = plt.subplots()
+# ax.plot(range(0,1000),pProtein_Z1['pprot_Z1'],label="Z1")
+# # ax.plot(range(0,1000),pProtein_Z2['pprot_Z2'],label="Z2")
+# # ax.plot(range(0,1000),pProtein_Z3['pprot_Z3'],label="Z3")
+# plt.title("Evolution of average protein numbers - perturbed case")
+# legend = ax.legend()
+# plt.savefig("new_protein.png")
+# plt.show()
+
+# fix, ax = plt.subplots()
+# # ax.plot(range(0,1000),mRNA_X1['mRNA_X1'],label="X1")
+# # ax.plot(range(0,1000),mRNA_X2['mRNA_X2'],label="X2")
+# # ax.plot(range(0,1000),mRNA_X3['mRNA_X3'],label="X3")
+# legendx = ax.legend()
+# plt.title("Evolution of average mRNA levels")
+# plt.savefig("new_mRNA.png")
+# plt.show()
+
+distance_Z1 = numpy.genfromtxt("atomic_Z1.csv", names=["d_prot_Z1"])
 fix, ax = plt.subplots()
-ax.plot(range(0,1000),Protein_Z1['prot_Z1'],label="Z1")
-ax.plot(range(0,1000),Protein_Z2['prot_Z2'],label="Z2")
-ax.plot(range(0,1000),Protein_Z3['prot_Z3'],label="Z3")
-plt.title("Evolution of average protein numbers")
-legend = ax.legend()
-plt.savefig("new_protein.png")
+line1, = ax.plot(range(0,1000),distance_Z1['d_prot_Z1'],'b:',label="dist_Z1")
+ax.set_ylabel('dist_Z1', color='b')
+
+offset_Z1 = numpy.genfromtxt("offsets_Z1.csv", names=["offsets_prot_Z1"])
+plt.title("Evolution of atomic distances")\
+# create y-axis that shares x-axis
+
+ax2 = ax.twinx()
+line4, = ax2.plot(range(0,1000),offset_Z1["offsets_prot_Z1"],'r--',label="offset_Z1")
+ax2.set_ylabel('offsets_Z1', color='r')
+
+lines = [line1, line4]
+labels = [line.get_label() for line in lines]
+ax.legend(lines, labels, loc='upper right')
+
+plt.savefig("distance.png")
 plt.show()
 
-fix, ax = plt.subplots()
-ax.plot(range(0,1000),pProtein_Z1['pprot_Z1'],label="Z1")
-ax.plot(range(0,1000),pProtein_Z2['pprot_Z2'],label="Z2")
-ax.plot(range(0,1000),pProtein_Z3['pprot_Z3'],label="Z3")
-plt.title("Evolution of average protein numbers - perturbed case")
-legend = ax.legend()
-plt.savefig("new_protein.png")
-plt.show()
 
 fix, ax = plt.subplots()
-ax.plot(range(0,1000),mRNA_X1['mRNA_X1'],label="X1")
-ax.plot(range(0,1000),mRNA_X2['mRNA_X2'],label="X2")
-ax.plot(range(0,1000),mRNA_X3['mRNA_X3'],label="X3")
-legendx = ax.legend()
-plt.title("Evolution of average mRNA levels")
-plt.savefig("new_mRNA.png")
+line2, = ax.plot(range(0,1000),pProtein_Z1['pprot_Z1'],'g', label="pert_Z1")
+line3, = ax.plot(range(0,1000),Protein_Z1['prot_Z1'],'orange',label="nom_Z1")
+ax.set_ylabel('nom/pert_Z1', color='g')
+
+lines = [line2, line3]
+labels = [line.get_label() for line in lines]
+ax.legend(lines, labels, loc='upper right')
+
+plt.title("Z1 nominal and perturbed")
+plt.savefig("states.png")
 plt.show()
-
-
 
 
 distance_Z1 = numpy.genfromtxt("atomic_Z1.csv", names=["d_prot_Z1"])
@@ -108,8 +140,10 @@ lines = [line1, line2, line3, line4]
 labels = [line.get_label() for line in lines]
 ax.legend(lines, labels, loc='upper right')
 
-plt.savefig("new_distance.png")
+plt.savefig("full.png")
 plt.show()
+
+
 
 
 Threshold = []
