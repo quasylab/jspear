@@ -22,11 +22,12 @@
 
 package it.unicam.quasylab.jspear.distance;
 
-import it.unicam.quasylab.jspear.DefaultRandomGenerator;
-import org.apache.commons.math3.random.RandomGenerator;
-import it.unicam.quasylab.jspear.EvolutionSequence;
-
 import java.util.stream.IntStream;
+
+import org.apache.commons.math3.random.RandomGenerator;
+
+import it.unicam.quasylab.jspear.DefaultRandomGenerator;
+import it.unicam.quasylab.jspear.EvolutionSequence;
 
 public sealed interface DistanceExpression permits
         AtomicDistanceExpression,
@@ -39,7 +40,8 @@ public sealed interface DistanceExpression permits
         MinIntervalDistanceExpression,
         UntilDistanceExpression,
         ThresholdDistanceExpression,
-        SkorokhodDistanceExpression {
+        SkorokhodDistanceExpression,
+        draft {
 
     /**
      * Returns the evaluation of the distance expression among the two sequences at the given step.

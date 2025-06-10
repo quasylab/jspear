@@ -41,7 +41,9 @@ import it.unicam.quasylab.jspear.TimedSystem;
 import it.unicam.quasylab.jspear.Util;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.NilController;
+import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.distance.SkorokhodDistanceExpression;
+import it.unicam.quasylab.jspear.distance.draft;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
@@ -389,7 +391,7 @@ public class Main {
             and sample sets by class <code>SampleSet</code>.
             In this context, <code>size</code> is the cardinality of those sample sets.
             */
-            int size = 10; // was 100
+            int size = 1; // was 100
 
             /*
             The evolution sequence <code>sequence></code> created by the following instruction consists in a sequence of
@@ -479,88 +481,14 @@ public class Main {
             double x = -3.0; // x positive: higher values for Z1, lower for Z2, higher for Z3
             // x negative: lower values for Z1, higher for Z2, lower for Z3
 
-
             int w1=50;
             int w2=50;
             int replica= 5;
-
-
-
-            double[][] plot_z1 = new double[N][1];
-            // double[][] plot_z2 = new double[N][1];
-            // double[][] plot_z3 = new double[N][1];
-
-            // double[][] plot_x1 = new double[N][1];
-            // double[][] plot_x2 = new double[N][1];
-            // double[][] plot_x3 = new double[N][1];
-
-            double[][] data = SystemState.sample(rand, F, system, N, size);
-            for (int i = 0; i<N; i++){
-                plot_z1[i][0] = data[i][3];
-            //     plot_z2[i][0] = data[i][7];
-            //     plot_z3[i][0] = data[i][11];
-
-            //     plot_x1[i][0] = data[i][2];
-            //     plot_x2[i][0] = data[i][6];
-            //     plot_x3[i][0] = data[i][10];
-            }
-            Util.writeToCSV("./new_plotZ1.csv",plot_z1);
-            // Util.writeToCSV("./new_plotZ2.csv",plot_z2);
-            // Util.writeToCSV("./new_plotZ3.csv",plot_z3);
-
-            // Util.writeToCSV("./new_plotX1.csv",plot_x1);
-            // Util.writeToCSV("./new_plotX2.csv",plot_x2);
-            // Util.writeToCSV("./new_plotX3.csv",plot_x3);
-
-            double[][] plot_pz1 = new double[N][1];
-            // double[][] plot_pz2 = new double[N][1];
-            // double[][] plot_pz3 = new double[N][1];
-
-            // double[][] plot_px1 = new double[N][1];
-            // double[][] plot_px2 = new double[N][1];
-            // double[][] plot_px3 = new double[N][1];
-
-            double[][] pdata = SystemState.sample(rand, F, itZ1TranslRate(x,w1,w2,replica), system, N, size);
-            for (int i = 0; i<N; i++){
-                plot_pz1[i][0] = pdata[i][3];
-            //     plot_pz2[i][0] = pdata[i][7];
-            //     plot_pz3[i][0] = pdata[i][11];
-
-            //     plot_px1[i][0] = pdata[i][2];
-            //     plot_px2[i][0] = pdata[i][6];
-            //     plot_px3[i][0] = pdata[i][10];
-            }
-            Util.writeToCSV("./new_pplotZ1.csv",plot_pz1);
-            // Util.writeToCSV("./new_pplotZ2.csv",plot_pz2);
-            // Util.writeToCSV("./new_pplotZ3.csv",plot_pz3);
-
-            // Util.writeToCSV("./new_pplotX1.csv",plot_px1);
-            // Util.writeToCSV("./new_pplotX2.csv",plot_px2);
-            // Util.writeToCSV("./new_pplotX3.csv",plot_px3);
-
-
-
-
 
             /*
             While in the previous lines of code the average values of variables obtained step-by-step are stored in
             .cvs files, the following portion of code allows us to print them.
             */
-
-
-            System.out.println("");
-            System.out.println("Simulation of nominal system - data average values:");
-            System.out.println("");
-            // printAvgData(rand, L, F, system, N, size, 0, N); BLIEP
-            System.out.println("");
-            System.out.println("Simulation of perturbed system - data average values:");
-            System.out.println("");
-            // printAvgDataPerturbed(rand, L, F, system, N, size, 0, N, itZ1TranslRate(x, w1, w2, replica)); BLIEP
-
-
-
-
-
 
             /*
 
@@ -574,7 +502,6 @@ public class Main {
 
              */
 
-
             /*
             In order to quantify the difference between two evolution sequences w.r.t. Zi, we need to define the
             difference between two configurations w.r.t. Zi: given two configurations with Zi=m and Zi=n, the
@@ -586,8 +513,6 @@ public class Main {
             To this purpose, we generate a nominal and a perturbed evolution sequence of length 2N and collect the
             maximal values that are assumed by the variables in all configurations in all sample sets.
             */
-
-
 
             System.out.println("");
             System.out.println("Estimating behavioural differences between nominal and perturbed system");
@@ -603,10 +528,8 @@ public class Main {
             double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, w1+w2, 2*N, itZ1TranslRate(x,w1,w2,replica));
 
             double normalisationZ1 = Math.max(dataMax[Z1],dataMax_p[Z1])*1.1;
-            // double normalisationZ2 = Math.max(dataMax[Z2],dataMax_p[Z1])*1.1;
-            // double normalisationZ3 = Math.max(dataMax[Z3],dataMax_p[Z2])*1.1;
-
-
+            double normalisationZ2 = Math.max(dataMax[Z2],dataMax_p[Z2])*1.1;
+            double normalisationZ3 = Math.max(dataMax[Z3],dataMax_p[Z3])*1.1;
 
             /*
             The following instruction allows us to create the evolution sequence <code>sequence_p</code>, which is
@@ -617,10 +540,8 @@ public class Main {
             of <code>sequence</code> multiplied by <code>scale>/code>
             */
 
-
             int scale=5;
             EvolutionSequence sequence_p = sequence.apply(itZ1TranslRate(x, w1, w2, replica),0,scale);
-
 
             /*
             The following lines of code first defines three atomic distances between evolution sequences, named
@@ -637,65 +558,140 @@ public class Main {
             <code>sequence_p</code> at the same step.
             */
 
-            int leftBound = 0;
+            int leftBound = 550;
             int rightBound = 1000;
             int normalisationTime = 1000;
-            int scanWidth = 300;
-            int scanFromStep = 0;
-            int offsetEvaluationCount = 50;
+            int scanWidth = 400;
+            int offsetEvaluationCount = 150;
             
             SkorokhodDistanceExpression skorokhodZ1 = new SkorokhodDistanceExpression(ds->ds.get(Z1)/normalisationZ1,
                                                                                         (v1, v2) -> Math.abs(v2-v1),
+                                                                                        (a, b) -> Math.max(a, b),
                                                                                         offset->((double)offset/(double)normalisationTime),
-                                                                                        scanFromStep,
+                                                                                        leftBound,
                                                                                         rightBound,false, offsetEvaluationCount, scanWidth);
 
-            // SkorokhodDistanceExpression skorokhodZ2 = new SkorokhodDistanceExpression(ds->ds.get(Z2)/normalisationZ2,
-            //                                                                             (v1, v2) -> Math.abs(v2-v1),
-            //                                                                             offset->((double)offset/(double)normalisationTime),
-            //                                                                             scanFromStep,
-            //                                                                             rightBound,true, offsetEvaluationCount, scanWidth);
+            SkorokhodDistanceExpression skorokhodZ2 = new SkorokhodDistanceExpression(ds->ds.get(Z2)/normalisationZ2,
+                                                                                        (v1, v2) -> Math.abs(v2-v1),
+                                                                                        (a, b) -> Math.max(a, b),
+                                                                                        offset->((double)offset/(double)normalisationTime),
+                                                                                        leftBound,
+                                                                                        rightBound,false, offsetEvaluationCount, scanWidth);
 
-            // SkorokhodDistanceExpression skorokhodZ3 = new SkorokhodDistanceExpression(ds->ds.get(Z3)/normalisationZ3,
-            //                                                                             (v1, v2) -> Math.abs(v2-v1),
-            //                                                                             offset->((double)offset/(double)normalisationTime),
-            //                                                                             scanFromStep,
-            //                                                                             rightBound,true, offsetEvaluationCount, scanWidth);
+            SkorokhodDistanceExpression skorokhodZ3 = new SkorokhodDistanceExpression(ds->ds.get(Z3)/normalisationZ3,
+                                                                                        (v1, v2) -> Math.abs(v2-v1),
+                                                                                        (a, b) -> Math.max(a, b),
+                                                                                        offset->((double)offset/(double)normalisationTime),
+                                                                                        leftBound,
+                                                                                        rightBound,false, offsetEvaluationCount, scanWidth);
+  
+            draft draft = new draft(ds->ds.get(Z1)/normalisationZ1,
+                                    (v1, v2) -> Math.abs(v2-v1),
+                                    (a, b) -> Math.max(a, b),
+                                    offset->((double)offset/(double)normalisationTime),
+                                    leftBound,
+                                    rightBound, normalisationZ1);
 
-            // AtomicDistanceExpression atomicZ1 = new AtomicDistanceExpression(ds->ds.get(Z1)/normalisationZ1,(v1, v2) -> Math.abs(v2-v1));
+            double skorokhodDistance = draft.computeSkorokhodDistance(normalisationZ1, leftBound, rightBound, sequence, sequence_p, 0.0000001);
 
-            // AtomicDistanceExpression atomicZ2 = new AtomicDistanceExpression(ds->ds.get(Z2)/normalisationZ2,(v1, v2) -> Math.abs(v2-v1));
+            int[] skOffsets = draft.computeOffsetWarpingPath();
 
-            // AtomicDistanceExpression atomicZ3 = new AtomicDistanceExpression(ds->ds.get(Z3)/normalisationZ3,(v1, v2) -> Math.abs(v2-v1));
+            System.out.println("Skorokhod distance --------- " + skorokhodDistance);
 
-            double[][] direct_evaluation_atomic_Z1 = new double[rightBound-leftBound][1];
-            // double[][] direct_evaluation_atomic_Z2 = new double[rightBound-leftBound][1];
-            // double[][] direct_evaluation_atomic_Z3 = new double[rightBound-leftBound][1];
+            AtomicDistanceExpression atomicZ1 = new AtomicDistanceExpression(ds->ds.get(Z1)/normalisationZ1,(v1, v2) -> Math.abs(v2-v1));
 
-            for (int i = 0; i<(rightBound-leftBound); i++){
-                System.out.println("\n step: "+ i);
-                direct_evaluation_atomic_Z1[i][0] = skorokhodZ1.compute(i+leftBound, sequence, sequence_p);
-                // direct_evaluation_atomic_Z2[i][0] = skorokhodZ2.compute(i+leftBound, sequence, sequence_p);
-                // direct_evaluation_atomic_Z3[i][0] = skorokhodZ3.compute(i+leftBound, sequence, sequence_p);
+            AtomicDistanceExpression atomicZ2 = new AtomicDistanceExpression(ds->ds.get(Z2)/normalisationZ2,(v1, v2) -> Math.abs(v2-v1));
+
+            AtomicDistanceExpression atomicZ3 = new AtomicDistanceExpression(ds->ds.get(Z3)/normalisationZ3,(v1, v2) -> Math.abs(v2-v1));
+
+            double[][] offsetssk = new double[skOffsets.length][1];
+            for (int i = 0; i < skOffsets.length; i++) {
+                offsetssk[i][0] = skOffsets[i];
             }
+            Util.writeToCSV("./offsets_SK.csv", offsetssk);
+
+            double[][] realsk_distances = new double[rightBound][1];
+
+            double[][] direct_evaluation_skorokhod_Z1 = new double[rightBound][1];
+            double[][] direct_evaluation_skorokhod_Z2 = new double[rightBound][1];
+            double[][] direct_evaluation_skorokhod_Z3 = new double[rightBound][1];
+
+            double[][] direct_evaluation_atomic_Z1 = new double[rightBound][1];
+            double[][] direct_evaluation_atomic_Z2 = new double[rightBound][1];
+            double[][] direct_evaluation_atomic_Z3 = new double[rightBound][1];
+
+            for (int i = 0; i<(rightBound); i++){
+                if (i >= leftBound)
+                {
+                    realsk_distances[i][0] = sequence.get(i).distance(ds->ds.get(Z1)/normalisationZ1, (v1, v2) -> Math.abs(v2-v1), sequence_p.get(i + skOffsets[i - leftBound]));
+                }
+                else
+                {
+                    realsk_distances[i][0] = sequence.get(i).distance(ds->ds.get(Z1)/normalisationZ1, (v1, v2) -> Math.abs(v2-v1), sequence_p.get(i));
+                }
+
+                direct_evaluation_skorokhod_Z1[i][0] = skorokhodZ1.compute(i, sequence, sequence_p);
+                direct_evaluation_skorokhod_Z2[i][0] = skorokhodZ2.compute(i, sequence, sequence_p);
+                direct_evaluation_skorokhod_Z3[i][0] = skorokhodZ3.compute(i, sequence, sequence_p);
+
+                // atomic; on same sequence for direct comparison
+                direct_evaluation_atomic_Z1[i][0] = atomicZ1.compute(i, sequence, sequence_p);
+                direct_evaluation_atomic_Z2[i][0] = atomicZ2.compute(i, sequence, sequence_p);
+                direct_evaluation_atomic_Z3[i][0] = atomicZ3.compute(i, sequence, sequence_p);
+            }
+            Util.writeToCSV("./rskor.csv",realsk_distances);
+
+            Util.writeToCSV("./skorokhod_Z1.csv",direct_evaluation_skorokhod_Z1);
+            Util.writeToCSV("./skorokhod_Z2.csv",direct_evaluation_skorokhod_Z2);
+            Util.writeToCSV("./skorokhod_Z3.csv",direct_evaluation_skorokhod_Z3);
 
             Util.writeToCSV("./atomic_Z1.csv",direct_evaluation_atomic_Z1);
-            // Util.writeToCSV("./atomic_Z2.csv",direct_evaluation_atomic_Z2);
-            // Util.writeToCSV("./atomic_Z3.csv",direct_evaluation_atomic_Z3);
+            Util.writeToCSV("./atomic_Z2.csv",direct_evaluation_atomic_Z2);
+            Util.writeToCSV("./atomic_Z3.csv",direct_evaluation_atomic_Z3);
 
-            int[] _offsets = skorokhodZ1.GetOffsetArray();
-            double[][] offsets = new double[rightBound][1];
-            for (int i = 0; i < offsets.length; i++) {
-                offsets[i][0] = _offsets[i];
+            
+
+            int[] _offsets1 = skorokhodZ1.GetOffsetArray();
+            int[] _offsets2 = skorokhodZ2.GetOffsetArray();
+            int[] _offsets3 = skorokhodZ3.GetOffsetArray();
+            double[][] offsets1 = new double[rightBound][1];
+            double[][] offsets2 = new double[rightBound][1];
+            double[][] offsets3 = new double[rightBound][1];
+            for (int i = 0; i < offsets1.length; i++) {
+                offsets1[i][0] = _offsets1[i];
+                offsets2[i][0] = _offsets2[i];
+                offsets3[i][0] = _offsets3[i];
             }
 
-            Util.writeToCSV("./offsets_Z1.csv",offsets);
+            Util.writeToCSV("./offsets_Z1.csv",offsets1);
+            Util.writeToCSV("./offsets_Z2.csv",offsets2);
+            Util.writeToCSV("./offsets_Z3.csv",offsets3);
 
+            // plot system state:
+            double[][] plot_z1 = new double[N][1];
+            double[][] plot_z2 = new double[N][1];
+            double[][] plot_z3 = new double[N][1];
 
+            double[][] plot_pz1 = new double[N][1];
+            double[][] plot_pz2 = new double[N][1];
+            double[][] plot_pz3 = new double[N][1];
 
+            for (int i = 0; i<N; i++){
+                plot_z1[i][0] = Arrays.stream(sequence.get(i).evalPenaltyFunction(ds->ds.get(Z1))).average().orElse(Double.NaN);
+                plot_z2[i][0] = Arrays.stream(sequence.get(i).evalPenaltyFunction(ds->ds.get(Z2))).average().orElse(Double.NaN);
+                plot_z3[i][0] = Arrays.stream(sequence.get(i).evalPenaltyFunction(ds->ds.get(Z3))).average().orElse(Double.NaN);
 
+                plot_pz1[i][0] = Arrays.stream(sequence_p.get(i).evalPenaltyFunction(ds->ds.get(Z1))).average().orElse(Double.NaN);
+                plot_pz2[i][0] = Arrays.stream(sequence_p.get(i).evalPenaltyFunction(ds->ds.get(Z2))).average().orElse(Double.NaN);
+                plot_pz3[i][0] = Arrays.stream(sequence_p.get(i).evalPenaltyFunction(ds->ds.get(Z3))).average().orElse(Double.NaN);
+            }
+            Util.writeToCSV("./new_plotZ1.csv",plot_z1);
+            Util.writeToCSV("./new_plotZ2.csv",plot_z2);
+            Util.writeToCSV("./new_plotZ3.csv",plot_z3);
 
-
+            Util.writeToCSV("./new_pplotZ1.csv",plot_pz1);
+            Util.writeToCSV("./new_pplotZ2.csv",plot_pz2);
+            Util.writeToCSV("./new_pplotZ3.csv",plot_pz3);
 
 
             /*
@@ -735,8 +731,6 @@ public class Main {
             //         rightRBound
             // );
 
-
-
             // double[][] robEvaluations = new double[20][2];
             // RobustnessFormula robustF;
             // int index=0;
@@ -756,17 +750,6 @@ public class Main {
             //     index++;
             // }
             // Util.writeToCSV("./evalR.csv",robEvaluations);
-
-
-
-
-
-
-
-
-
-
-
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -826,7 +809,7 @@ public class Main {
         return tot;
     }
 
-
+    
     private static double[] printAvgDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
         System.out.println(label);
 
