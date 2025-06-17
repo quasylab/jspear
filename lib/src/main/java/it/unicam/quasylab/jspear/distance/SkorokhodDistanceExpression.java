@@ -59,13 +59,13 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      * and the given distance over reals for the evaluation of the ground distance on data states.
      * @param rho the penalty function
      * @param distance ground distance on reals.
-     * @param muLogic logic to assign weight of sampled offset.
+     * @param muLogic logic to assign weight/cost to sampled lambda
      * @param rho2 for normalizing time
      * @param leftBound step from which to start evaluating: returns regular wasserstein distance before.
-     * @param rightBound number of steps to be simulated
-     * @param direction direction to allow time jumps toward, true = forward, false = backward.
+     * @param rightBound will not sample beyond this step
+     * @param direction direction to allow time jumps toward, true = forward/positive offsets, false = backward/negative offsets.
      * @param lambdaCount number of offsets/lambda functions that will be evaluated/considered
-     * @param scanWidth number of steps that will be evaluated when determining max distance according to lambda function
+     * @param scanWidth number of steps that will be evaluated when determining lambda function quality
      */
     public SkorokhodDistanceExpression(DataStateExpression rho, DoubleBinaryOperator distance, DoubleBinaryOperator muLogic ,ToDoubleFunction<Integer> rho2,
                                          int leftBound, int rightBound, boolean direction, int lambdaCount, int scanWidth) {
@@ -106,11 +106,10 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
         // for analysis
         this.usedOffsets[step] = offset;
-        // System.out.println("step: "+ step + "Distance: " + _distance);
-
         return _distance;
     }
 
+    // not yet implemented:
     @Override
     public double[] evalCI(RandomGenerator rg, int step, EvolutionSequence seq1, EvolutionSequence seq2, int m, double z){
         
@@ -122,7 +121,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
         // for analysis
         this.usedOffsets[step] = offset;
-        System.out.println("step: "+ step + "Distance: " + res[0]);
         return res;
     }
 
@@ -130,11 +128,12 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     /**
      * Finds offset from which sequence 2 should be sampled, using skorokhod metric
      * 
-     * @param step time step at which the atomic is evaluated
+     * @param step time step at which the skorokhod distance is evaluated
      * @param seq1 an evolution sequence
      * @param seq2 the other evolution sequence
      * @param lambdaCount number of offsets/lambda functions that will be evaluated/considered
-     * @return the offset at which sequence 2 should be sampled when measuring wasserstein distance between both sequences using skorokhod metric.
+     * @return the offset at which one of the sequences (depending on this.direction) should be sampled 
+     * when measuring wasserstein distance between both sequences using skorokhod metric.
      */
     private int FindLambdaSkorokhod(int step, EvolutionSequence seq1, EvolutionSequence seq2, int lambdaCount)
     {
@@ -192,8 +191,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
             }
         }
 
-        // System.out.println("\n picked: " + offset);
-
         previousOffset = offset;
         return offset;
     }
@@ -204,15 +201,15 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      * hopes of finding a smaller distance. This avoids throwing away valid candidates for lambda since the offset is allowed to increase
      * in future evaluations, but may not decrease.
      * 
-     * @param step time step from which the sequences will be evaluated
+     * @param step time step from which the sequences will be sampled
      * @param range number of steps that will be evaluated
      * @param seq1 an evolution sequence
      * @param seq2 the other evolution sequence
-     * @param offset the time translation lambda as a constant offset
-     * @param currentMaximum The current maximum, used to speed up computation
+     * @param offset the time translation lambda as a starting offset
+     * @param currentMinimum the current minimum distance found by a previous lambda, to try and stay below it
      * @return the largest found wasserstein distance between the sequences, given the time translation lambda
      */
-    private double EvaluateLambda(int step, int range, EvolutionSequence seq1, EvolutionSequence seq2, int offset, double currentMaximum)
+    private double EvaluateLambda(int step, int range, EvolutionSequence seq1, EvolutionSequence seq2, int offset, double currentMinimum)
     {
         double maxDistance = 0;
         int i = 0;
@@ -237,7 +234,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
             // if found maximum distance is larger than the current maximum distance by a previous lambda, stop iterating
             // since this lambda is not better
             // however, if increasing the offset leads to a smaller ditance, continue with the increased offset
-            if(sampledDistance >= currentMaximum) {
+            if(sampledDistance >= currentMinimum) {
                 boolean isFirstStep = (i == 0);
                 boolean offsetWithinLimit = offset <= lambdaCount;
 
@@ -263,8 +260,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
             i++;
         }
-        // System.out.print(" | "+ offset);
-        // System.out.printf(": %.4f", maxDistance);
 
         return maxDistance;
     }
@@ -312,7 +307,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
         return seq1.get(indexSeq1).distance(this.rho, this.distance, seq2.get(indexSeq2));
     }
-
 
     /**
      * Samples bootstrap wasserstein distance given an offset and 2 sequences

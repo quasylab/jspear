@@ -43,7 +43,6 @@ import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.NilController;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.distance.SkorokhodDistanceExpression;
-import it.unicam.quasylab.jspear.distance.draft;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
@@ -584,33 +583,12 @@ public class Main {
                                                                                         offset->((double)offset/(double)normalisationTime),
                                                                                         leftBound,
                                                                                         rightBound,false, offsetEvaluationCount, scanWidth);
-  
-            draft draft = new draft(ds->ds.get(Z1)/normalisationZ1,
-                                    (v1, v2) -> Math.abs(v2-v1),
-                                    (a, b) -> Math.max(a, b),
-                                    offset->((double)offset/(double)normalisationTime),
-                                    leftBound,
-                                    rightBound, normalisationZ1);
-
-            double skorokhodDistance = draft.computeSkorokhodDistance(normalisationZ1, leftBound, rightBound, sequence, sequence_p, 0.0000001);
-
-            int[] skOffsets = draft.computeOffsetWarpingPath();
-
-            System.out.println("Skorokhod distance --------- " + skorokhodDistance);
 
             AtomicDistanceExpression atomicZ1 = new AtomicDistanceExpression(ds->ds.get(Z1)/normalisationZ1,(v1, v2) -> Math.abs(v2-v1));
 
             AtomicDistanceExpression atomicZ2 = new AtomicDistanceExpression(ds->ds.get(Z2)/normalisationZ2,(v1, v2) -> Math.abs(v2-v1));
 
             AtomicDistanceExpression atomicZ3 = new AtomicDistanceExpression(ds->ds.get(Z3)/normalisationZ3,(v1, v2) -> Math.abs(v2-v1));
-
-            double[][] offsetssk = new double[skOffsets.length][1];
-            for (int i = 0; i < skOffsets.length; i++) {
-                offsetssk[i][0] = skOffsets[i];
-            }
-            Util.writeToCSV("./offsets_SK.csv", offsetssk);
-
-            double[][] realsk_distances = new double[rightBound][1];
 
             double[][] direct_evaluation_skorokhod_Z1 = new double[rightBound][1];
             double[][] direct_evaluation_skorokhod_Z2 = new double[rightBound][1];
@@ -621,15 +599,6 @@ public class Main {
             double[][] direct_evaluation_atomic_Z3 = new double[rightBound][1];
 
             for (int i = 0; i<(rightBound); i++){
-                if (i >= leftBound)
-                {
-                    realsk_distances[i][0] = sequence.get(i).distance(ds->ds.get(Z1)/normalisationZ1, (v1, v2) -> Math.abs(v2-v1), sequence_p.get(i + skOffsets[i - leftBound]));
-                }
-                else
-                {
-                    realsk_distances[i][0] = sequence.get(i).distance(ds->ds.get(Z1)/normalisationZ1, (v1, v2) -> Math.abs(v2-v1), sequence_p.get(i));
-                }
-
                 direct_evaluation_skorokhod_Z1[i][0] = skorokhodZ1.compute(i, sequence, sequence_p);
                 direct_evaluation_skorokhod_Z2[i][0] = skorokhodZ2.compute(i, sequence, sequence_p);
                 direct_evaluation_skorokhod_Z3[i][0] = skorokhodZ3.compute(i, sequence, sequence_p);
@@ -639,7 +608,6 @@ public class Main {
                 direct_evaluation_atomic_Z2[i][0] = atomicZ2.compute(i, sequence, sequence_p);
                 direct_evaluation_atomic_Z3[i][0] = atomicZ3.compute(i, sequence, sequence_p);
             }
-            Util.writeToCSV("./rskor.csv",realsk_distances);
 
             Util.writeToCSV("./skorokhod_Z1.csv",direct_evaluation_skorokhod_Z1);
             Util.writeToCSV("./skorokhod_Z2.csv",direct_evaluation_skorokhod_Z2);

@@ -86,24 +86,6 @@ legend = ax.legend(loc='upper right')
 plt.savefig("SkorokhodAtomicDistancesZ3.png")
 plt.savefig("SkorokhodAtomicDistancesZ3.eps", format='eps')
 
-
-
-# offset_sk = numpy.genfromtxt("offsets_SK.csv", names=["offsets_SK"])
-# dist_sk = numpy.genfromtxt("rskor.csv", names=["distance"])
-
-# fix, ax = plt.subplots()
-# line1, = ax.plot(range(550,1000),dist_sk['distance'][550:1000],'b:',label="distance")
-# ax.set_ylabel('distance', color='b')
-# # create y-axis that shares x-axis
-# ax2 = ax.twinx()
-# line4, = ax2.plot(range(550,1000),offset_sk["offsets_SK"],'r--',label="offsets_SK")
-# ax2.set_ylabel('offsets_SK', color='r')
-# lines = [line1, line4]
-# labels = [line.get_label() for line in lines]
-# ax.legend(lines, labels, loc='upper left')
-# plt.savefig("distanceSK.png")
-# plt.savefig("distanceSK.eps", format='eps')
-
 # skorokhod vs skorokhod Z1
 fix, ax = plt.subplots()
 ax.plot(range(550,1000),distance_Z1['d_prot_Z1'][550:1000],label="Skorokhod")

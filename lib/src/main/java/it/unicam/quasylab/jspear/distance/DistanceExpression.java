@@ -40,8 +40,7 @@ public sealed interface DistanceExpression permits
         MinIntervalDistanceExpression,
         UntilDistanceExpression,
         ThresholdDistanceExpression,
-        SkorokhodDistanceExpression,
-        draft {
+        SkorokhodDistanceExpression{
 
     /**
      * Returns the evaluation of the distance expression among the two sequences at the given step.
