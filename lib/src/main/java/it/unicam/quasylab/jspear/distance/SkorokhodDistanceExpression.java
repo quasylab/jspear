@@ -42,7 +42,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
 
     private final DataStateExpression rho;
     private final ToDoubleFunction<Integer> rho2; // used to normalize time in addition to distance
-    private final DoubleBinaryOperator distance;
+    private final DoubleBinaryOperator distanceOperator;
     private final DoubleBinaryOperator muLogic; // used to determine mu from timestamp, and distance
     
     private int previousOffset;
@@ -53,6 +53,8 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     private final int scanWidth;
 
     private final int[] usedOffsets;
+
+    private double[][] DPTable; // Dynamic Programming table, used to store calculated wasserstein distances, to avoid calculating them multiple times
 
     /**
      * Generates the atomic distance expression that will use the given penalty function
@@ -71,7 +73,7 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
                                          int leftBound, int rightBound, boolean direction, int lambdaCount, int scanWidth) {
         this.rho = rho;
         this.rho2 = rho2;
-        this.distance = distance;
+        this.distanceOperator = distance;
         this.direction = direction;
         this.previousOffset = 0;
         this.lambdaCount = lambdaCount;
@@ -80,6 +82,17 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         this.scanWidth = scanWidth;
         this.muLogic = muLogic;
         this.usedOffsets = new int[rightBound];
+
+        int size = rightBound + 1 - leftBound;
+        // + 1 since leftbount = 0, rightbound = 1 should result in 2 (by 2) wasserstein distances
+        this.DPTable = new double[size][size];
+
+        // fill with negative numbers to state distances are not yet calculated.
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                this.DPTable[i][j] = -1;
+            }
+        }
     }
 
     /**
@@ -97,12 +110,18 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
      */
     @Override
     public double compute(int step, EvolutionSequence seq1, EvolutionSequence seq2) {
-
+        long startTime = System.nanoTime();
+        
         // find best fitting offset
         int offset = FindLambdaSkorokhod(step, seq1, seq2, this.lambdaCount);
 
         // sample wasserstein distance using offset
         double _distance = sample(step, offset, seq1, seq2);
+
+        long endTime = System.nanoTime();
+        long duration = (endTime - startTime);
+
+        System.out.println("t:"+(duration/1000000));
 
         // for analysis
         this.usedOffsets[step] = offset;
@@ -123,7 +142,6 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         this.usedOffsets[step] = offset;
         return res;
     }
-
     
     /**
      * Finds offset from which sequence 2 should be sampled, using skorokhod metric
@@ -305,7 +323,25 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         int indexSeq1 = this.direction ? step           : step + offset;
         int indexSeq2 = this.direction ? step + offset  : step;
 
-        return seq1.get(indexSeq1).distance(this.rho, this.distance, seq2.get(indexSeq2));
+        // do not use DPTable before left bound
+        if (indexSeq1 < leftBound || indexSeq2 < leftBound)
+        {
+            return seq1.get(indexSeq1).distance(this.rho, this.distanceOperator, seq2.get(indexSeq2));
+        }
+
+        int DPIndex1 = indexSeq1 - this.leftBound;
+        int DPIndex2 = indexSeq2 - this.leftBound;
+        
+        double distance = this.DPTable[DPIndex1][DPIndex2];
+
+        // calculate distance, and put into table
+        if (distance < 0)
+        {
+            distance = seq1.get(indexSeq1).distance(this.rho, this.distanceOperator, seq2.get(indexSeq2));
+            this.DPTable[DPIndex1][DPIndex2] = distance;
+        }
+
+        return distance;
     }
 
     /**

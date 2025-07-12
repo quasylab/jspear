@@ -390,7 +390,7 @@ public class Main {
             and sample sets by class <code>SampleSet</code>.
             In this context, <code>size</code> is the cardinality of those sample sets.
             */
-            int size = 1; // was 100
+            int size = 100; // was 100
 
             /*
             The evolution sequence <code>sequence></code> created by the following instruction consists in a sequence of
