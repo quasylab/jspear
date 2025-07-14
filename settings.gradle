@@ -27,4 +27,6 @@ include 'examples:Lotka'
 findProject(':examples:Lotka')?.name = 'Lotka'
 include 'examples:polistil'
 findProject(':examples:polistil')?.name = 'polistil'
+include 'examples:multipleSclerosis'
+findProject(':examples:multipleSclerosis')?.name = 'multipleSclerosis'
 
