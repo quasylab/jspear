@@ -96,32 +96,26 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
     }
 
     /**
-     * Evaluates the Wasserstein lifting of this ground distance
-     * between the distributions reached at a given time step
-     * by two given evolution sequences.
+     * Evaluates the skorokhod distance between two evolution sequences,
+     * and samples the distance between the distributions reached at a 
+     * given time step by two given evolution sequences, after applying
+     * the time transfer function used to determine the skorokhod distance.
      *
      * @param step time step at which the atomic is evaluated
      * @param seq1 an evolution sequence
      * @param seq2 an evolution sequence
-     * @return the Wasserstein lifting of the ground distance over data states obtained
-     * from <code>this.distance</code> and <code>this.rho</code> between
-     * the distribution reached by <code>seq1</code> and that reached by <code>seq2</code>
-     * at time <code>step</code>.
+     * @return the distance between the distributions reached at a 
+     * given time step by two given evolution sequences, after applying
+     * the time transfer function used to determine the skorokhod distance.
      */
     @Override
     public double compute(int step, EvolutionSequence seq1, EvolutionSequence seq2) {
-        long startTime = System.nanoTime();
-        
+
         // find best fitting offset
         int offset = FindLambdaSkorokhod(step, seq1, seq2, this.lambdaCount);
 
         // sample wasserstein distance using offset
         double _distance = sample(step, offset, seq1, seq2);
-
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);
-
-        System.out.println("t:"+(duration/1000000));
 
         // for analysis
         this.usedOffsets[step] = offset;
@@ -141,6 +135,56 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         // for analysis
         this.usedOffsets[step] = offset;
         return res;
+    }
+
+    // for verification
+    public double computeRefined(int step, EvolutionSequence seq1, EvolutionSequence seq2) {        
+        int _lowerOffset = this.previousOffset;
+        
+        // find best fitting offset
+        int offset = FindLambdaSkorokhod(step, seq1, seq2, this.lambdaCount);
+
+        int newoffset = refineOffset(_lowerOffset, offset, step, seq1, seq2);
+
+        this.previousOffset = newoffset;
+
+        // sample wasserstein distance using offset
+        double _distance = sample(step, newoffset, seq1, seq2);
+
+        // for analysis
+        this.usedOffsets[step] = newoffset;
+        return _distance;
+    }
+
+    /*
+     * Refine picked offset by choosing from all confirmed valid offsets, 
+     * the offset that yields the lowest distance at the step of interest.
+     * 
+     * upper offset is determined by EvaluateLambda method: it computes for all offset their long-term effect if picked.
+     * lower offset is determined by the previously used offset: we may not pick an offset less than one previously used.
+     * 
+     * So any offset in between these offsets is safe to use.
+     */
+    private int refineOffset(int lowerOffset, int upperOffset, int step, EvolutionSequence seq1, EvolutionSequence seq2)
+    {
+        if (lowerOffset == upperOffset)
+        {
+            return lowerOffset;
+        }
+        
+        double minDistance = Double.MAX_VALUE;
+        int bestOffset = upperOffset;
+        for (int offset = lowerOffset; offset < upperOffset + 1; offset++) {
+            double _distance = sample(step, offset, seq1, seq2);
+
+            if (_distance < minDistance)
+            {
+                minDistance = _distance;
+                bestOffset = offset;
+            }
+        }
+
+        return bestOffset;
     }
     
     /**
@@ -375,6 +419,11 @@ public final class SkorokhodDistanceExpression implements DistanceExpression {
         // res[1] = partial[0];
         // res[2] = partial[1];
         // return res;
+    }
+
+    public void Reset()
+    {
+        this.previousOffset = 0;
     }
 
     /**

@@ -36,5 +36,8 @@ build
 #Ignore png file
 *.png
 
+#Ignore eps file
+*.eps
+
 # Ignore binaries
 bin

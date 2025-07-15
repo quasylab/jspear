@@ -43,6 +43,9 @@ import numpy
 from statistics import mean
 import csv
 
+distance_Z1_ref = numpy.genfromtxt("skorokhod_Z1_refined.csv", names=["ref_prot_Z1"])
+distance_Z1_diff = numpy.genfromtxt("skorokhod_Z1_refined_diff.csv", names=["diff_prot_Z1"])
+
 distance_Z1 = numpy.genfromtxt("skorokhod_Z1.csv", names=["d_prot_Z1"])
 distance_Z2 = numpy.genfromtxt("skorokhod_Z2.csv", names=["d_prot_Z2"])
 distance_Z3 = numpy.genfromtxt("skorokhod_Z3.csv", names=["d_prot_Z3"])
@@ -60,6 +63,22 @@ legend = ax.legend(loc='upper right')
 plt.savefig("distances.png")
 plt.savefig("distances.eps", format='eps')
 plt.show()
+
+
+# skorokhod vs refined Z1
+fix, ax = plt.subplots()
+ax.plot(range(550,1000),distance_Z1['d_prot_Z1'][550:1000],label="skorokhod")
+ax.plot(range(550,1000),distance_Z1_ref['ref_prot_Z1'][550:1000],label="refined")
+legend = ax.legend(loc='upper right')
+plt.savefig("SkorokhodRefinedDistancesZ1.png")
+plt.savefig("SkorokhodRefinedDistancesZ1.eps", format='eps')
+
+# refined diff
+fix, ax = plt.subplots()
+ax.plot(range(550,1000),distance_Z1_diff['diff_prot_Z1'][550:1000],label="diff")
+legend = ax.legend(loc='upper right')
+plt.savefig("SkorokhodRefinedDiff.png")
+plt.savefig("SkorokhodRefinedDiff.eps", format='eps')
 
 
 # atomic vs skorokhod Z1
@@ -202,3 +221,23 @@ ax.legend(lines, labels, loc='upper right')
 
 plt.savefig("fullZ1.png")
 plt.savefig("fullZ1.eps", format='eps')
+
+
+fix, ax = plt.subplots()
+Threshold = []
+Value = []
+
+with open('evalR.csv','r') as csvfile:
+    lines = csv.reader(csvfile, delimiter=',')
+    for row in lines:
+        Threshold.append(row[0])
+        Value.append(row[1])
+
+plt.scatter(Threshold, Value, color = 'b',s = 100)
+plt.xticks(rotation = 0)
+plt.xlabel('Threshold')
+plt.ylabel('Evaluation (0.0 = True, 1.0 = False)')
+plt.title('Robustness', fontsize = 20)
+plt.savefig("robustness.png")
+
+plt.show
