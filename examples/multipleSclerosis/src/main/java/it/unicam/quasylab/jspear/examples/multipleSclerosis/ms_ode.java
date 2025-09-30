@@ -77,6 +77,7 @@ public class ms_ode {
     private static final double a = 22800.0;
     private static final double Einit = 1000.0;
     private static final double Rinit = 200.0;
+    private static final double h = 5.0;
 
     public static void main(String[] args) throws IOException {
         try {
@@ -103,6 +104,14 @@ public class ms_ode {
 
 
             double[][] data_avg = SystemState.sample(rand, F, system, steps, size);
+            double[][] E_values = new double[steps][1];
+            double[][] R_values = new double[steps][1];
+            double[][] Er_values = new double[steps][1];
+            double[][] Rr_values = new double[steps][1];
+            double[][] l_values= new double[steps][1];
+            double[][] L_values = new double[steps][1];
+
+
             for (int i = 0; i < data_avg.length; i++) {
                 System.out.printf("%d>   ", i);
                 for (int j = 0; j < data_avg[i].length -1 ; j++) {
@@ -110,7 +119,23 @@ public class ms_ode {
                 }
                 System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
             }
+
+            for(int j = 0; j < steps; j++){
+                E_values[j][0] = Math.log10(data_avg[j][0]);
+                R_values[j][0] = Math.log10(data_avg[j][1]);
+                Er_values[j][0] = Math.log10(data_avg[j][2]);
+                Rr_values[j][0] = Math.log10(data_avg[j][3]);
+                l_values[j][0] = Math.log10(data_avg[j][4]);
+                L_values[j][0] = Math.log10(data_avg[j][5]);
+            }
+
             Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
+            Util.writeToCSV("./multipleSclerosisOdeE.csv",E_values);
+            Util.writeToCSV("./multipleSclerosisOdeR.csv",R_values);
+            Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
+            Util.writeToCSV("./multipleSclerosisOdeRr.csv",Rr_values);
+            Util.writeToCSV("./multipleSclerosisOdel.csv",l_values);
+            Util.writeToCSV("./multipleSclerosisOdeL.csv",L_values);
 
 
         } catch (RuntimeException e) {
@@ -138,7 +163,10 @@ public class ms_ode {
 
     public static List<DataStateUpdate> odeEnv(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-
+        updates.add(new DataStateUpdate(Er,state.get(Er) + ( - state.get(Er)*delta - state.get(Er)*beta + state.get(E)*eta ) ) );
+        updates.add(new DataStateUpdate(Rr,state.get(Rr) + ( - state.get(Rr)*delta - state.get(Rr)*beta - state.get(R)*eta ) ) );
+        updates.add(new DataStateUpdate(E, state.get(E) + ( state.get(Er)*delta - state.get(E) * eta + state.get(E)*alphaE*Math.pow(kR,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h)) - state.get(E)*gammaE*Math.pow(R,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h))) ) );
+        updates.add(new DataStateUpdate(R, state.get(R) + ( state.get(Rr)*delta - state.get(R) * eta + state.get(R)*alphaR*Math.pow(E,h)/(Math.pow(kE,h)+Math.pow(state.get(E),h)) - state.get(R)*gammaE) ) );
         return updates;
 
     }
