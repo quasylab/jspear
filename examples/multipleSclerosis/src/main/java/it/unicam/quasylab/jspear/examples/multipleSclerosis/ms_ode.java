@@ -62,8 +62,8 @@ public class ms_ode {
     public static final double k1 = 1.0;
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
-    public static final double alphaE = 2.0;
-    public static final double alphaR = 0.25;
+    public static final double alphaE = 1.5;
+    public static final double alphaR = 1.0;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -131,7 +131,7 @@ public class ms_ode {
                 L_values[j][0] = Math.log10(data_avg[j][5]);
             }
 
-            Util.writeToCSV("./multipleSclerosisOde_sick.csv",data_avg);
+            Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
             Util.writeToCSV("./multipleSclerosisOdeE.csv",E_values);
             Util.writeToCSV("./multipleSclerosisOdeR.csv",R_values);
             Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
