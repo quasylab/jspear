@@ -62,7 +62,7 @@ public class ms_ode {
     public static final double k1 = 1.0;
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
-    public static final double alphaE = 1.5;
+    public static final double alphaE = 2.0;
     public static final double alphaR = 1.0;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
@@ -100,7 +100,7 @@ public class ms_ode {
             F.add(ds->ds.get(l));
             F.add(ds->ds.get(L));
 
-            int steps = 2000;
+            int steps = 1850;
 
 
             double[][] data_avg = SystemState.sample(rand, F, system, steps, size);
@@ -164,7 +164,7 @@ public class ms_ode {
     public static List<DataStateUpdate> odeEnv(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
         updates.add(new DataStateUpdate(Er,state.get(Er) + ( - state.get(Er)*delta - state.get(Er)*beta + state.get(E)*eta ) ) );
-        updates.add(new DataStateUpdate(Rr,state.get(Rr) + ( - state.get(Rr)*delta - state.get(Rr)*beta - state.get(R)*eta ) ) );
+        updates.add(new DataStateUpdate(Rr,state.get(Rr) + ( - state.get(Rr)*delta - state.get(Rr)*beta + state.get(R)*eta ) ) );
         updates.add(new DataStateUpdate(E, state.get(E) + ( state.get(Er)*delta - state.get(E) * eta + state.get(E)*alphaE*Math.pow(kR,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h)) - state.get(E)*gammaE*Math.pow(R,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h))) ) );
         updates.add(new DataStateUpdate(R, state.get(R) + ( state.get(Rr)*delta - state.get(R) * eta + state.get(R)*alphaR*Math.pow(E,h)/(Math.pow(kE,h)+Math.pow(state.get(E),h)) - state.get(R)*gammaE) ) );
         return updates;
