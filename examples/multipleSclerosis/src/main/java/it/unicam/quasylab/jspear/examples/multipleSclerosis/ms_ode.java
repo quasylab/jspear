@@ -63,7 +63,7 @@ public class ms_ode {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 0.25;
+    public static final double alphaR = 0.14;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -137,7 +137,7 @@ public class ms_ode {
             Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
             Util.writeToCSV("./multipleSclerosisOdeRr.csv",Rr_values);
             Util.writeToCSV("./multipleSclerosisOdel.csv",l_values);
-            Util.writeToCSV("./multipleSclerosisOdeL.csv",L_values);
+            Util.writeToCSV("./multipleSclerosisOdeLLL.csv",L_values);
 
 
         } catch (RuntimeException e) {
@@ -174,11 +174,17 @@ public class ms_ode {
         double old_L = state.get(L);
 
 
+        double r1 = rg.nextDouble();
+        double ie;
+        if (r1<1.0/365.0) {ie=10000.0;} else{ie = 0;}
+        double ir;
+        r1 = rg.nextDouble();
+        if (r1<1.0/365.0) {ir=10000.0;} else{ir = 0;}
 
-        double dEr = IE - old_Er*delta - old_Er*beta + old_E*eta;
+        double dEr = ie - old_Er*delta - old_Er*beta + old_E*eta;
         double new_Er = old_Er + dEr*delta_t;
         updates.add(new DataStateUpdate(Er, new_Er));
-        double dRr = IR - old_Rr*delta - old_Rr*beta + old_R*eta;
+        double dRr = ir - old_Rr*delta - old_Rr*beta + old_R*eta;
         double new_Rr = old_Rr + dRr*delta_t;
         updates.add(new DataStateUpdate(Rr, new_Rr));
         double dE = old_Er*delta - old_E*eta + old_E*(alphaE*Math.pow(kR,h) - gammaE*Math.pow(old_R,h))/(Math.pow(kR,h)+Math.pow(old_R,h));
