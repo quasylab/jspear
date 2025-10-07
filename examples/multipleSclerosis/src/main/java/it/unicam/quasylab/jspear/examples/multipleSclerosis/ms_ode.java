@@ -62,8 +62,8 @@ public class ms_ode {
     public static final double k1 = 1.0;
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
-    public static final double alphaE = 1.5;
-    public static final double alphaR = 1.0;
+    public static final double alphaE = 2.0;
+    public static final double alphaR = 0.25;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -78,17 +78,19 @@ public class ms_ode {
     private static final double Einit = 1000.0;
     private static final double Rinit = 200.0;
     private static final double h = 5.0;
+    private static final double delta_t = Math.pow(10,-4);
+    private static final double jumps = 1;
 
     public static void main(String[] args) throws IOException {
         try {
 
             Controller controller = new NilController();
 
-            DataState state = getInitialState( );
+            DataState state = getInitialState(jumps,0.0,0.0,delta_t);
 
             RandomGenerator rand = new DefaultRandomGenerator();
 
-            ControlledSystem system = new ControlledSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state);
+            TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
             int size = 1;
 
@@ -129,7 +131,7 @@ public class ms_ode {
                 L_values[j][0] = Math.log10(data_avg[j][5]);
             }
 
-            Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
+            Util.writeToCSV("./multipleSclerosisOde_sick.csv",data_avg);
             Util.writeToCSV("./multipleSclerosisOdeE.csv",E_values);
             Util.writeToCSV("./multipleSclerosisOdeR.csv",R_values);
             Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
@@ -146,7 +148,7 @@ public class ms_ode {
 
     }
 
-    public static DataState getInitialState() {
+    public static DataState getInitialState(double gran, double Tstep, double Ttot, double Tshift) {
         Map<Integer, Double> values = new HashMap<>();
 
         values.put(E, Einit);
@@ -157,16 +159,44 @@ public class ms_ode {
         values.put(l, 0.0);
         values.put(L, 0.0);
 
-        return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN));
+        return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Ttot, Tshift);
     }
 
 
     public static List<DataStateUpdate> odeEnv(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
-        updates.add(new DataStateUpdate(Er,state.get(Er) + ( - state.get(Er)*delta - state.get(Er)*beta + state.get(E)*eta ) ) );
-        updates.add(new DataStateUpdate(Rr,state.get(Rr) + ( - state.get(Rr)*delta - state.get(Rr)*beta - state.get(R)*eta ) ) );
-        updates.add(new DataStateUpdate(E, state.get(E) + ( state.get(Er)*delta - state.get(E) * eta + state.get(E)*alphaE*Math.pow(kR,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h)) - state.get(E)*gammaE*Math.pow(R,h)/(Math.pow(kR,h)+Math.pow(state.get(R),h))) ) );
-        updates.add(new DataStateUpdate(R, state.get(R) + ( state.get(Rr)*delta - state.get(R) * eta + state.get(R)*alphaR*Math.pow(E,h)/(Math.pow(kE,h)+Math.pow(state.get(E),h)) - state.get(R)*gammaE) ) );
+
+        double old_Er = state.get(Er);
+        double old_E = state.get(E);
+        double old_Rr = state.get(Rr);
+        double old_R = state.get(R);
+        double old_l = state.get(l);
+        double old_L = state.get(L);
+
+
+
+        double dEr = IE - old_Er*delta - old_Er*beta + old_E*eta;
+        double new_Er = old_Er + dEr*delta_t;
+        updates.add(new DataStateUpdate(Er, new_Er));
+        double dRr = IR - old_Rr*delta - old_Rr*beta + old_R*eta;
+        double new_Rr = old_Rr + dRr*delta_t;
+        updates.add(new DataStateUpdate(Rr, new_Rr));
+        double dE = old_Er*delta - old_E*eta + old_E*(alphaE*Math.pow(kR,h) - gammaE*Math.pow(old_R,h))/(Math.pow(kR,h)+Math.pow(old_R,h));
+        double new_E = old_E + dE*delta_t;
+        updates.add(new DataStateUpdate(E, new_E));
+        double dR = old_Rr*delta - old_R*eta + old_R*alphaR*Math.pow(old_E,h)/(Math.pow(kE,h)+Math.pow(old_E,h)) - old_R*gammaR;
+        double new_R = old_R + dR*delta_t;
+        updates.add(new DataStateUpdate(R, new_R));
+
+        double new_Ea = Math.pow(new_E/a,2);
+        updates.add(new DataStateUpdate(Ea, new_Ea));
+        double dl = new_Ea*d1 - old_l*r - old_l*d2;
+        double new_l = old_l + dl*delta_t;
+        updates.add(new DataStateUpdate(l, new_l));
+        double dL = old_l*d2;
+        double new_L = old_L + dL*delta_t;
+        updates.add(new DataStateUpdate(L, new_L));
+
         return updates;
 
     }
