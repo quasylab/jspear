@@ -62,8 +62,8 @@ public class ms_ode {
     public static final double k1 = 1.0;
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
-    public static final double alphaE = 1.5;
-    public static final double alphaR = 1.0;
+    public static final double alphaE = 2.0;
+    public static final double alphaR = 0.25;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -188,11 +188,12 @@ public class ms_ode {
         double new_R = old_R + dR*delta_t;
         updates.add(new DataStateUpdate(R, new_R));
 
-        double new_Ea = Math.pow(new_E/a,2);
+        /* double new_Ea = Math.pow(new_E/a,2); */
+        double new_Ea = Math.pow(old_E/a,2);
         updates.add(new DataStateUpdate(Ea, new_Ea));
         double dl = new_Ea*d1 - old_l*r - old_l*d2;
         double new_l = old_l + dl*delta_t;
-        updates.add(new DataStateUpdate(l, new_l));
+        updates.add(new DataStateUpdate(l,new_l));
         double dL = old_l*d2;
         double new_L = old_L + dL*delta_t;
         updates.add(new DataStateUpdate(L, new_L));
