@@ -63,7 +63,7 @@ public class ms_ode {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 1.5;
+    public static final double alphaR = 1.0;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
