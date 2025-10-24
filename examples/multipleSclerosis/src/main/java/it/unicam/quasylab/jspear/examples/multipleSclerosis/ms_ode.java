@@ -63,7 +63,7 @@ public class ms_ode {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 0.14;
+    public static final double alphaR = 1.5;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -176,10 +176,10 @@ public class ms_ode {
 
         double r1 = rg.nextDouble();
         double ie;
-        if (r1<1.0/365.0) {ie=10000.0;} else{ie = 0;}
+        if (r1<100*delta_t/365.0) {ie=100.0/delta_t;} else{ie = 0;}
         double ir;
-        r1 = rg.nextDouble();
-        if (r1<1.0/365.0) {ir=10000.0;} else{ir = 0;}
+        double r2 = rg.nextDouble();
+        if (r2<100*delta_t/365.0) {ir=100.0/delta_t;} else{ir = 0;}
 
         double dEr = ie - old_Er*delta - old_Er*beta + old_E*eta;
         double new_Er = old_Er + dEr*delta_t;
