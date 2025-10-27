@@ -84,7 +84,7 @@ public class ms_ode {
     public static void main(String[] args) throws IOException {
         try {
 
-            Controller controller = new NilController();
+            Controller controller = getController();
 
             DataState state = getInitialState(jumps,0.0,0.0,delta_t);
 
@@ -92,7 +92,7 @@ public class ms_ode {
 
             TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
-            int size = 1;
+            int size = 100;
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -147,6 +147,11 @@ public class ms_ode {
 
 
     }
+
+    public static Controller getController(){
+        return new NilController();
+    }
+
 
     public static DataState getInitialState(double gran, double Tstep, double Ttot, double Tshift) {
         Map<Integer, Double> values = new HashMap<>();
