@@ -23,8 +23,7 @@
 package it.unicam.quasylab.jspear.examples.multipleSclerosis;
 
 import it.unicam.quasylab.jspear.*;
-import it.unicam.quasylab.jspear.controller.Controller;
-import it.unicam.quasylab.jspear.controller.NilController;
+import it.unicam.quasylab.jspear.controller.*;
 import it.unicam.quasylab.jspear.distance.*;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
@@ -52,7 +51,31 @@ public class ms_ode {
     public static final int l = 5;
     public static final int L = 6;
 
-    private static final int NUMBER_OF_VARIABLES = 7;
+    public static final int E1 = 7;
+    public static final int E2 = 8;
+    public static final int E3 = 9;
+    public static final int E4 = 10;
+    public static final int E5 = 11;
+    public static final int E6 = 12;
+    public static final int E7 = 13;
+    public static final int E8 = 14;
+    public static final int E9 = 15;
+    public static final int E10 = 16;
+
+    public static final int R1 = 17;
+    public static final int R2 = 18;
+    public static final int R3 = 19;
+    public static final int R4 = 20;
+    public static final int R5 = 21;
+    public static final int R6 = 22;
+    public static final int R7 = 23;
+    public static final int R8 = 24;
+    public static final int R9 = 25;
+    public static final int R10 = 26;
+
+
+
+    private static final int NUMBER_OF_VARIABLES = 27;
 
     public static final double IE = 0.0;
     public static final double IR = 0.0;
@@ -92,7 +115,7 @@ public class ms_ode {
 
             TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
-            int size = 100;
+            int size = 1;
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -144,12 +167,30 @@ public class ms_ode {
             e.printStackTrace();
         }
 
-
-
     }
 
-    public static Controller getController(){
+    public static Controller getController(int x) {
         return new NilController();
+    }
+
+
+    public static Controller getController() {
+        ControllerRegistry registry = getControllerRegistry();
+        return registry.reference("therapy");
+    }
+
+
+    public static ControllerRegistry getControllerRegistry() {
+        ControllerRegistry registry = new ControllerRegistry();
+
+        registry.set("therapy",
+                Controller.ifThenElse(
+                        DataState.greaterThan(R1,R2).and(DataState.greaterThan(R2,R3).and(DataState.greaterThan(R3,R4).and(DataState.greaterThan(R4,R5).and(DataState.greaterThan(R5,R6).and(DataState.greaterThan(R6,R7).and(DataState.greaterThan(R7,R8).and(DataState.greaterThan(R8,R9).and(DataState.greaterThan(R9,R10).and(DataState.greaterThan(E2,E1).and(DataState.greaterThan(E3,E2).and(DataState.greaterThan(E4,E3).and(DataState.greaterThan(E5,E4).and(DataState.greaterThan(E6,E5).and(DataState.greaterThan(E7,E6).and(DataState.greaterThan(E8,E7).and(DataState.greaterThan(E9,E8).and(DataState.greaterThan(E10,E9)))))))))))))))))),
+                        Controller.doAction((rg,ds)-> List.of(new DataStateUpdate(R,ds.get(R)*1.0)),registry.reference("therapy")),
+                        Controller.doTick(registry.reference("therapy"))
+                ));
+
+        return registry;
     }
 
 
@@ -163,7 +204,26 @@ public class ms_ode {
         values.put(Ea, Math.pow(Einit/a,2));
         values.put(l, 0.0);
         values.put(L, 0.0);
-
+        values.put(E1,Einit);
+        values.put(E2,Einit);
+        values.put(E3,Einit);
+        values.put(E4,Einit);
+        values.put(E5,Einit);
+        values.put(E6,Einit);
+        values.put(E7,Einit);
+        values.put(E8,Einit);
+        values.put(E9,Einit);
+        values.put(E10,Einit);
+        values.put(R1,Rinit);
+        values.put(R2,Rinit);
+        values.put(R3,Rinit);
+        values.put(R4,Rinit);
+        values.put(R5,Rinit);
+        values.put(R6,Rinit);
+        values.put(R7,Rinit);
+        values.put(R8,Rinit);
+        values.put(R9,Rinit);
+        values.put(R10,Rinit);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Ttot, Tshift);
     }
 
