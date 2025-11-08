@@ -24,7 +24,6 @@ package nl.tue.Monitoring;
 
 import it.unicam.quasylab.jspear.DefaultRandomGenerator;
 import it.unicam.quasylab.jspear.SampleSet;
-import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.distl.TargetDisTLFormula;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
@@ -62,15 +61,4 @@ public class DefaultTargetMonitor implements UDisTLMonitor<Double> {
             return q - sample.distanceGeq(P, muSample, 0);
         }
     }
-
-
-//    SampleSet<SystemState> state = sequence.get(step);
-//    SampleSet<SystemState> state2 = state.replica(sampleSize).applyDistribution(new DefaultRandomGenerator(),this.mu);
-//    double distance;
-//        if (this.rho.isPresent()) {
-//        distance = state.distanceGeq(this.rho.get(), state2);
-//    } else {
-//        distance = state.distanceGeq(this.P,state2,step);
-//    }
-//        return this.q - distance;
 }

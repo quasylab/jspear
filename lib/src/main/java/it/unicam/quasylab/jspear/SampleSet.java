@@ -24,11 +24,9 @@ package it.unicam.quasylab.jspear;
 
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
-import nl.tue.Monitoring.PerceivedSystemState;
 import org.apache.commons.math3.random.RandomGenerator;
 import it.unicam.quasylab.jspear.penalty.*;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.*;

@@ -23,9 +23,6 @@
 package it.unicam.quasylab.jspear.distl;
 
 import it.unicam.quasylab.jspear.EvolutionSequence;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormulaVisitor;
-import it.unicam.quasylab.jspear.robtl.RobustnessFunction;
 
 public final class ImplicationDisTLFormula implements DisTLFormula {
 
@@ -43,7 +40,7 @@ public final class ImplicationDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalImplication(this);
     }
 

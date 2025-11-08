@@ -29,6 +29,6 @@ public interface UDisTLMonitor<T> {
     T evalNext(SampleSet<PerceivedSystemState> sample);
 
     static SampleSet<PerceivedSystemState> systemStatesToPerceivedSystemStates(SampleSet<SystemState> systemStateSample){
-        return new SampleSet<PerceivedSystemState>(systemStateSample.stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
+        return new SampleSet<>(systemStateSample.stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
     }
 }
