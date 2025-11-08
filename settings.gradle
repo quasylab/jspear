@@ -25,4 +25,4 @@ include 'examples:envzompr'
 findProject(':examples:envzompr')?.name = 'envzompr'
 include 'examples:Lotka'
 findProject(':examples:Lotka')?.name = 'Lotka'
-
+include('examples:monitoring:basic')

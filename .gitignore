@@ -29,3 +29,5 @@ build
 
 # Ignore csv file
 *.csv
+
+.idea/

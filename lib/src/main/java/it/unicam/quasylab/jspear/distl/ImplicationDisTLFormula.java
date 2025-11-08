@@ -47,7 +47,6 @@ public final class ImplicationDisTLFormula implements DisTLFormula {
         return evaluator.evalImplication(this);
     }
 
-
     public DisTLFormula getLeftFormula() {
         return leftFormula;
     }

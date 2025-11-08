@@ -24,6 +24,7 @@ package it.unicam.quasylab.jspear;
 
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
+import nl.tue.Monitoring.PerceivedSystemState;
 import org.apache.commons.math3.random.RandomGenerator;
 import it.unicam.quasylab.jspear.penalty.*;
 
@@ -54,7 +55,7 @@ public class SampleSet<T extends SystemState> {
      *
      * @param states system states in the sample.
      */
-    private SampleSet(List<T> states) {
+    public SampleSet(List<T> states) {
         this.states = states;
     }
 
@@ -393,7 +394,7 @@ public class SampleSet<T extends SystemState> {
         );
     }
 
-    public SampleSet<SystemState> applyDistribution(RandomGenerator rg, DataStateFunction function){
-        return new SampleSet<>(this.stream().parallel().map(s -> s.apply(rg, function)).toList());
+    public SampleSet<T> applyDistribution(RandomGenerator rg, DataStateFunction function){
+        return new SampleSet<>(this.stream().parallel().map(s -> (T) s.apply(rg, function)).toList());
     }
 }
