@@ -19,7 +19,7 @@ Hence, STARK includes:
 Since the procedures outlined above are based on statistical inference, we need to take into account the statistical error when checking the satisfaction of formulae.
 Hence, STARK also includes a classical algorithm for the evaluation of confidence intervals in the evaluation of distances, and a three-valued semantics for RobTL specifications, in which the truth value *unknown* is added to true and false.
 
-The [lib](./lib) folder contains all the [JAVA classes](./lib/src/main/java/it/unicam/quasylab/jspear/) that are necessary to implement all the procedures, mechanisms, and functions described above.
+The [lib](./lib) folder contains all the [Java classes](./lib/src/main/java/it/unicam/quasylab/jspear/) that are necessary to implement all the procedures, mechanisms, and functions described above.
 
 In the [examples/engine](./examples/engine) folder you can find the script [Main.java](./examples/engine/src/main/java/it/unicam/quasylab/jspear/examples/engine/Main.java), that contains various tests, that we used to showcase different features of JSPEAR over the case study of a refrigerated engine system subject to cyber-physical attacks aimed at inflicting overstress of equipment. 
 
