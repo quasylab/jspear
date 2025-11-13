@@ -23,9 +23,12 @@
 package it.unicam.quasylab.jspear.distl;
 
 import it.unicam.quasylab.jspear.DefaultRandomGenerator;
+import it.unicam.quasylab.jspear.SampleSet;
+import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.penalty.*;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
+import org.apache.commons.math3.random.AbstractRandomGenerator;
 
 import java.util.stream.IntStream;
 import java.util.Optional;
@@ -33,13 +36,19 @@ import java.util.Optional;
 public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
 
     private final boolean parallel;
+    private final AbstractRandomGenerator rg;
 
     public DoubleSemanticsVisitor(boolean parallel) {
         this.parallel = parallel;
+        rg = new DefaultRandomGenerator();
     }
 
     public DoubleSemanticsVisitor() {
         this(false);
+    }
+
+    public void setRandomGeneratorSeed(int seed){
+        rg.setSeed(seed);
     }
 
     @Override
@@ -68,10 +77,10 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         double q = brinkDisTLFormula.getThreshold();
         if (rho.isPresent()) {
             return (sampleSize, step, sequence)
-                    -> sequence.get(step).distanceLeq(rho.get(), sequence.get(step).replica(sampleSize).applyDistribution(new DefaultRandomGenerator(), mu)) - q;
+                    -> sequence.get(step).distanceLeq(rho.get(), sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel)) - q;
         } else {
             return (sampleSize, step, sequence)
-                    -> sequence.get(step).distanceLeq(P, sequence.get(step).replica(sampleSize).applyDistribution(new DefaultRandomGenerator(), mu),step) - q;
+                    -> sequence.get(step).distanceLeq(P, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel),step) - q;
         }
     }
 
@@ -123,15 +132,21 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
     @Override
     public DisTLFunction<Double> evalTarget(TargetDisTLFormula targetDisTLFormula) {
         DataStateFunction mu = targetDisTLFormula.getDistribution();
+
         Optional<DataStateExpression> rho = targetDisTLFormula.getRho();
         Penalty P = targetDisTLFormula.getP();
         double q = targetDisTLFormula.getThreshold();
         if (rho.isPresent()) {
             return (sampleSize, step, sequence)
-                    -> q - sequence.get(step).distanceGeq(rho.get(), sequence.get(step).replica(sampleSize).applyDistribution(new DefaultRandomGenerator(), mu));
+                    -> {
+                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(rho.get(), muSample);
+            };
         } else {
             return (sampleSize, step, sequence)
-                    -> q - sequence.get(step).distanceGeq(P, sequence.get(step).replica(sampleSize).applyDistribution(new DefaultRandomGenerator(), mu), step);
+                    -> {
+                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(P, muSample, step);};
         }
     }
 

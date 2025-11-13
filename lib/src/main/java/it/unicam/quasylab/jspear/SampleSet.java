@@ -392,7 +392,11 @@ public class SampleSet<T extends SystemState> {
         );
     }
 
-    public SampleSet<T> applyDistribution(RandomGenerator rg, DataStateFunction function){
-        return new SampleSet<>(this.stream().parallel().map(s -> (T) s.apply(rg, function)).toList());
+    public SampleSet<T> applyDistribution(RandomGenerator rg, DataStateFunction function, boolean parallel){
+        if(parallel){
+            return new SampleSet<>(this.stream().parallel().map(s -> (T) s.apply(rg, function)).toList());
+        } else {
+            return new SampleSet<>(this.stream().map(s -> (T) s.apply(rg, function)).toList());
+        }
     }
 }

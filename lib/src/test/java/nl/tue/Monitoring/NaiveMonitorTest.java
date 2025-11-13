@@ -77,7 +77,9 @@ class NaiveMonitorTest {
         UDisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
         int timestep = 0;
 
-        double semanticsEval = new DoubleSemanticsVisitor().eval((DisTLFormula) phi)
+        DoubleSemanticsVisitor semanticsEvaluator = new DoubleSemanticsVisitor();
+        semanticsEvaluator.setRandomGeneratorSeed(seed);
+        double semanticsEval = semanticsEvaluator.eval((DisTLFormula) phi)
                 .eval(SAMPLE_SIZE, 0, sequence);
 
         NaiveMonitorBuilder naiveMonitorBuilder = new NaiveMonitorBuilder(timestep, SAMPLE_SIZE, false);

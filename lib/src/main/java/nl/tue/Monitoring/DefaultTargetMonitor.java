@@ -36,7 +36,7 @@ public class DefaultTargetMonitor implements UDisTLMonitor<Double> {
     TargetDisTLFormula formula;
     boolean parallel;
     private final int timestep;
-    private DefaultRandomGenerator rng;
+    private final DefaultRandomGenerator rg;
 
     public DefaultTargetMonitor(TargetDisTLFormula formula, int timestep, int sampleSize) {
         this(formula, timestep, sampleSize, false);
@@ -47,17 +47,17 @@ public class DefaultTargetMonitor implements UDisTLMonitor<Double> {
         this.formula = formula;
         this.timestep = timestep;
         this.parallel = parallel;
-        rng = new DefaultRandomGenerator();
+        rg = new DefaultRandomGenerator();
     }
 
     public void setRandomGeneratorSeed(int seed){
-        rng.setSeed(seed);
+        rg.setSeed(seed);
     }
 
     @Override
     public Double evalNext(SampleSet<PerceivedSystemState> sample) {
         DataStateFunction mu = formula.getDistribution();
-        SampleSet<PerceivedSystemState> muSample = sample.replica(sampleSize).applyDistribution(rng, mu);
+        SampleSet<PerceivedSystemState> muSample = sample.replica(sampleSize).applyDistribution(rg, mu, parallel);
         Optional<DataStateExpression> rho = formula.getRho();
         Penalty P = formula.getP();
         double q = formula.getThreshold();

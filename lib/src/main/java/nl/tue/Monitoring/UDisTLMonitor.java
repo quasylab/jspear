@@ -26,7 +26,10 @@ import it.unicam.quasylab.jspear.SampleSet;
 import it.unicam.quasylab.jspear.SystemState;
 
 public interface UDisTLMonitor<T> {
+
     T evalNext(SampleSet<PerceivedSystemState> sample);
+
+    void setRandomGeneratorSeed(int seed);
 
     static SampleSet<PerceivedSystemState> systemStatesToPerceivedSystemStates(SampleSet<SystemState> systemStateSample){
         return new SampleSet<>(systemStateSample.stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());

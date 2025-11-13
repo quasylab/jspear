@@ -43,12 +43,14 @@ public final class TargetDisTLFormula implements DisTLFormula, UDisTLFormula {
 
     public TargetDisTLFormula(DataStateFunction distribution, DataStateExpression penalty, double threshold) {
         this(distribution, threshold);
+        this.rho = Optional.ofNullable(penalty);
         this.P = new NonePenalty();
     }
 
     public TargetDisTLFormula(DataStateFunction distribution, Penalty penalty, double threshold) {
         this(distribution, threshold);
         this.rho = Optional.empty();
+        this.P = penalty;
     }
 
     private TargetDisTLFormula(DataStateFunction distribution, double threshold) {
