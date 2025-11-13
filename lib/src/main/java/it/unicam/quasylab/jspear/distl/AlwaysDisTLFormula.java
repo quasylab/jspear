@@ -40,16 +40,6 @@ public final class AlwaysDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        if (parallel) {
-            return IntStream.of(from, to).parallel().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, true)).min().orElse(Double.NaN);
-        } else {
-            return IntStream.of(from, to).sequential().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, false)).min().orElse(Double.NaN);
-
-        }
-    }
-
-    @Override
     public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalAlways(this);
     }

@@ -27,11 +27,6 @@ import it.unicam.quasylab.jspear.EvolutionSequence;
 public final class FalseDisTLFormula implements DisTLFormula {
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return -1.0;
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalFalse();
     }

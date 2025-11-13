@@ -47,19 +47,6 @@ public final class UntilDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        if (parallel) {
-            return IntStream.range(from+step, to+step).sequential().mapToDouble(
-                    i -> Math.min(rightFormula.eval(sampleSize, i, sequence, true),
-                            IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, true)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
-        } else {
-            return IntStream.range(from+step, to+step).sequential().mapToDouble(
-                    i -> Math.min(rightFormula.eval(sampleSize, i, sequence, false),
-                            IntStream.range(from+step, i).mapToDouble(j -> leftFormula.eval(sampleSize, j, sequence, false)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
-        }
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalUntil(this);
     }

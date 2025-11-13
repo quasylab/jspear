@@ -35,11 +35,6 @@ public final class DisjunctionDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return Math.max(leftFormula.eval(sampleSize, step, sequence, parallel),rightFormula.eval(sampleSize, step, sequence, parallel));
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalDisjunction(this);
     }

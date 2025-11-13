@@ -30,11 +30,6 @@ import it.unicam.quasylab.jspear.robtl.RobustnessFunction;
 public final class TrueDisTLFormula implements DisTLFormula {
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return 1.0;
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalTrue();
     }

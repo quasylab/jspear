@@ -57,19 +57,6 @@ public final class BrinkDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        SampleSet<SystemState> state = sequence.get(step);
-        SampleSet<SystemState> state2 = state.replica(sampleSize).applyDistribution(new DefaultRandomGenerator(),this.mu);
-        double distance;
-        if (this.rho.isPresent()) {
-            distance = state.distanceLeq(this.rho.get(), state2);
-        } else {
-            distance = state.distanceLeq(this.P,state2,step);
-        }
-        return distance - this.q;
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalBrink(this);
     }

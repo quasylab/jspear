@@ -40,16 +40,6 @@ public final class EventuallyDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        if (parallel) {
-            return IntStream.of(from, to).parallel().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, true)).max().orElse(Double.NaN);
-        } else {
-            return IntStream.of(from, to).sequential().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, false)).max().orElse(Double.NaN);
-
-        }
-    }
-
-    @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalEventually(this);
     }

@@ -38,12 +38,6 @@ public sealed interface DisTLFormula permits
         TrueDisTLFormula,
         UntilDisTLFormula {
 
-    default double eval(int sampleSize, int step, EvolutionSequence sequence) {
-        return eval(sampleSize, step, sequence, true);
-    }
-
-    double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel);
-
     <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator);
 
     static DisTLFunction<Double> getDoubleEvaluationFunction(DisTLFormula formula) {

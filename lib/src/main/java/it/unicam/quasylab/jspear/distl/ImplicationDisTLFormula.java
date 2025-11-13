@@ -35,11 +35,6 @@ public final class ImplicationDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return Math.max(-leftFormula.eval(sampleSize, step, sequence,parallel),rightFormula.eval(sampleSize, step, sequence,parallel));
-    }
-
-    @Override
     public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalImplication(this);
     }

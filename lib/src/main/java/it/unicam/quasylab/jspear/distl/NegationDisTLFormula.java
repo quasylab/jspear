@@ -35,13 +35,6 @@ public final class NegationDisTLFormula implements DisTLFormula {
         this.argument = argument;
     }
 
-
-
-    @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return - argument.eval(sampleSize, step, sequence, parallel);
-    }
-
     @Override
     public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
         return evaluator.evalNegation(this);

@@ -35,38 +35,27 @@ public final class TargetDisTLFormula implements DisTLFormula, UDisTLFormula {
 
     private final DataStateFunction mu;
 
-    private final Optional<DataStateExpression> rho;
+    private Optional<DataStateExpression> rho;
 
-    private final Penalty P;
+    private Penalty P;
 
     private final double q;
 
     public TargetDisTLFormula(DataStateFunction distribution, DataStateExpression penalty, double threshold) {
-        this.mu = distribution;
-        this.rho = Optional.of(penalty);
-        this.q = threshold;
+        this(distribution, threshold);
         this.P = new NonePenalty();
     }
 
     public TargetDisTLFormula(DataStateFunction distribution, Penalty penalty, double threshold) {
-        this.mu = distribution;
+        this(distribution, threshold);
         this.rho = Optional.empty();
-        this.q = threshold;
-        this.P = penalty;
     }
 
-    @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        SampleSet<SystemState> state = sequence.get(step);
-        SampleSet<SystemState> state2 = state.replica(sampleSize).applyDistribution(new DefaultRandomGenerator(),this.mu);
-        double distance;
-        if (this.rho.isPresent()) {
-            distance = state.distanceGeq(this.rho.get(), state2);
-        } else {
-            distance = state.distanceGeq(this.P,state2,step);
-        }
-        return this.q - distance;
+    private TargetDisTLFormula(DataStateFunction distribution, double threshold) {
+        this.mu = distribution;
+        this.q = threshold;
     }
+
 
     @Override
     public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
