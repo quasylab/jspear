@@ -29,10 +29,12 @@ import it.unicam.quasylab.jspear.udistl.UnboundedUntiluDisTLFormula;
 public class NaiveMonitorBuilder implements MonitoringVisitor<UDisTLMonitor<Double>> {
     int sampleSize;
     boolean parallel;
+    int formulaEvalTimestep;
 
-    public NaiveMonitorBuilder(int sampleSize, boolean parallel) {
+    public NaiveMonitorBuilder(int formulaEvalTimestep, int sampleSize, boolean parallel) {
         this.sampleSize = sampleSize;
         this.parallel = parallel;
+        this.formulaEvalTimestep = formulaEvalTimestep;
     }
 
     @Override
@@ -42,12 +44,11 @@ public class NaiveMonitorBuilder implements MonitoringVisitor<UDisTLMonitor<Doub
 
     @Override
     public UDisTLMonitor<Double> buildTargetMonitor(TargetDisTLFormula formula) {
-        return new DefaultTargetMonitor(formula, sampleSize, parallel);
+        return new DefaultTargetMonitor(formula, formulaEvalTimestep, sampleSize, parallel);
     }
 
     @Override
     public UDisTLMonitor<Double> buildUnboundedUntilMonitor(TargetDisTLFormula formula) {
-
         throw new UnsupportedOperationException("TODO");
     }
 

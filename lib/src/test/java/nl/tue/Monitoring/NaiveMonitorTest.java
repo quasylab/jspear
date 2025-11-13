@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class NaiveMonitorTest {
 
     final int x = 0;
+    int seed = 0;
     // one variable x, evolution sequence composed of distributions s.t. x uniformly distributed in [0,1]
     // Target with tolerance 1 and mu following a uniform distribution over data states with values of x in [0,1]
     EvolutionSequence getTestES1(){
@@ -60,7 +61,9 @@ class NaiveMonitorTest {
         DataStateFunction environment = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, rg.nextDouble())));
         Function<RandomGenerator, SystemState> system = rg ->
                 new ControlledSystem(controller, environment, new DataState(NUMBER_OF_VARIABLES, i -> rg.nextDouble()));
-        return new EvolutionSequence(new DefaultRandomGenerator(), system, ES_SAMPLE_SIZE);
+        DefaultRandomGenerator rng = new DefaultRandomGenerator();
+        rng.setSeed(seed);
+        return new EvolutionSequence(rng, system, ES_SAMPLE_SIZE);
     }
 
 
@@ -72,13 +75,14 @@ class NaiveMonitorTest {
 
         DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, rg.nextDouble())));
         UDisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
-
+        int timestep = 0;
 
         double semanticsEval = new DoubleSemanticsVisitor().eval((DisTLFormula) phi)
                 .eval(SAMPLE_SIZE, 0, sequence);
 
-        NaiveMonitorBuilder naiveMonitorBuilder = new NaiveMonitorBuilder(SAMPLE_SIZE, false);
+        NaiveMonitorBuilder naiveMonitorBuilder = new NaiveMonitorBuilder(timestep, SAMPLE_SIZE, false);
         UDisTLMonitor<Double> m = naiveMonitorBuilder.build(phi);
+        m.setRandomGeneratorSeed(seed);
 
         SampleSet<PerceivedSystemState> distribution = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(0));
 

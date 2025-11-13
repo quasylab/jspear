@@ -35,30 +35,36 @@ public class DefaultTargetMonitor implements UDisTLMonitor<Double> {
     int sampleSize;
     TargetDisTLFormula formula;
     boolean parallel;
+    private final int timestep;
+    private DefaultRandomGenerator rng;
 
-    public DefaultTargetMonitor(TargetDisTLFormula formula, int sampleSize) {
-        this.sampleSize = sampleSize;
-        this.formula = formula;
-        parallel = false;
+    public DefaultTargetMonitor(TargetDisTLFormula formula, int timestep, int sampleSize) {
+        this(formula, timestep, sampleSize, false);
     }
 
-    public DefaultTargetMonitor(TargetDisTLFormula formula,  int sampleSize, boolean parallel) {
+    public DefaultTargetMonitor(TargetDisTLFormula formula, int timestep, int sampleSize, boolean parallel) {
         this.sampleSize = sampleSize;
         this.formula = formula;
+        this.timestep = timestep;
         this.parallel = parallel;
+        rng = new DefaultRandomGenerator();
+    }
+
+    public void setRandomGeneratorSeed(int seed){
+        rng.setSeed(seed);
     }
 
     @Override
     public Double evalNext(SampleSet<PerceivedSystemState> sample) {
         DataStateFunction mu = formula.getDistribution();
-        SampleSet<PerceivedSystemState> muSample = sample.replica(sampleSize).applyDistribution(new DefaultRandomGenerator(), mu);
+        SampleSet<PerceivedSystemState> muSample = sample.replica(sampleSize).applyDistribution(rng, mu);
         Optional<DataStateExpression> rho = formula.getRho();
         Penalty P = formula.getP();
         double q = formula.getThreshold();
         if (rho.isPresent()) {
             return q - sample.distanceGeq(rho.get(), muSample);
         } else {
-            return q - sample.distanceGeq(P, muSample, 0);
+            return q - sample.distanceGeq(P, muSample, timestep);
         }
     }
 }
