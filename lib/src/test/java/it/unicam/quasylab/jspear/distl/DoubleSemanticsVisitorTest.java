@@ -47,7 +47,7 @@ public class DoubleSemanticsVisitorTest {
     final SampleSet<PerceivedSystemState> emptySampleSet = new SampleSet<>();
 
     // Two variables. Evolution sequence defined as follows:
-// The distribution at time t is a dirac dist. around (0, 1.0) if t == 0, otherwise dirac dist. around (t, 1/t)
+    // The distribution at time t is a dirac dist. around (0, 1.0) if t == 0, otherwise dirac dist. around (t, 1/t)
     EvolutionSequence getTestES1() {
         final int ES_SAMPLE_SIZE = 10;
         final int NUMBER_OF_VARIABLES = 2;
@@ -89,8 +89,12 @@ public class DoubleSemanticsVisitorTest {
         semanticsEvaluator.setRandomGeneratorSeed(seed);
         double evaluation = semanticsEvaluator.eval(phi)
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
+        assertEquals( -0.16666666666666663, evaluation);
 
-        assertEquals( -0.1667, evaluation);
+        DoubleSemanticsVisitor parallelSemanticsEvaluator = new DoubleSemanticsVisitor(true);
+        parallelSemanticsEvaluator.setRandomGeneratorSeed(seed);
+        double parEvaluation = parallelSemanticsEvaluator.eval(phi).eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
+        assertEquals( -0.16666666666666663, parEvaluation);
     }
 
     @Test
@@ -113,7 +117,11 @@ public class DoubleSemanticsVisitorTest {
         semanticsEvaluator.setRandomGeneratorSeed(seed);
         double evaluation = semanticsEvaluator.eval(phi)
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
+        assertEquals(-0.09090909090909091, evaluation);
 
-        assertEquals(-0.0909, evaluation);
+        DoubleSemanticsVisitor parallelSemanticsEvaluator = new DoubleSemanticsVisitor(true);
+        parallelSemanticsEvaluator.setRandomGeneratorSeed(seed);
+        double parEvaluation = parallelSemanticsEvaluator.eval(phi).eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
+        assertEquals( -0.09090909090909091, parEvaluation);
     }
 }

@@ -30,6 +30,7 @@ import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import org.apache.commons.math3.random.AbstractRandomGenerator;
 
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.Optional;
 
@@ -61,12 +62,7 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         DisTLFunction<Double> argumentFunction = alwaysDisTLFormula.getArgument().eval(this);
         int from = alwaysDisTLFormula.getFrom();
         int to = alwaysDisTLFormula.getTo();
-        if (parallel) {
-            return (sampleSize, step, sequence) -> IntStream.of(from, to).parallel().mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).min().orElse(Double.NaN);
-        } else {
-            return (sampleSize, step, sequence) -> IntStream.of(from, to).sequential().mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).min().orElse(Double.NaN);
-
-        }
+        return (sampleSize, step, sequence) -> maybeParallelize(IntStream.of(from, to)).mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).min().orElse(Double.NaN);
     }
 
     @Override
@@ -104,11 +100,8 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         DisTLFunction<Double> argumentFunction = eventuallyDisTLFormula.getArgument().eval(this);
         int from = eventuallyDisTLFormula.getFrom();
         int to = eventuallyDisTLFormula.getTo();
-        if (parallel) {
-            return (sampleSize, step, sequence) -> IntStream.of(from, to).parallel().mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).max().orElse(Double.NaN);
-        } else {
-            return (sampleSize, step, sequence) -> IntStream.of(from, to).parallel().mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).max().orElse(Double.NaN);
-        }
+        return (sampleSize, step, sequence) -> maybeParallelize(IntStream.of(from, to)).mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).max().orElse(Double.NaN);
+
     }
 
     @Override
@@ -161,17 +154,27 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         DisTLFunction<Double> rightFunction = untilDisTLFormula.getRightFormula().eval(this);
         int from = untilDisTLFormula.getFrom();
         int to = untilDisTLFormula.getTo();
-        if (parallel) {
-            return (sampleSize, step, sequence) ->
-                    IntStream.range(from+step, to+step).sequential().mapToDouble(
-                    i -> Math.min(rightFunction.eval(sampleSize, i, sequence),
-                            IntStream.range(from+step, i).mapToDouble(j -> leftFunction.eval(sampleSize, j, sequence)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
-        } else {
-            return (sampleSize, step, sequence) ->
-                    IntStream.range(from+step, to+step).sequential().mapToDouble(
-                            i -> Math.min(rightFunction.eval(sampleSize, i, sequence),
-                                    IntStream.range(from+step, i).mapToDouble(j -> leftFunction.eval(sampleSize, j, sequence)).min().orElse(Double.NaN))).max().orElse(Double.NaN);
+
+        return(sampleSize, step, sequence) ->
+                maybeParallelize(IntStream.range(from+step, to+step+1)).mapToDouble(
+                        i -> {
+                            if (i == from + step){
+                                return rightFunction.eval(sampleSize, i, sequence);
+                            } else {
+                                return Math.min(
+                                        rightFunction.eval(sampleSize, i, sequence),
+                                        maybeParallelize(IntStream.range(from+step, i)).mapToDouble(j -> leftFunction.eval(sampleSize, j, sequence))
+                                                .min().orElse(Double.NaN));
+                            }
+                        }).max().orElse(Double.NaN);
+
+    }
+
+    private IntStream maybeParallelize(IntStream s){
+        if (parallel){
+            return s.parallel();
         }
+        return s.sequential();
     }
 
 }
