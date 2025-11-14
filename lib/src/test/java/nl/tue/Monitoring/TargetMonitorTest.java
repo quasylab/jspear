@@ -74,12 +74,12 @@ class TargetMonitorTest {
 
         // Target with tolerance 1 and mu following a uniform distribution over data states with values of x in [0,1]
         DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, rg.nextDouble())));
-        UDisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
+        DisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
         int semanticsEvalTimestep = 0;
 
         DoubleSemanticsVisitor semanticsEvaluator = new DoubleSemanticsVisitor();
         semanticsEvaluator.setRandomGeneratorSeed(seed);
-        double semanticsEval = semanticsEvaluator.eval((DisTLFormula) phi)
+        double semanticsEval = semanticsEvaluator.eval(phi)
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
@@ -111,12 +111,12 @@ class TargetMonitorTest {
         EvolutionSequence sequence = getTestES1();
 
         DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, rg.nextDouble())));
-        UDisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
+        DisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 1.0);
         int semanticsEvalTimestep = 1;
 
         DoubleSemanticsVisitor semanticsEvaluator = new DoubleSemanticsVisitor();
         semanticsEvaluator.setRandomGeneratorSeed(seed);
-        double semanticsEval = semanticsEvaluator.eval((DisTLFormula) phi)
+        double semanticsEval = semanticsEvaluator.eval(phi)
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
@@ -168,7 +168,7 @@ class TargetMonitorTest {
 
         DoubleSemanticsVisitor semanticsEvaluator = new DoubleSemanticsVisitor();
         semanticsEvaluator.setRandomGeneratorSeed(seed);
-        double semanticsEval = semanticsEvaluator.eval((DisTLFormula) phi)
+        double semanticsEval = semanticsEvaluator.eval(phi)
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);

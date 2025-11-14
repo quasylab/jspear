@@ -56,7 +56,7 @@ public final class BrinkDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalBrink(this);
     }
 

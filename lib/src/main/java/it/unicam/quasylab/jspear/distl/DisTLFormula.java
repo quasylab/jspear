@@ -22,7 +22,6 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.robtl.*;
 import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 

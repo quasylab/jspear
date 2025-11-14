@@ -24,7 +24,6 @@ package it.unicam.quasylab.jspear.distl;
 
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.penalty.*;
-import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.Optional;

@@ -37,7 +37,7 @@ public final class DisjunctionDisTLFormula implements DisTLFormula {
     }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalDisjunction(this);
     }
 

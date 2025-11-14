@@ -28,7 +28,7 @@ public class Main {
     private static final int x = 0;
     private static final int NUMBER_OF_VARIABLES = 1;
 
-    private static int evaluationTimestep = 0;
+    private static final int evaluationTimestep = 0;
 
     public static void main(String[] args) {
             Controller controller = getController();
@@ -39,9 +39,9 @@ public class Main {
 
             DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, 0.0)));
 
-            UDisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 0.0);
+            DisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 0.0);
 
-            double eval = new DoubleSemanticsVisitor().eval((DisTLFormula) phi)
+            double eval = new DoubleSemanticsVisitor().eval(phi)
                     .eval(FORMULA_SAMPLE_SIZE, evaluationTimestep, sequence);
 
             System.out.println("Robustness: "+eval);
