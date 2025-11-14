@@ -26,7 +26,9 @@ import it.unicam.quasylab.jspear.distl.*;
 import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import it.unicam.quasylab.jspear.udistl.UnboundedUntiluDisTLFormula;
 
-public class DefaultMonitorBuilder implements MonitorBuildingVisitor<UDisTLMonitor<Double>> {
+import java.util.OptionalDouble;
+
+public class DefaultMonitorBuilder implements MonitorBuildingVisitor<UDisTLMonitor<OptionalDouble>> {
 
     int sampleSize;
     boolean parallel;
@@ -37,68 +39,68 @@ public class DefaultMonitorBuilder implements MonitorBuildingVisitor<UDisTLMonit
     }
 
     @Override
-    public UDisTLMonitor<Double> build(UDisTLFormula formula, int semanticsEvaluationTimestep) {
+    public UDisTLMonitor<OptionalDouble> build(UDisTLFormula formula, int semanticsEvaluationTimestep) {
         return formula.build(this, semanticsEvaluationTimestep);
     }
 
     @Override
-    public UDisTLMonitor<Double> buildAlways(AlwaysDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildAlways(AlwaysDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildBrink(BrinkDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildBrink(BrinkDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildConjunction(ConjunctionDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildConjunction(ConjunctionDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildDisjunction(DisjunctionDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildDisjunction(DisjunctionDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildEventually(EventuallyDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildEventually(EventuallyDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildFalse(FalseDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildFalse(FalseDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildImplication(ImplicationDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildImplication(ImplicationDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildNegation(NegationDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildNegation(NegationDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildTarget(TargetDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildTarget(TargetDisTLFormula formula, int formulaEvalTimestep) {
         return new DefaultTargetMonitor(formula, formulaEvalTimestep, sampleSize, parallel);
     }
 
     @Override
-    public UDisTLMonitor<Double> buildTrue(TrueDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildTrue(TrueDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
 
     @Override
-    public UDisTLMonitor<Double> buildUnboundedUntil(UnboundedUntiluDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildUnboundedUntil(UnboundedUntiluDisTLFormula formula, int formulaEvalTimestep) {
         throw new UnsupportedOperationException("TODO");
     }
 
     @Override
-    public UDisTLMonitor<Double> buildUntil(UntilDisTLFormula formula, int formulaEvalTimestep) {
+    public UDisTLMonitor<OptionalDouble> buildUntil(UntilDisTLFormula formula, int formulaEvalTimestep) {
         return new DefaultUntilMonitor(formula, formulaEvalTimestep, sampleSize, parallel);
     }
 }

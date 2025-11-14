@@ -29,8 +29,9 @@ import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.penalty.Penalty;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
 
-public class DefaultTargetMonitor extends UDisTLMonitor<Double> {
+public class DefaultTargetMonitor extends UDisTLMonitor<OptionalDouble> {
 
     private final TargetDisTLFormula formula;
     private int distributionSequenceSizeCounter;
@@ -45,19 +46,19 @@ public class DefaultTargetMonitor extends UDisTLMonitor<Double> {
 
 
     @Override
-    public Double evalNext(SampleSet<PerceivedSystemState> sample) {
+    public OptionalDouble evalNext(SampleSet<PerceivedSystemState> sample) {
         distributionSequenceSizeCounter += 1;
         if(distributionSequenceSizeCounter == semEvalTimestep + formula.getFES()){
             result = computeAsSemantics(sample);
             alreadyComputed = true;
-            return result;
+            return OptionalDouble.of(result);
         } else if(distributionSequenceSizeCounter > semEvalTimestep + formula.getFES()){
             if(!alreadyComputed){
                 System.out.println("Warn: Target monitor is reporting without computing");
             }
-            return result;
+            return OptionalDouble.of(result);
         } else {
-            return UDisTLMonitor.UNDEFINED_SYMBOL;
+            return OptionalDouble.empty();
         }
     }
 
@@ -67,10 +68,7 @@ public class DefaultTargetMonitor extends UDisTLMonitor<Double> {
         Optional<DataStateExpression> rho = formula.getRho();
         Penalty P = formula.getP();
         double q = formula.getThreshold();
-        if (rho.isPresent()) {
-            return q - sample.distanceGeq(rho.get(), muSample);
-        } else {
-            return q - sample.distanceGeq(P, muSample, semEvalTimestep);
-        }
+        return rho.map(dataStateExpression -> q - sample.distanceGeq(dataStateExpression, muSample))
+                .orElseGet(() -> q - sample.distanceGeq(P, muSample, semEvalTimestep));
     }
 }

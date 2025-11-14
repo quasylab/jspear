@@ -37,9 +37,11 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UntilMonitorTest {
 
@@ -97,16 +99,19 @@ class UntilMonitorTest {
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<Double> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
         m.setRandomGeneratorSeed(seed);
 
         for (int i = from; i <= to+1; i++) {
             SampleSet<PerceivedSystemState> observationSampleSet = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(i));
-            double monitorEval = m.evalNext(observationSampleSet);
+            OptionalDouble monitorEval = m.evalNext(observationSampleSet);
             DataState percievedSample =((PerceivedSystemState) observationSampleSet.stream().toArray()[0]).getDataState();
-            System.out.printf("s_%d: dirac around (%.2f, %.4f), monitor output: %.4f%n", i, percievedSample.get(t), percievedSample.get(x), monitorEval);
+            System.out.printf("s_%d: dirac around (%.2f, %.4f), monitor output: %.4f%n", i, percievedSample.get(t), percievedSample.get(x), monitorEval.isPresent() ? monitorEval.getAsDouble() : Double.NaN);
         }
-        assertEquals(semanticsEval, m.evalNext(emptySampleSet));
+
+        OptionalDouble monitorEval = m.evalNext(emptySampleSet);
+        assertTrue(monitorEval.isPresent());
+        assertEquals(semanticsEval, monitorEval.getAsDouble());
     }
 
     @Test
@@ -134,16 +139,19 @@ class UntilMonitorTest {
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<Double> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
         m.setRandomGeneratorSeed(seed);
 
         for (int i = 0; i <= semanticsEvalTimestep + to + 3; i++) {
             SampleSet<PerceivedSystemState> observationSampleSet = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(i));
-            double monitorEval = m.evalNext(observationSampleSet);
+            OptionalDouble monitorEval = m.evalNext(observationSampleSet);
             DataState percievedSample =((PerceivedSystemState) observationSampleSet.stream().toArray()[0]).getDataState();
-            System.out.printf("s_%d: dirac around (%.2f, %.4f), monitor output: %.4f%n", i, percievedSample.get(t), percievedSample.get(x), monitorEval);
+            System.out.printf("s_%d: dirac around (%.2f, %.4f), monitor output: %.4f%n", i, percievedSample.get(t), percievedSample.get(x), monitorEval.isPresent() ? monitorEval.getAsDouble() : Double.NaN);
         }
-        assertEquals(semanticsEval, m.evalNext(emptySampleSet));
+
+        OptionalDouble monitorEval = m.evalNext(emptySampleSet);
+        assertTrue(monitorEval.isPresent());
+        assertEquals(semanticsEval, monitorEval.getAsDouble());
     }
 
 }
