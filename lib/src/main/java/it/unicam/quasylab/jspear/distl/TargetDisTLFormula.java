@@ -22,16 +22,16 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.penalty.*;
 import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
-import nl.tue.Monitoring.MonitoringVisitor;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 
-public final class TargetDisTLFormula implements DisTLFormula, UDisTLFormula {
+public final class TargetDisTLFormula implements DisTLFormula {
 
     private final DataStateFunction mu;
 
@@ -79,7 +79,17 @@ public final class TargetDisTLFormula implements DisTLFormula, UDisTLFormula {
     public double getThreshold() { return this.q; }
 
     @Override
-    public <T> T build(MonitoringVisitor<T> visitor) {
-        return visitor.buildTargetMonitor(this);
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildTarget(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return 1;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return OptionalInt.of(1);
     }
 }

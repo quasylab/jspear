@@ -22,10 +22,9 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormulaVisitor;
-import it.unicam.quasylab.jspear.robtl.RobustnessFunction;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public final class NegationDisTLFormula implements DisTLFormula {
 
@@ -42,5 +41,20 @@ public final class NegationDisTLFormula implements DisTLFormula {
 
     public DisTLFormula getArgument() {
         return argument;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildNegation(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return argument.getFES();
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return argument.getTimeHorizon();
     }
 }

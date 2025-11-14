@@ -22,9 +22,9 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
-import java.util.stream.IntStream;
+import java.util.OptionalInt;
 
 public final class EventuallyDisTLFormula implements DisTLFormula {
 
@@ -54,5 +54,25 @@ public final class EventuallyDisTLFormula implements DisTLFormula {
 
     public int getTo() {
         return to;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildEventually(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return arg.getFES() + from;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        OptionalInt arghrz = arg.getTimeHorizon();
+        if(arghrz.isEmpty()){
+            return OptionalInt.empty();
+        } else {
+            return OptionalInt.of(to + arghrz.getAsInt());
+        }
     }
 }

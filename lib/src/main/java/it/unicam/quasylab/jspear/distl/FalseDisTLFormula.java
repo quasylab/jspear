@@ -22,7 +22,9 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public final class FalseDisTLFormula implements DisTLFormula {
 
@@ -31,4 +33,19 @@ public final class FalseDisTLFormula implements DisTLFormula {
         return evaluator.evalFalse();
     }
 
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildFalse(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return 0;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return OptionalInt.of(0);
+    }
 }
+

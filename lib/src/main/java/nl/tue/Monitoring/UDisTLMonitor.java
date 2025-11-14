@@ -22,16 +22,36 @@
 
 package nl.tue.Monitoring;
 
+import it.unicam.quasylab.jspear.DefaultRandomGenerator;
 import it.unicam.quasylab.jspear.SampleSet;
 import it.unicam.quasylab.jspear.SystemState;
 
-public interface UDisTLMonitor<T> {
+public abstract class UDisTLMonitor<T> {
 
-    T evalNext(SampleSet<PerceivedSystemState> sample);
+    public static final double UNDEFINED_SYMBOL = -2.0;
 
-    void setRandomGeneratorSeed(int seed);
+    protected int sampleSize;
+    protected boolean parallel;
+    protected final int semEvalTimestep;
+    protected final DefaultRandomGenerator rg;
 
-    static SampleSet<PerceivedSystemState> systemStatesToPerceivedSystemStates(SampleSet<SystemState> systemStateSample){
+    public UDisTLMonitor(int semEvalTimestep, int sampleSize, boolean parallel) {
+        this.sampleSize = sampleSize;
+        this.semEvalTimestep = semEvalTimestep;
+        this.parallel = parallel;
+        rg = new DefaultRandomGenerator();
+    }
+
+    public void setRandomGeneratorSeed(int seed){
+        rg.setSeed(seed);
+    }
+
+    public abstract T evalNext(SampleSet<PerceivedSystemState> sample);
+
+    public static SampleSet<PerceivedSystemState> systemStatesToPerceivedSystemStates(SampleSet<SystemState> systemStateSample){
         return new SampleSet<>(systemStateSample.stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
     }
+
+
+
 }

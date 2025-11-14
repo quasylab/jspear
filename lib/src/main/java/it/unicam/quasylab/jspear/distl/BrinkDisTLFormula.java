@@ -22,14 +22,13 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.DefaultRandomGenerator;
-import it.unicam.quasylab.jspear.EvolutionSequence;
-import it.unicam.quasylab.jspear.SampleSet;
-import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.penalty.*;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
 import java.util.Optional;
+import java.util.OptionalInt;
 
 
 public final class BrinkDisTLFormula implements DisTLFormula {
@@ -74,4 +73,19 @@ public final class BrinkDisTLFormula implements DisTLFormula {
     }
 
     public double getThreshold() { return this.q; }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildBrink(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return 1;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return OptionalInt.of(1);
+    }
 }

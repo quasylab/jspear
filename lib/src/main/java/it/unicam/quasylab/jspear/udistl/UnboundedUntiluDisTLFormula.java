@@ -23,12 +23,24 @@
 package it.unicam.quasylab.jspear.udistl;
 
 import it.unicam.quasylab.jspear.EvolutionSequence;
-import nl.tue.Monitoring.MonitoringVisitor;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public class UnboundedUntiluDisTLFormula implements UDisTLFormula {
     @Override
-    public <T> T build(MonitoringVisitor<T> visitor) {
-        return visitor.buildUnboundedUntil(this);
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildUnboundedUntil(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return 1;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return OptionalInt.empty();
     }
 
     public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {

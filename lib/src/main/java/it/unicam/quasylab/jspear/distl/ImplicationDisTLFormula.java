@@ -22,7 +22,9 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public final class ImplicationDisTLFormula implements DisTLFormula {
 
@@ -45,5 +47,26 @@ public final class ImplicationDisTLFormula implements DisTLFormula {
 
     public DisTLFormula getRightFormula() {
         return rightFormula;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildImplication(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return Math.max(leftFormula.getFES(), rightFormula.getFES());
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        OptionalInt l = leftFormula.getTimeHorizon();
+        OptionalInt r = rightFormula.getTimeHorizon();
+        if(l.isEmpty() || r.isEmpty()){
+            return OptionalInt.empty();
+        } else {
+            return OptionalInt.of(Math.max(l.getAsInt(), r.getAsInt()));
+        }
     }
 }

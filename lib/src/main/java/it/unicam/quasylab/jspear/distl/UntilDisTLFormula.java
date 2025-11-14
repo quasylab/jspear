@@ -22,12 +22,9 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormula;
-import it.unicam.quasylab.jspear.robtl.RobustnessFormulaVisitor;
-import it.unicam.quasylab.jspear.robtl.RobustnessFunction;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
-import java.util.stream.IntStream;
+import java.util.OptionalInt;
 
 public final class UntilDisTLFormula implements DisTLFormula {
 
@@ -65,5 +62,26 @@ public final class UntilDisTLFormula implements DisTLFormula {
 
     public DisTLFormula getRightFormula() {
         return rightFormula;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildUntil(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return Math.max(leftFormula.getFES(),rightFormula.getFES())+from;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        OptionalInt l = leftFormula.getTimeHorizon();
+        OptionalInt r = rightFormula.getTimeHorizon();
+        if(l.isEmpty() || r.isEmpty()){
+            return OptionalInt.empty();
+        } else {
+            return OptionalInt.of(Math.max(l.getAsInt() - 1, r.getAsInt()) + to);
+        }
     }
 }

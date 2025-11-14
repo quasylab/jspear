@@ -22,8 +22,14 @@
 
 package it.unicam.quasylab.jspear.udistl;
 
-import nl.tue.Monitoring.MonitoringVisitor;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public interface UDisTLFormula {
-    <T> T build(MonitoringVisitor<T> visitor);
+    <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep);
+
+    int getFES();
+
+    OptionalInt getTimeHorizon();
 }
