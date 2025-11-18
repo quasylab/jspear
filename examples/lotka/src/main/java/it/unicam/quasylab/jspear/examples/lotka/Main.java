@@ -184,7 +184,7 @@ public class Main {
             In this context, <code>size</code> is the cardinality of those sample sets.
             */
 
-            int size = 50;
+            int size = 1;
 
             /*
             The evolution sequence <code>sequence></code> created by the following instruction consists in a sequence of

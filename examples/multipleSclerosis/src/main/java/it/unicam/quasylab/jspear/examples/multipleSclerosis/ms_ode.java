@@ -86,7 +86,7 @@ public class ms_ode {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 1.0;
+    public static final double alphaR = 0.25;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -115,7 +115,7 @@ public class ms_ode {
 
             TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
-            int size = 1;
+            int size = 50;
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -169,12 +169,12 @@ public class ms_ode {
 
     }
 
-    public static Controller getController(int x) {
+    public static Controller getController() {
         return new NilController();
     }
 
 
-    public static Controller getController() {
+    public static Controller getController(int x) {
         ControllerRegistry registry = getControllerRegistry();
         return registry.reference("therapy");
     }
