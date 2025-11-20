@@ -23,53 +23,48 @@ import java.util.function.Function;
 
 public class Main {
 
-    private static final int ES_SAMPLE_SIZE = 100;
-    private static final int MONITORING_SAMPLE_SIZE = 10;
+    private static final int ES_SAMPLE_SIZE = 20;
+    private static final int MONITORING_SAMPLE_SIZE = 20;
 
     private static final int t = 0;
     private static final int x = 1;
 
-    private static final int evaluationTimestep = 0;
 
     public static void main(String[] args) {
-            Controller controller = getIdleController();
+        // Set up of evolution sequence. An evolution sequence will be the source of observations.
+        Controller controller = getIdleController();
 
-            Function<RandomGenerator, Double> myGaussian = (rg) -> rg.nextGaussian()/3+0.5;
+        Function<RandomGenerator, Double> myGaussian = (rg) -> rg.nextGaussian()/3+0.5;
 
-            DataStateFunction environment = (rg, ds) ->
-                ds.apply(List.of(
-                        new DataStateUpdate(t, ds.get(t)+1),
-                        new DataStateUpdate(x, myGaussian.apply(rg)+(1-1/(ds.get(t)+1))))
-              );
+        DataStateFunction environment = (rg, ds) ->
+            ds.apply(List.of(
+                    new DataStateUpdate(t, ds.get(t)+1),
+                    new DataStateUpdate(x, myGaussian.apply(rg)+(1-1/(ds.get(t)+1))))
+          );
 
-            EvolutionSequence sequence = new EvolutionSequence(new DefaultRandomGenerator(),
-                    rg -> new ControlledSystem(controller, environment, new DataState(new double[]{0, myGaussian.apply(rg)})),
-                    ES_SAMPLE_SIZE);
+        EvolutionSequence sequence = new EvolutionSequence(new DefaultRandomGenerator(),
+                rg -> new ControlledSystem(controller, environment, new DataState(new double[]{0, myGaussian.apply(rg)})),
+                ES_SAMPLE_SIZE);
 
+        // Creating a uDisTL formula
+        DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, myGaussian.apply(rg))));
 
-            DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, myGaussian.apply(rg))));
+        DisTLFormula phiprime = new TargetDisTLFormula(mu, ds -> ds.get(x), 0.0);
+        UDisTLFormula phi = new NegationDisTLFormula(new UnboundedUntiluDisTLFormula(new TrueDisTLFormula(),
+                new NegationDisTLFormula(phiprime)));
 
-            DisTLFormula phiprime = new TargetDisTLFormula(mu, ds -> {
-                if(ds.get(x) > 1){
-                    return 1;
-                } else if(ds.get(x) < 0){
-                    return 0.1;
-                }
-                return ds.get(x);
-            }, 0.0);
-            UDisTLFormula phi = new NegationDisTLFormula(new UnboundedUntiluDisTLFormula(new TrueDisTLFormula(),
-                    new NegationDisTLFormula(phiprime)));
+        // Creating a monitor for the formula
+        DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(MONITORING_SAMPLE_SIZE, false);
+        DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi);
 
-            DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(MONITORING_SAMPLE_SIZE, false);
-            DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, evaluationTimestep);
-
-            int i = 0;
-            while(i < 10){
-                SampleSet<PerceivedSystemState> distribution = sequence.getAsPerceivedSystemStates(i);
-                OptionalDouble monitorEval = m.evalNext(distribution);
-                System.out.println(monitorEval.isPresent() ? monitorEval.getAsDouble() : "u");
-                i++;
-            }
+        // Printing the first 10 monitor outputs
+        int i = 0;
+        while(i < 10){
+            SampleSet<PerceivedSystemState> distribution = sequence.getAsPerceivedSystemStates(i);
+            OptionalDouble monitorEval = m.evalNext(distribution);
+            System.out.println(monitorEval.isPresent() ? monitorEval.getAsDouble() : "u");
+            i++;
+        }
     }
 
     public static Controller getIdleController() {
