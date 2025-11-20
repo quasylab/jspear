@@ -22,21 +22,28 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
 public final class UntilDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula leftFormula;
+    private final UDisTLFormula leftFormula;
     private final int from;
     private final int to;
-    private final DisTLFormula rightFormula;
+    private final UDisTLFormula rightFormula;
 
-    public UntilDisTLFormula(DisTLFormula leftFormula, int from, int to, DisTLFormula rightFormula) {
-        if ((from<0)||(to<0)||(from>=to)) {
-            throw new IllegalArgumentException();
-        }
+    public UntilDisTLFormula(UDisTLFormula leftFormula, int from, int to, UDisTLFormula rightFormula) {
+        if (from < 0)
+            throw new IllegalArgumentException("Parameter 'from' must be non-negative: from=" + from);
+
+        if (to < 0)
+            throw new IllegalArgumentException("Parameter 'to' must be non-negative: to=" + to);
+
+        if (from >= to)
+            throw new IllegalArgumentException("Parameter 'from' must be less than 'to': from=" + from + ", to=" + to);
+
         this.leftFormula = leftFormula;
         this.from = from;
         this.to = to;
@@ -48,7 +55,7 @@ public final class UntilDisTLFormula implements DisTLFormula {
         return evaluator.evalUntil(this);
     }
 
-    public DisTLFormula getLeftFormula() {
+    public UDisTLFormula getLeftFormula() {
         return leftFormula;
     }
 
@@ -60,7 +67,7 @@ public final class UntilDisTLFormula implements DisTLFormula {
         return to;
     }
 
-    public DisTLFormula getRightFormula() {
+    public UDisTLFormula getRightFormula() {
         return rightFormula;
     }
 

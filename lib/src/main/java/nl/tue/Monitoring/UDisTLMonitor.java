@@ -22,36 +22,20 @@
 
 package nl.tue.Monitoring;
 
-import it.unicam.quasylab.jspear.DefaultRandomGenerator;
 import it.unicam.quasylab.jspear.SampleSet;
-import it.unicam.quasylab.jspear.SystemState;
 
-public abstract class UDisTLMonitor<T> {
-
-    public static final double UNDEFINED_SYMBOL = -2.0;
-
-    protected int sampleSize;
-    protected boolean parallel;
-    protected final int semEvalTimestep;
-    protected final DefaultRandomGenerator rg;
-
-    public UDisTLMonitor(int semEvalTimestep, int sampleSize, boolean parallel) {
-        this.sampleSize = sampleSize;
-        this.semEvalTimestep = semEvalTimestep;
-        this.parallel = parallel;
-        rg = new DefaultRandomGenerator();
-    }
-
-    public void setRandomGeneratorSeed(int seed){
-        rg.setSeed(seed);
-    }
-
-    public abstract T evalNext(SampleSet<PerceivedSystemState> sample);
-
-    public static SampleSet<PerceivedSystemState> systemStatesToPerceivedSystemStates(SampleSet<SystemState> systemStateSample){
-        return new SampleSet<>(systemStateSample.stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
-    }
-
-
-
+public interface UDisTLMonitor<T> {
+    /**
+     * Evaluates the monitored UDisTL formula on the given sample set.
+     *
+     * <p>This method receives a {@link SampleSet} of perceived system states
+     * corresponding to the next step of the evolution, and returns the
+     * monitoring output associated with that step. The returned value represents
+     * the evaluation, verdict, or satisfaction information of the UDisTL formula
+     * monitored by this object.</p>
+     *
+     * @param sample the sample set of perceived system states at the next step.
+     * @return the monitoring output for the given sample set.
+     */
+    T evalNext(SampleSet<PerceivedSystemState> sample);
 }

@@ -22,12 +22,30 @@
 
 package it.unicam.quasylab.jspear.udistl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.distl.DisTLFormulaVisitor;
+import it.unicam.quasylab.jspear.distl.DisTLFunction;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
 public class UnboundedUntiluDisTLFormula implements UDisTLFormula {
+
+    private final UDisTLFormula rightFormula;
+    private final UDisTLFormula leftFormula;
+
+    public UnboundedUntiluDisTLFormula(UDisTLFormula leftFormula, UDisTLFormula rightFormula) {
+        this.leftFormula = leftFormula;
+        this.rightFormula = rightFormula;
+    }
+
+    public UDisTLFormula getRightFormula() {
+        return rightFormula;
+    }
+
+    public UDisTLFormula getLeftFormula() {
+        return leftFormula;
+    }
+
     @Override
     public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
         return visitor.buildUnboundedUntil(this, semanticsEvaluationTimestep);
@@ -35,7 +53,7 @@ public class UnboundedUntiluDisTLFormula implements UDisTLFormula {
 
     @Override
     public int getFES() {
-        return 1;
+        return Math.max(leftFormula.getFES(), rightFormula.getFES());
     }
 
     @Override
@@ -43,7 +61,9 @@ public class UnboundedUntiluDisTLFormula implements UDisTLFormula {
         return OptionalInt.empty();
     }
 
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        throw new ArithmeticException("Unbounded until formula semantics is not computable");
+    @Override
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
+        throw new UnsupportedOperationException("Semantic evaluation of unbounded until is not formally defined");
     }
+
 }

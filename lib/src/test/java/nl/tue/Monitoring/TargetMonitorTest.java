@@ -32,6 +32,8 @@ import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
 import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import nl.tue.Monitoring.Default.DefaultMonitorBuilder;
+import nl.tue.Monitoring.Default.DefaultUDisTLMonitor;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +48,7 @@ class TargetMonitorTest {
 
     final int x = 0;
     int seed = 0;
-    final int SAMPLE_SIZE = 10;
+    final int SAMPLE_SIZE = 10000;
 
     final SampleSet<PerceivedSystemState> emptySampleSet = new SampleSet<>();
 
@@ -70,6 +72,8 @@ class TargetMonitorTest {
     }
 
 
+
+
     @Test
     void targetEvaluatesAt0() {
         EvolutionSequence sequence = getTestES1();
@@ -85,10 +89,10 @@ class TargetMonitorTest {
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
         m.setRandomGeneratorSeed(seed);
 
-        SampleSet<PerceivedSystemState> distribution = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(semanticsEvalTimestep));
+        SampleSet<PerceivedSystemState> distribution =sequence.getAsPerceivedSystemStates(semanticsEvalTimestep);
 
         OptionalDouble monitorEval = m.evalNext(distribution);
         assertTrue(monitorEval.isPresent());
@@ -103,7 +107,7 @@ class TargetMonitorTest {
         int semanticsEvalTimestep = 1;
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
 
         assertTrue(m.evalNext(emptySampleSet).isEmpty());
     }
@@ -123,12 +127,12 @@ class TargetMonitorTest {
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
         m.setRandomGeneratorSeed(seed);
 
         m.evalNext(emptySampleSet);
 
-        SampleSet<PerceivedSystemState> distribution = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(semanticsEvalTimestep));
+        SampleSet<PerceivedSystemState> distribution = sequence.getAsPerceivedSystemStates(semanticsEvalTimestep);
         OptionalDouble monitorEval = m.evalNext(distribution);
         assertTrue(monitorEval.isPresent());
         assertEquals(semanticsEval, monitorEval.getAsDouble());
@@ -176,18 +180,19 @@ class TargetMonitorTest {
                 .eval(SAMPLE_SIZE, semanticsEvalTimestep, sequence);
 
         DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(SAMPLE_SIZE, false);
-        UDisTLMonitor<OptionalDouble> m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
+        DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, semanticsEvalTimestep);
         m.setRandomGeneratorSeed(seed);
 
         m.evalNext(emptySampleSet);
         m.evalNext(emptySampleSet);
 
-        SampleSet<PerceivedSystemState> distribution = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(semanticsEvalTimestep));
+        SampleSet<PerceivedSystemState> distribution = sequence.getAsPerceivedSystemStates(semanticsEvalTimestep);
 
         OptionalDouble monitorEval = m.evalNext(distribution);
         assertTrue(monitorEval.isPresent());
         assertEquals(semanticsEval, monitorEval.getAsDouble());
     }
+
 
 }
 

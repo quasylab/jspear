@@ -20,25 +20,26 @@
  * limitations under the License.
  */
 
-package nl.tue.Monitoring;
+package nl.tue.Monitoring.Default;
 
 import it.unicam.quasylab.jspear.SampleSet;
 import it.unicam.quasylab.jspear.distl.TargetDisTLFormula;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.penalty.Penalty;
+import nl.tue.Monitoring.PerceivedSystemState;
 
 import java.util.Optional;
 import java.util.OptionalDouble;
 
-public class DefaultTargetMonitor extends UDisTLMonitor<OptionalDouble> {
+public class TargetMonitor extends DefaultUDisTLMonitor {
 
     private final TargetDisTLFormula formula;
     private int distributionSequenceSizeCounter;
     private double result;
     private boolean alreadyComputed = false;
 
-    public DefaultTargetMonitor(TargetDisTLFormula formula, int semanticEvaluationTimestep, int sampleSize, boolean parallel) {
+    public TargetMonitor(TargetDisTLFormula formula, int semanticEvaluationTimestep, int sampleSize, boolean parallel) {
         super(semanticEvaluationTimestep, sampleSize, parallel);
         this.formula = formula;
         distributionSequenceSizeCounter = 0;
@@ -48,11 +49,11 @@ public class DefaultTargetMonitor extends UDisTLMonitor<OptionalDouble> {
     @Override
     public OptionalDouble evalNext(SampleSet<PerceivedSystemState> sample) {
         distributionSequenceSizeCounter += 1;
-        if(distributionSequenceSizeCounter == semEvalTimestep + formula.getFES()){
+        if(distributionSequenceSizeCounter == semanticsEvaluationStep + formula.getFES()){
             result = computeAsSemantics(sample);
             alreadyComputed = true;
             return OptionalDouble.of(result);
-        } else if(distributionSequenceSizeCounter > semEvalTimestep + formula.getFES()){
+        } else if(distributionSequenceSizeCounter > semanticsEvaluationStep + formula.getFES()){
             if(!alreadyComputed){
                 System.out.println("Warn: Target monitor is reporting without computing");
             }
@@ -69,6 +70,6 @@ public class DefaultTargetMonitor extends UDisTLMonitor<OptionalDouble> {
         Penalty P = formula.getP();
         double q = formula.getThreshold();
         return rho.map(dataStateExpression -> q - sample.distanceGeq(dataStateExpression, muSample))
-                .orElseGet(() -> q - sample.distanceGeq(P, muSample, semEvalTimestep));
+                .orElseGet(() -> q - sample.distanceGeq(P, muSample, semanticsEvaluationStep));
     }
 }

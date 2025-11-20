@@ -20,20 +20,20 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.udistl;
+package nl.tue.Monitoring.Default;
 
-import it.unicam.quasylab.jspear.distl.DisTLFormulaVisitor;
-import it.unicam.quasylab.jspear.distl.DisTLFunction;
-import nl.tue.Monitoring.MonitorBuildingVisitor;
+import it.unicam.quasylab.jspear.SampleSet;
+import nl.tue.Monitoring.PerceivedSystemState;
 
-import java.util.OptionalInt;
+import java.util.OptionalDouble;
 
-public interface UDisTLFormula {
-    <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep);
+public class TrueMonitor extends DefaultUDisTLMonitor {
+    public TrueMonitor() {
+        super(0, 0, false);
+    }
 
-    int getFES();
-
-    OptionalInt getTimeHorizon();
-
-    <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator);
+    @Override
+    public OptionalDouble evalNext(SampleSet<PerceivedSystemState> sample) {
+        return OptionalDouble.of(1.0);
+    }
 }

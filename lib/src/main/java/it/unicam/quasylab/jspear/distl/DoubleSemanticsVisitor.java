@@ -61,7 +61,11 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         DisTLFunction<Double> argumentFunction = alwaysDisTLFormula.getArgument().eval(this);
         int from = alwaysDisTLFormula.getFrom();
         int to = alwaysDisTLFormula.getTo();
-        return (sampleSize, step, sequence) -> maybeParallelize(IntStream.of(from, to)).mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).min().orElse(Double.NaN);
+        return (sampleSize, step, sequence) ->
+                maybeParallelize(IntStream.range(from, to+1))
+                        .mapToDouble(i ->
+                                argumentFunction.eval(sampleSize, step+i, sequence))
+                        .min().orElse(Double.NaN);
     }
 
     @Override
@@ -70,13 +74,11 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         Optional<DataStateExpression> rho = brinkDisTLFormula.getRho();
         Penalty P = brinkDisTLFormula.getP();
         double q = brinkDisTLFormula.getThreshold();
-        if (rho.isPresent()) {
-            return (sampleSize, step, sequence)
-                    -> sequence.get(step).distanceLeq(rho.get(), sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel)) - q;
-        } else {
-            return (sampleSize, step, sequence)
-                    -> sequence.get(step).distanceLeq(P, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel),step) - q;
-        }
+        return rho.<DisTLFunction<Double>>map(
+                dataStateExpression -> (sampleSize, step, sequence)
+                -> sequence.get(step).distanceLeq(dataStateExpression, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel)) - q)
+                .orElseGet(() -> (sampleSize, step, sequence)
+                -> sequence.get(step).distanceLeq(P, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel), step) - q);
     }
 
 
@@ -99,7 +101,8 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         DisTLFunction<Double> argumentFunction = eventuallyDisTLFormula.getArgument().eval(this);
         int from = eventuallyDisTLFormula.getFrom();
         int to = eventuallyDisTLFormula.getTo();
-        return (sampleSize, step, sequence) -> maybeParallelize(IntStream.of(from, to)).mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).max().orElse(Double.NaN);
+        return (sampleSize, step, sequence) -> maybeParallelize(IntStream.range(from, to+1))
+                .mapToDouble(i -> argumentFunction.eval(sampleSize, step+i, sequence)).max().orElse(Double.NaN);
 
     }
 
@@ -117,7 +120,7 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
 
     @Override
     public DisTLFunction<Double> evalNegation(NegationDisTLFormula negationDisTLFormula) {
-        DisTLFunction<Double> argumentFunction = negationDisTLFormula.getArgument().eval(this);
+        DisTLFunction<Double> argumentFunction = (negationDisTLFormula.getArgument()).eval(this);
         return (sampleSize, step, sequence) -> - argumentFunction.eval(sampleSize, step, sequence);
     }
 
@@ -128,18 +131,15 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         Optional<DataStateExpression> rho = targetDisTLFormula.getRho();
         Penalty P = targetDisTLFormula.getP();
         double q = targetDisTLFormula.getThreshold();
-        if (rho.isPresent()) {
-            return (sampleSize, step, sequence)
-                    -> {
-                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
-                return q - sequence.get(step).distanceGeq(rho.get(), muSample);
-            };
-        } else {
-            return (sampleSize, step, sequence)
-                    -> {
-                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
-                return q - sequence.get(step).distanceGeq(P, muSample, step);};
-        }
+        return rho.<DisTLFunction<Double>>map(dataStateExpression -> (sampleSize, step, sequence)
+                -> {
+            SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+            return q - sequence.get(step).distanceGeq(dataStateExpression, muSample);
+        }).orElseGet(() -> (sampleSize, step, sequence)
+                -> {
+            SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+            return q - sequence.get(step).distanceGeq(P, muSample, step);
+        });
     }
 
     @Override
@@ -155,14 +155,14 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         int to = untilDisTLFormula.getTo();
 
         return(sampleSize, step, sequence) ->
-                maybeParallelize(IntStream.range(from+step, to+step+1)).mapToDouble(
-                        i -> {
-                            if (i == from + step){
-                                return rightFunction.eval(sampleSize, i, sequence);
+                maybeParallelize(IntStream.range(step+from, step+to+1)).mapToDouble(
+                        tauPrime -> {
+                            if (tauPrime == from + step){
+                                return rightFunction.eval(sampleSize, tauPrime, sequence);
                             } else {
                                 return Math.min(
-                                        rightFunction.eval(sampleSize, i, sequence),
-                                        maybeParallelize(IntStream.range(from+step, i)).mapToDouble(j -> leftFunction.eval(sampleSize, j, sequence))
+                                        rightFunction.eval(sampleSize, tauPrime, sequence),
+                                        maybeParallelize(IntStream.range(from+step, tauPrime)).mapToDouble(tauPrimePrime -> leftFunction.eval(sampleSize, tauPrimePrime, sequence))
                                                 .min().orElse(Double.NaN));
                             }
                         }).max().orElse(Double.NaN);

@@ -22,18 +22,19 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
 public final class EventuallyDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula arg;
+    private final UDisTLFormula arg;
     private final int from;
     private final int to;
 
 
-    public EventuallyDisTLFormula(DisTLFormula arg, int from, int to) {
+    public EventuallyDisTLFormula(UDisTLFormula arg, int from, int to) {
         this.arg = arg;
         this.from = from;
         this.to = to;
@@ -44,7 +45,7 @@ public final class EventuallyDisTLFormula implements DisTLFormula {
         return evaluator.evalEventually(this);
     }
 
-    public DisTLFormula getArgument() {
+    public UDisTLFormula getArgument() {
         return this.arg;
     }
 
@@ -68,11 +69,11 @@ public final class EventuallyDisTLFormula implements DisTLFormula {
 
     @Override
     public OptionalInt getTimeHorizon() {
-        OptionalInt arghrz = arg.getTimeHorizon();
-        if(arghrz.isEmpty()){
+        OptionalInt argTimeHorizon = arg.getTimeHorizon();
+        if(argTimeHorizon.isEmpty()){
             return OptionalInt.empty();
         } else {
-            return OptionalInt.of(to + arghrz.getAsInt());
+            return OptionalInt.of(to + argTimeHorizon.getAsInt());
         }
     }
 }

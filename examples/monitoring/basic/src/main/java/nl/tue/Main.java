@@ -6,60 +6,76 @@ import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.SampleSet;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
-import it.unicam.quasylab.jspear.distl.DisTLFormula;
-import it.unicam.quasylab.jspear.distl.DoubleSemanticsVisitor;
-import it.unicam.quasylab.jspear.distl.TargetDisTLFormula;
+import it.unicam.quasylab.jspear.distl.*;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
 import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
-import nl.tue.Monitoring.DefaultMonitorBuilder;
+import it.unicam.quasylab.jspear.udistl.UnboundedUntiluDisTLFormula;
+import nl.tue.Monitoring.Default.DefaultMonitorBuilder;
 import nl.tue.Monitoring.PerceivedSystemState;
-import nl.tue.Monitoring.UDisTLMonitor;
+import nl.tue.Monitoring.Default.DefaultUDisTLMonitor;
+import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.List;
+import java.util.OptionalDouble;
+import java.util.function.Function;
 
 public class Main {
 
-    private static final int ES_SAMPLE_SIZE = 10;
-    private static final int FORMULA_SAMPLE_SIZE = 10;
+    private static final int ES_SAMPLE_SIZE = 100;
     private static final int MONITORING_SAMPLE_SIZE = 10;
 
-    private static final int x = 0;
-    private static final int NUMBER_OF_VARIABLES = 1;
+    private static final int t = 0;
+    private static final int x = 1;
 
     private static final int evaluationTimestep = 0;
 
     public static void main(String[] args) {
-            Controller controller = getController();
-            DataStateFunction environment = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, rg.nextDouble())));
-            DataState initialState = new DataState(NUMBER_OF_VARIABLES, i -> 0.0);
-            ControlledSystem system = new ControlledSystem(controller, environment, initialState);
-            EvolutionSequence sequence = new EvolutionSequence(new DefaultRandomGenerator(), rg -> system, ES_SAMPLE_SIZE);
+            Controller controller = getIdleController();
 
-            DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, 0.0)));
+            Function<RandomGenerator, Double> myGaussian = (rg) -> rg.nextGaussian()/3+0.5;
 
-            DisTLFormula phi = new TargetDisTLFormula(mu, ds -> ds.get(x), 0.0);
+            DataStateFunction environment = (rg, ds) ->
+                ds.apply(List.of(
+                        new DataStateUpdate(t, ds.get(t)+1),
+                        new DataStateUpdate(x, myGaussian.apply(rg)+(1-1/(ds.get(t)+1))))
+              );
 
-            double eval = new DoubleSemanticsVisitor().eval(phi)
-                    .eval(FORMULA_SAMPLE_SIZE, evaluationTimestep, sequence);
+            EvolutionSequence sequence = new EvolutionSequence(new DefaultRandomGenerator(),
+                    rg -> new ControlledSystem(controller, environment, new DataState(new double[]{0, myGaussian.apply(rg)})),
+                    ES_SAMPLE_SIZE);
 
-            System.out.println("Robustness: "+eval);
 
+            DataStateFunction mu = (rg, ds) -> ds.apply(List.of(new DataStateUpdate(x, myGaussian.apply(rg))));
+
+            DisTLFormula phiprime = new TargetDisTLFormula(mu, ds -> {
+                if(ds.get(x) > 1){
+                    return 1;
+                } else if(ds.get(x) < 0){
+                    return 0.1;
+                }
+                return ds.get(x);
+            }, 0.0);
+            UDisTLFormula phi = new NegationDisTLFormula(new UnboundedUntiluDisTLFormula(new TrueDisTLFormula(),
+                    new NegationDisTLFormula(phiprime)));
 
             DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(MONITORING_SAMPLE_SIZE, false);
-            UDisTLMonitor<Double> m = defaultMonitorBuilder.build(phi, evaluationTimestep);
+            DefaultUDisTLMonitor m = defaultMonitorBuilder.build(phi, evaluationTimestep);
 
-            SampleSet<PerceivedSystemState> distribution = UDisTLMonitor.systemStatesToPerceivedSystemStates(sequence.get(0));
-            double monitorEval = m.evalNext(distribution);
-            System.out.println("Monitor eval: "+ monitorEval);
-
+            int i = 0;
+            while(i < 10){
+                SampleSet<PerceivedSystemState> distribution = sequence.getAsPerceivedSystemStates(i);
+                OptionalDouble monitorEval = m.evalNext(distribution);
+                System.out.println(monitorEval.isPresent() ? monitorEval.getAsDouble() : "u");
+                i++;
+            }
     }
 
-    public static Controller getController() {
+    public static Controller getIdleController() {
         ControllerRegistry registry = new ControllerRegistry();
         registry.set("Ctrl",
-                Controller.doAction((rg, ds) -> List.of(new DataStateUpdate(x, rg.nextDouble())), registry.reference("Ctrl"))
+                Controller.doTick(registry.reference("Ctrl"))
         );
         return registry.reference("Ctrl");
     }

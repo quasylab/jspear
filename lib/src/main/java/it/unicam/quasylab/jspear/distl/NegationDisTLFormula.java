@@ -22,24 +22,25 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
 public final class NegationDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula argument;
+    private final UDisTLFormula argument;
 
-    public NegationDisTLFormula(DisTLFormula argument) {
+    public NegationDisTLFormula(UDisTLFormula argument) {
         this.argument = argument;
     }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalNegation(this);
     }
 
-    public DisTLFormula getArgument() {
+    public UDisTLFormula getArgument() {
         return argument;
     }
 

@@ -22,16 +22,17 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
 public final class DisjunctionDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula leftFormula;
-    private final DisTLFormula rightFormula;
+    private final UDisTLFormula leftFormula;
+    private final UDisTLFormula rightFormula;
 
-    public DisjunctionDisTLFormula(DisTLFormula leftFormula, DisTLFormula rightFormula) {
+    public DisjunctionDisTLFormula(UDisTLFormula leftFormula, UDisTLFormula rightFormula) {
         this.leftFormula = leftFormula;
         this.rightFormula = rightFormula;
     }
@@ -41,11 +42,11 @@ public final class DisjunctionDisTLFormula implements DisTLFormula {
         return evaluator.evalDisjunction(this);
     }
 
-    public DisTLFormula getLeftFormula() {
+    public UDisTLFormula getLeftFormula() {
         return leftFormula;
     }
 
-    public DisTLFormula getRightFormula() {
+    public UDisTLFormula getRightFormula() {
         return rightFormula;
     }
 
