@@ -22,10 +22,13 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.SampleSet;
+import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.penalty.*;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -34,6 +37,8 @@ public final class TargetDisTLFormula implements DisTLFormula {
 
     private final DataStateFunction mu;
 
+    private SampleSet<SystemState> dist;
+
     private Optional<DataStateExpression> rho;
 
     private Penalty P;
@@ -41,15 +46,35 @@ public final class TargetDisTLFormula implements DisTLFormula {
     private final double q;
 
     public TargetDisTLFormula(DataStateFunction distribution, DataStateExpression penalty, double threshold) {
-        this(distribution, threshold);
+        this.mu = distribution;
+        this.dist = new SampleSet<>();
         this.rho = Optional.ofNullable(penalty);
         this.P = new NonePenalty();
+        this.q = threshold;
     }
 
     public TargetDisTLFormula(DataStateFunction distribution, Penalty penalty, double threshold) {
-        this(distribution, threshold);
+        this.mu =distribution;
+        this.dist = new SampleSet<>();
         this.rho = Optional.empty();
         this.P = penalty;
+        this.q = threshold;
+    }
+
+    public TargetDisTLFormula(SampleSet<SystemState> distribution, DataStateExpression penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.ofNullable(penalty);
+        this.P = new NonePenalty();
+        this.q = threshold;
+    }
+
+    public TargetDisTLFormula(SampleSet<SystemState> distribution, Penalty penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.empty();
+        this.P = penalty;
+        this.q = threshold;
     }
 
     private TargetDisTLFormula(DataStateFunction distribution, double threshold) {
@@ -65,6 +90,10 @@ public final class TargetDisTLFormula implements DisTLFormula {
 
     public DataStateFunction getDistribution() {
         return this.mu;
+    }
+
+    public SampleSet<SystemState> getSampledDistribution(){
+        return this.dist;
     }
 
     public Optional<DataStateExpression> getRho() {

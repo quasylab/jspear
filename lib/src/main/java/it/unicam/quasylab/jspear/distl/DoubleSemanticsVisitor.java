@@ -74,11 +74,24 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
         Optional<DataStateExpression> rho = brinkDisTLFormula.getRho();
         Penalty P = brinkDisTLFormula.getP();
         double q = brinkDisTLFormula.getThreshold();
+        if (brinkDisTLFormula.getSampledDistribution().size() ==0) {
         return rho.<DisTLFunction<Double>>map(
                 dataStateExpression -> (sampleSize, step, sequence)
                 -> sequence.get(step).distanceLeq(dataStateExpression, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel)) - q)
                 .orElseGet(() -> (sampleSize, step, sequence)
                 -> sequence.get(step).distanceLeq(P, sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel), step) - q);
+        } else {
+            SampleSet<SystemState> muSample = brinkDisTLFormula.getSampledDistribution();
+            return rho.<DisTLFunction<Double>>map(dataStateExpression -> (sampleSize, step, sequence)
+                    -> {
+                //SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return sequence.get(step).distanceGeq(dataStateExpression, muSample) -q;
+            }).orElseGet(() -> (sampleSize, step, sequence)
+                    -> {
+                //SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return sequence.get(step).distanceGeq(P, muSample, step)-q;
+            });
+        }
     }
 
 
@@ -127,19 +140,31 @@ public class DoubleSemanticsVisitor implements DisTLFormulaVisitor<Double> {
     @Override
     public DisTLFunction<Double> evalTarget(TargetDisTLFormula targetDisTLFormula) {
         DataStateFunction mu = targetDisTLFormula.getDistribution();
-
         Optional<DataStateExpression> rho = targetDisTLFormula.getRho();
         Penalty P = targetDisTLFormula.getP();
         double q = targetDisTLFormula.getThreshold();
-        return rho.<DisTLFunction<Double>>map(dataStateExpression -> (sampleSize, step, sequence)
-                -> {
-            SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
-            return q - sequence.get(step).distanceGeq(dataStateExpression, muSample);
-        }).orElseGet(() -> (sampleSize, step, sequence)
-                -> {
-            SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
-            return q - sequence.get(step).distanceGeq(P, muSample, step);
-        });
+        if (targetDisTLFormula.getSampledDistribution().size() ==0) {
+            return rho.<DisTLFunction<Double>>map(dataStateExpression -> (sampleSize, step, sequence)
+                    -> {
+                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(dataStateExpression, muSample);
+            }).orElseGet(() -> (sampleSize, step, sequence)
+                    -> {
+                SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(P, muSample, step);
+            });
+        } else {
+            SampleSet<SystemState> muSample = targetDisTLFormula.getSampledDistribution();
+            return rho.<DisTLFunction<Double>>map(dataStateExpression -> (sampleSize, step, sequence)
+                    -> {
+                //SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(dataStateExpression, muSample);
+            }).orElseGet(() -> (sampleSize, step, sequence)
+                    -> {
+                //SampleSet<SystemState> muSample = sequence.get(step).replica(sampleSize).applyDistribution(rg, mu, parallel);
+                return q - sequence.get(step).distanceGeq(P, muSample, step);
+            });
+        }
     }
 
     @Override

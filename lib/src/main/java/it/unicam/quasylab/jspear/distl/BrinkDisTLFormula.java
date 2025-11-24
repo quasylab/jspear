@@ -22,6 +22,8 @@
 
 package it.unicam.quasylab.jspear.distl;
 
+import it.unicam.quasylab.jspear.SampleSet;
+import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.penalty.*;
@@ -35,6 +37,8 @@ public final class BrinkDisTLFormula implements DisTLFormula {
 
     private final DataStateFunction mu;
 
+    private SampleSet<SystemState> dist;
+
     private final Optional<DataStateExpression> rho;
 
     private final Penalty P;
@@ -43,6 +47,7 @@ public final class BrinkDisTLFormula implements DisTLFormula {
 
     public BrinkDisTLFormula(DataStateFunction distribution, DataStateExpression penalty, double threshold) {
         this.mu = distribution;
+        this.dist = new SampleSet<>();
         this.rho = Optional.of(penalty);
         this.q = threshold;
         this.P = new NonePenalty();
@@ -50,9 +55,26 @@ public final class BrinkDisTLFormula implements DisTLFormula {
 
     public BrinkDisTLFormula(DataStateFunction distribution, Penalty penalty, double threshold) {
         this.mu = distribution;
+        this.dist = new SampleSet<>();
         this.rho = Optional.empty();
         this.q = threshold;
         this.P = penalty;
+    }
+
+    public BrinkDisTLFormula(SampleSet<SystemState> distribution, DataStateExpression penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.ofNullable(penalty);
+        this.P = new NonePenalty();
+        this.q = threshold;
+    }
+
+    public BrinkDisTLFormula(SampleSet<SystemState> distribution, Penalty penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.empty();
+        this.P = penalty;
+        this.q = threshold;
     }
 
     @Override
@@ -62,6 +84,10 @@ public final class BrinkDisTLFormula implements DisTLFormula {
 
     public DataStateFunction getDistribution() {
         return this.mu;
+    }
+
+    public SampleSet<SystemState> getSampledDistribution(){
+        return this.dist;
     }
 
     public Optional<DataStateExpression> getRho() {
