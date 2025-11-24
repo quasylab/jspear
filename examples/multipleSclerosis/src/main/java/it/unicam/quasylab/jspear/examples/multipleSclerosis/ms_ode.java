@@ -115,7 +115,7 @@ public class ms_ode {
 
             TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
-            int size = 50;
+            int size = 1;
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -124,6 +124,7 @@ public class ms_ode {
             F.add(ds->ds.get(Rr));
             F.add(ds->ds.get(l));
             F.add(ds->ds.get(L));
+            F.add(ds ->(ds.get(E)/ds.get(R)));
 
             int steps = 2000;
 
@@ -135,6 +136,8 @@ public class ms_ode {
             double[][] Rr_values = new double[steps][1];
             double[][] l_values= new double[steps][1];
             double[][] L_values = new double[steps][1];
+            double[][] E_R_values = new double[steps][1];
+
 
 
             for (int i = 0; i < data_avg.length; i++) {
@@ -146,12 +149,13 @@ public class ms_ode {
             }
 
             for(int j = 0; j < steps; j++){
-                E_values[j][0] = Math.log10(data_avg[j][0]);
-                R_values[j][0] = Math.log10(data_avg[j][1]);
-                Er_values[j][0] = Math.log10(data_avg[j][2]);
-                Rr_values[j][0] = Math.log10(data_avg[j][3]);
-                l_values[j][0] = Math.log10(data_avg[j][4]);
-                L_values[j][0] = Math.log10(data_avg[j][5]);
+                E_values[j][0] = data_avg[j][0];
+                R_values[j][0] = data_avg[j][1];
+                Er_values[j][0] = data_avg[j][2];
+                Rr_values[j][0] = data_avg[j][3];
+                l_values[j][0] = data_avg[j][4];
+                L_values[j][0] = data_avg[j][5];
+                E_R_values[j][0] = data_avg[j][0]/data_avg[j][1];
             }
 
             Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
