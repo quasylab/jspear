@@ -46,36 +46,21 @@ public class Main {
     public static final int Er = 1;
     public static final int R = 2;
     public static final int Rr = 3;
-
     public static final int Ea = 4;
     public static final int l = 5;
     public static final int L = 6;
+    public static final int ratioER = 7;
+    public static final int v_eta = 8;
+    public static final int v_delta = 9;
+    public static final int v_beta = 10;
+    public static final int v_gammaE = 11;
+    public static final int v_gammaR = 12;
+    public static final int v_d1 = 13;
+    public static final int v_d2 = 14;
+    public static final int v_r = 15;
+    public static final int timer = 16;
 
-    public static final int E1 = 7;
-    public static final int E2 = 8;
-    public static final int E3 = 9;
-    public static final int E4 = 10;
-    public static final int E5 = 11;
-    public static final int E6 = 12;
-    public static final int E7 = 13;
-    public static final int E8 = 14;
-    public static final int E9 = 15;
-    public static final int E10 = 16;
-
-    public static final int R1 = 17;
-    public static final int R2 = 18;
-    public static final int R3 = 19;
-    public static final int R4 = 20;
-    public static final int R5 = 21;
-    public static final int R6 = 22;
-    public static final int R7 = 23;
-    public static final int R8 = 24;
-    public static final int R9 = 25;
-    public static final int R10 = 26;
-
-
-
-    private static final int NUMBER_OF_VARIABLES = 27;
+    private static final int NUMBER_OF_VARIABLES = 17;
 
     public static final double IE = 0.0;
     public static final double IR = 0.0;
@@ -86,7 +71,7 @@ public class Main {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 0.25;
+    public static final double alphaR = 0.9;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -116,6 +101,7 @@ public class Main {
             TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
 
             int size = 1;
+            int size_ER = 1;
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -125,6 +111,10 @@ public class Main {
             F.add(ds->ds.get(l));
             F.add(ds->ds.get(L));
             F.add(ds ->(ds.get(E)/ds.get(R)));
+
+
+            ArrayList<DataStateExpression> Fratio = new ArrayList<>();
+            Fratio.add(ds->ds.get(ratioER));
 
             int steps = 2000;
 
@@ -138,6 +128,8 @@ public class Main {
             double[][] L_values = new double[steps][1];
             double[][] E_R_values = new double[steps][1];
 
+            double[][] ratio_E_R_max = SystemState.sample_max(rand, Fratio, system, steps, size_ER);
+            Util.writeToCSV("./multipleSclerosisOdeRatioER.csv",ratio_E_R_max);
 
 
             for (int i = 0; i < data_avg.length; i++) {
@@ -178,24 +170,9 @@ public class Main {
     }
 
 
-    public static Controller getController(int x) {
-        ControllerRegistry registry = getControllerRegistry();
-        return registry.reference("therapy");
-    }
 
 
-    public static ControllerRegistry getControllerRegistry() {
-        ControllerRegistry registry = new ControllerRegistry();
 
-        registry.set("therapy",
-                Controller.ifThenElse(
-                        DataState.greaterThan(R1,R2).and(DataState.greaterThan(R2,R3).and(DataState.greaterThan(R3,R4).and(DataState.greaterThan(R4,R5).and(DataState.greaterThan(R5,R6).and(DataState.greaterThan(R6,R7).and(DataState.greaterThan(R7,R8).and(DataState.greaterThan(R8,R9).and(DataState.greaterThan(R9,R10).and(DataState.greaterThan(E2,E1).and(DataState.greaterThan(E3,E2).and(DataState.greaterThan(E4,E3).and(DataState.greaterThan(E5,E4).and(DataState.greaterThan(E6,E5).and(DataState.greaterThan(E7,E6).and(DataState.greaterThan(E8,E7).and(DataState.greaterThan(E9,E8).and(DataState.greaterThan(E10,E9)))))))))))))))))),
-                        Controller.doAction((rg,ds)-> List.of(new DataStateUpdate(R,ds.get(R)*1.0)),registry.reference("therapy")),
-                        Controller.doTick(registry.reference("therapy"))
-                ));
-
-        return registry;
-    }
 
 
     public static DataState getInitialState(double gran, double Tstep, double Ttot, double Tshift) {
@@ -208,26 +185,16 @@ public class Main {
         values.put(Ea, Math.pow(Einit/a,2));
         values.put(l, 0.0);
         values.put(L, 0.0);
-        values.put(E1,Einit);
-        values.put(E2,Einit);
-        values.put(E3,Einit);
-        values.put(E4,Einit);
-        values.put(E5,Einit);
-        values.put(E6,Einit);
-        values.put(E7,Einit);
-        values.put(E8,Einit);
-        values.put(E9,Einit);
-        values.put(E10,Einit);
-        values.put(R1,Rinit);
-        values.put(R2,Rinit);
-        values.put(R3,Rinit);
-        values.put(R4,Rinit);
-        values.put(R5,Rinit);
-        values.put(R6,Rinit);
-        values.put(R7,Rinit);
-        values.put(R8,Rinit);
-        values.put(R9,Rinit);
-        values.put(R10,Rinit);
+        values.put(ratioER, Einit / Rinit);
+        values.put(v_eta,eta);
+        values.put(v_delta,delta);
+        values.put(v_beta,beta);
+        values.put(v_gammaE,gammaE);
+        values.put(v_gammaR,gammaR);
+        values.put(v_d1,d1);
+        values.put(v_d2,d2);
+        values.put(v_r,r);
+        values.put(timer, 0.0);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Ttot, Tshift);
     }
 
@@ -241,6 +208,15 @@ public class Main {
         double old_R = state.get(R);
         double old_l = state.get(l);
         double old_L = state.get(L);
+        double old_timer = state.get(timer);
+        double old_eta = state.get(v_eta);
+        double old_delta = state.get(v_delta);
+        double old_beta = state.get(v_beta);
+        double old_gammaE = state.get(v_gammaE);
+        double old_gammaR = state.get(v_gammaR);
+        double old_d1 = state.get(v_d1);
+        double old_d2 = state.get(v_d2);
+        double old_r = state.get(v_r);
 
 
         double r1 = rg.nextDouble();
@@ -250,28 +226,69 @@ public class Main {
         double r2 = rg.nextDouble();
         if (r2<100*delta_t/365.0) {ir=100.0/delta_t;} else{ir = 0;}
 
-        double dEr = ie - old_Er*delta - old_Er*beta + old_E*eta;
+        double dEr = ie - old_Er*old_delta - old_Er*old_beta + old_E*old_eta;
         double new_Er = old_Er + dEr*delta_t;
         updates.add(new DataStateUpdate(Er, new_Er));
-        double dRr = ir - old_Rr*delta - old_Rr*beta + old_R*eta;
+        double dRr = ir - old_Rr*old_delta - old_Rr*old_beta + old_R*old_eta;
         double new_Rr = old_Rr + dRr*delta_t;
         updates.add(new DataStateUpdate(Rr, new_Rr));
-        double dE = old_Er*delta - old_E*eta + old_E*(alphaE*Math.pow(kR,h) - gammaE*Math.pow(old_R,h))/(Math.pow(kR,h)+Math.pow(old_R,h));
+        double dE = old_Er*old_delta - old_E*old_eta + old_E*(alphaE*Math.pow(kR,h) - old_gammaE*Math.pow(old_R,h))/(Math.pow(kR,h)+Math.pow(old_R,h));
         double new_E = old_E + dE*delta_t;
         updates.add(new DataStateUpdate(E, new_E));
-        double dR = old_Rr*delta - old_R*eta + old_R*alphaR*Math.pow(old_E,h)/(Math.pow(kE,h)+Math.pow(old_E,h)) - old_R*gammaR;
+        double dR = old_Rr*old_delta - old_R*old_eta + old_R*alphaR*Math.pow(old_E,h)/(Math.pow(kE,h)+Math.pow(old_E,h)) - old_R*old_gammaR;
         double new_R = old_R + dR*delta_t;
         updates.add(new DataStateUpdate(R, new_R));
 
         /* double new_Ea = Math.pow(new_E/a,2); */
         double new_Ea = Math.pow(old_E/a,2);
         updates.add(new DataStateUpdate(Ea, new_Ea));
-        double dl = new_Ea*d1 - old_l*r - old_l*d2;
+        double dl = new_Ea*old_d1 - old_l*old_r - old_l*old_d2;
         double new_l = old_l + dl*delta_t;
         updates.add(new DataStateUpdate(l,new_l));
-        double dL = old_l*d2;
+        double dL = old_l*old_d2;
         double new_L = old_L + dL*delta_t;
         updates.add(new DataStateUpdate(L, new_L));
+
+        updates.add(new DataStateUpdate(ratioER, new_E/new_R));
+
+        if(old_timer>=1){
+            updates.add(new DataStateUpdate(timer, 0.0));
+
+            double r3 = rg.nextDouble();
+            double e_eta = 5*(r3-0.5)*old_eta/100.0;
+            updates.add(new DataStateUpdate(v_eta,old_eta+e_eta));
+
+            r3 = rg.nextDouble();
+            double e_delta = 5*(r3-0.5)*old_delta/100.0;
+            updates.add(new DataStateUpdate(v_delta,old_delta+e_delta));
+
+            r3 = rg.nextDouble();
+            double e_beta = 5*(r3-0.5)*old_beta/100.0;
+            updates.add(new DataStateUpdate(v_beta,old_beta+e_beta));
+
+            r3 = rg.nextDouble();
+            double e_gammaE = 5*(r3-0.5)*old_gammaE/100.0;
+            updates.add(new DataStateUpdate(v_gammaE,old_gammaE+e_gammaE));
+
+            r3 = rg.nextDouble();
+            double e_gammaR = 5*(r3-0.5)*old_gammaR/100.0;
+            updates.add(new DataStateUpdate(v_gammaR,old_gammaR+e_gammaR));
+
+            r3 = rg.nextDouble();
+            double e_d1 = 5*(r3-0.5)*old_d1/100.0;
+            updates.add(new DataStateUpdate(v_d1,old_d1+e_d1));
+
+            r3 = rg.nextDouble();
+            double e_d2 = 5*(r3-0.5)*old_d2/100.0;
+            updates.add(new DataStateUpdate(v_d2,old_d2+e_d2));
+
+            r3 = rg.nextDouble();
+            double e_r = 5*(r3-0.5)*old_r/100.0;
+            updates.add(new DataStateUpdate(v_r,old_r+e_r));
+        }
+        else{
+            updates.add(new DataStateUpdate(timer, old_timer + delta_t));
+        }
 
         return updates;
 
