@@ -158,7 +158,7 @@ public class ms_ode {
                 E_R_values[j][0] = data_avg[j][0]/data_avg[j][1];
             }
 
-            Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
+            Util.writeToCSV("./multipleSclerosisOde_sick.csv",data_avg);
             Util.writeToCSV("./multipleSclerosisOdeE.csv",E_values);
             Util.writeToCSV("./multipleSclerosisOdeR.csv",R_values);
             Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
