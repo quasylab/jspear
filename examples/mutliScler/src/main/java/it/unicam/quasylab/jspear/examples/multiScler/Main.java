@@ -25,15 +25,19 @@ package it.unicam.quasylab.jspear.examples.multiScler;
 import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.*;
 import it.unicam.quasylab.jspear.distance.*;
-import it.unicam.quasylab.jspear.ds.DataState;
-import it.unicam.quasylab.jspear.ds.DataStateExpression;
-import it.unicam.quasylab.jspear.ds.DataStateUpdate;
-import it.unicam.quasylab.jspear.ds.RelationOperator;
+import it.unicam.quasylab.jspear.distl.AlwaysDisTLFormula;
+import it.unicam.quasylab.jspear.distl.DisTLFormula;
+import it.unicam.quasylab.jspear.distl.DoubleSemanticsVisitor;
+import it.unicam.quasylab.jspear.distl.TargetDisTLFormula;
+import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.AtomicPerturbation;
 import it.unicam.quasylab.jspear.perturbation.IterativePerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import it.unicam.quasylab.jspear.perturbation.SequentialPerturbation;
 import it.unicam.quasylab.jspear.robtl.*;
+import nl.tue.Monitoring.Default.DefaultMonitorBuilder;
+import nl.tue.Monitoring.Default.DefaultUDisTLMonitor;
+import nl.tue.Monitoring.PerceivedSystemState;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
@@ -58,9 +62,10 @@ public class Main {
     public static final int v_d1 = 13;
     public static final int v_d2 = 14;
     public static final int v_r = 15;
-    public static final int timer = 16;
+    public static final int alphaR = 16;
+    public static final int timer = 17;
 
-    private static final int NUMBER_OF_VARIABLES = 17;
+    private static final int NUMBER_OF_VARIABLES = 18;
 
     public static final double IE = 0.0;
     public static final double IR = 0.0;
@@ -71,7 +76,8 @@ public class Main {
     public static final double k2 = 0.25;
     public static final double k3 = 0.1;
     public static final double alphaE = 2.0;
-    public static final double alphaR = 0.9;
+    public static final double alphaRH = 1.0;
+    public static final double alphaRS = 0.25;
     public static final double gammaE = 0.2;
     public static final double gammaR = 0.2;
     public static final double kE = 1000.0;
@@ -94,14 +100,63 @@ public class Main {
 
             Controller controller = getController();
 
-            DataState state = getInitialState(jumps,0.0,0.0,delta_t);
-
+            /*
+            Two systems are created, one is healthy (alphaR = alphaRH = 1.0), the other is unhealthy (alphaR = alphaRH = 0.25)
+             */
+            DataState stateH = getInitialState(jumps,0.0,0.0,delta_t,alphaRH);
+            DataState stateS = getInitialState(jumps,0.0,0.0,delta_t,alphaRS);
             RandomGenerator rand = new DefaultRandomGenerator();
+            TimedSystem systemH = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), stateH, ds -> ds.getTimeDelta());
+            TimedSystem systemS = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), stateS, ds -> ds.getTimeDelta());
 
-            TimedSystem system = new TimedSystem(controller, (rg, ds) -> ds.apply(odeEnv(rg, ds)), state, ds -> ds.getTimeDelta());
+            int size = 10;
+            int size_ER = 10;
 
-            int size = 1;
-            int size_ER = 1;
+
+
+
+
+
+            int steps = 2000;
+
+
+
+
+            /*
+            The unhealthy system is simulated in order to estimate the worst (i.e. maximal) ratio Eff/Reg exhibited in size_ER executions that run for 2000 days
+            Also the healthy system is simulated and the worst ratio Eff/Reg exhibited by both systems is printed out.
+             */
+            double maxRatioERH = 0.0;
+            double maxRatioERS = 0.0;
+
+            ArrayList<DataStateExpression> Fratio = new ArrayList<>();
+            Fratio.add(ds->ds.get(E)/ds.get(R));
+
+            double[][] ratio_E_R_max_H = SystemState.sample_max(rand, Fratio, systemH, steps, size_ER);
+            for(int i=0;i<ratio_E_R_max_H.length;i++){if(ratio_E_R_max_H[i][0]>maxRatioERH){maxRatioERH=ratio_E_R_max_H[i][0];}}
+            Util.writeToCSV("./multipleSclerosisOdeRatioERHealthy.csv",ratio_E_R_max_H);
+            double[][] ratio_E_R_max_S = SystemState.sample_max(rand, Fratio, systemS, steps, size_ER);
+            for(int i=0;i<ratio_E_R_max_S.length;i++){if(ratio_E_R_max_S[i][0]>maxRatioERS){maxRatioERS=ratio_E_R_max_S[i][0];}}
+            Util.writeToCSV("./multipleSclerosisOdeRatioERSick.csv",ratio_E_R_max_S);
+
+            System.out.println("Maximal Eff/Reg ratio exhibited by the healty system in "+size_ER+" runs: "+ maxRatioERH);
+            System.out.println("Maximal Eff/Reg ratio exhibited by the unhealty system in "+size_ER+" runs: "+ maxRatioERS);
+
+            final double maxRatioERHF = maxRatioERH;
+            final double maxRatioERSF = maxRatioERS;
+
+            System.out.println(maxRatioERHF);
+            System.out.println(maxRatioERSF);
+
+
+
+
+            /*
+            In order to observe the behaviour of systems, both the healthy and the unhealthy systems are simulated.
+            For each system we take size executions that run for 2000 days.
+            We print out the average value over the size runs that is taken, day per day, by some variables.
+            These values are also registered in a csv file for plotting.
+             */
 
             ArrayList<DataStateExpression> F = new ArrayList<>();
             F.add(ds->ds.get(E));
@@ -112,51 +167,116 @@ public class Main {
             F.add(ds->ds.get(L));
             F.add(ds ->(ds.get(E)/ds.get(R)));
 
+            double[][] data_avgH = SystemState.sample(rand, F, systemH, steps, size);
+            double[][] data_avgS = SystemState.sample(rand, F, systemS, steps, size);
 
-            ArrayList<DataStateExpression> Fratio = new ArrayList<>();
-            Fratio.add(ds->ds.get(ratioER));
-
-            int steps = 2000;
-
-
-            double[][] data_avg = SystemState.sample(rand, F, system, steps, size);
-            double[][] E_values = new double[steps][1];
-            double[][] R_values = new double[steps][1];
-            double[][] Er_values = new double[steps][1];
-            double[][] Rr_values = new double[steps][1];
-            double[][] l_values= new double[steps][1];
-            double[][] L_values = new double[steps][1];
-            double[][] E_R_values = new double[steps][1];
-
-            double[][] ratio_E_R_max = SystemState.sample_max(rand, Fratio, system, steps, size_ER);
-            Util.writeToCSV("./multipleSclerosisOdeRatioER.csv",ratio_E_R_max);
-
-
-            for (int i = 0; i < data_avg.length; i++) {
+            for (int i = 0; i < data_avgH.length; i++) {
                 System.out.printf("%d>   ", i);
-                for (int j = 0; j < data_avg[i].length -1 ; j++) {
-                    System.out.printf("%f   ", data_avg[i][j]);
+                for (int j = 0; j < data_avgH[i].length -1 ; j++) {
+                    System.out.printf("%f   ", data_avgH[i][j]);
                 }
-                System.out.printf("%f\n", data_avg[i][data_avg[i].length -1]);
+                System.out.printf("%f\n", data_avgH[i][data_avgH[i].length -1]);
             }
 
-            for(int j = 0; j < steps; j++){
-                E_values[j][0] = data_avg[j][0];
-                R_values[j][0] = data_avg[j][1];
-                Er_values[j][0] = data_avg[j][2];
-                Rr_values[j][0] = data_avg[j][3];
-                l_values[j][0] = data_avg[j][4];
-                L_values[j][0] = data_avg[j][5];
-                E_R_values[j][0] = data_avg[j][0]/data_avg[j][1];
+            for (int i = 0; i < data_avgS.length; i++) {
+                System.out.printf("%d>   ", i);
+                for (int j = 0; j < data_avgS[i].length -1 ; j++) {
+                    System.out.printf("%f   ", data_avgS[i][j]);
+                }
+                System.out.printf("%f\n", data_avgS[i][data_avgS[i].length -1]);
             }
 
-            Util.writeToCSV("./multipleSclerosisOde.csv",data_avg);
-            Util.writeToCSV("./multipleSclerosisOdeE.csv",E_values);
-            Util.writeToCSV("./multipleSclerosisOdeR.csv",R_values);
-            Util.writeToCSV("./multipleSclerosisOdeEr.csv",Er_values);
-            Util.writeToCSV("./multipleSclerosisOdeRr.csv",Rr_values);
-            Util.writeToCSV("./multipleSclerosisOdel.csv",l_values);
-            Util.writeToCSV("./multipleSclerosisOdeLLL.csv",L_values);
+            Util.writeToCSV("./multipleSclerosisOdeHealthy.csv",data_avgH);
+            Util.writeToCSV("./multipleSclerosisOdeSick.csv",data_avgS);
+
+
+
+            /*
+            An evolution sequence of the healthy system is generated in order to generate distributions of configurations that can be used as "targets"
+             */
+
+            EvolutionSequence healthySeq = new EvolutionSequence(new DefaultRandomGenerator(),rg -> systemH,10);
+
+            /*
+            The formula f is created. When evaluated on an evolution sequence, it returns the maximal distance between the distributions in that
+            evolution sequence and a target distribution, which is a one of the target distributions in the healthy system.
+             */
+
+
+            SampleSet<SystemState> target = healthySeq.get(100);
+            DataStateExpression rho = ds -> Math.min(1.0, Math.max(0.0, ds.get(E)/ds.get(R) - maxRatioERHF) / maxRatioERSF);
+            DisTLFormula f = new AlwaysDisTLFormula(new TargetDisTLFormula(target, rho,0.4),100,1800);
+
+
+            EvolutionSequence hSeq = new EvolutionSequence(new DefaultRandomGenerator(),rg -> systemH,10);
+            EvolutionSequence sSeq = new EvolutionSequence(new DefaultRandomGenerator(),rg -> systemS,10);
+
+            double v1 = new DoubleSemanticsVisitor().eval(f).eval(1,0,hSeq);
+            double v2 = new DoubleSemanticsVisitor().eval(f).eval(1,0,sSeq);
+
+            System.out.println("v1 = "+ v1 );
+            System.out.println("v2 = "+ v2 );
+
+            /*
+            Vale, Sebastian: HERE WE HAVE A PROBLEM
+            Now we create a formula ff, which is equivalent to f, and we monitor it.
+            The monitored sequence is sSeqq, which is equivalent to sSeq created above.
+            Since the evaluation of f over sSeq gives us the value v1, we expect that the
+            monitoring of ff over sSeqq prints similar values. This is not the case!
+
+             */
+
+            DisTLFormula ff = new AlwaysDisTLFormula(new TargetDisTLFormula(target, rho,0.4),100,2000);
+
+
+
+            EvolutionSequence hSeqq = new EvolutionSequence(new DefaultRandomGenerator(),lrg -> systemH,10);
+            EvolutionSequence sSeqq = new EvolutionSequence(new DefaultRandomGenerator(),rg -> systemS,10);
+
+
+
+
+
+            DefaultMonitorBuilder defaultMonitorBuilder = new DefaultMonitorBuilder(10, false);
+            DefaultUDisTLMonitor m = defaultMonitorBuilder.build(ff);
+            DefaultUDisTLMonitor m2 = defaultMonitorBuilder.build(ff);
+
+            int i = 0;
+            while(i < 2000){
+                SampleSet<PerceivedSystemState> distribution = sSeqq.getAsPerceivedSystemStates(i);
+                OptionalDouble monitorEval = m.evalNext(distribution);
+                System.out.println(monitorEval.isPresent() ? monitorEval.getAsDouble() : "u");
+
+                i++;
+            }
+            System.out.println("ciao");
+            System.out.println("ciao");
+            System.out.println("ciao");
+            System.out.println("ciao");
+            System.out.println("ciao");
+
+            i = 0;
+            while(i < 2000){
+                SampleSet<PerceivedSystemState> distribution = hSeqq.getAsPerceivedSystemStates(i);
+                OptionalDouble monitorEval = m2.evalNext(distribution);
+                System.out.println(monitorEval.isPresent() ? monitorEval.getAsDouble() : "u");
+
+                i++;
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         } catch (RuntimeException e) {
@@ -175,7 +295,7 @@ public class Main {
 
 
 
-    public static DataState getInitialState(double gran, double Tstep, double Ttot, double Tshift) {
+    public static DataState getInitialState(double gran, double Tstep, double Ttot, double Tshift, double alphaR_value) {
         Map<Integer, Double> values = new HashMap<>();
 
         values.put(E, Einit);
@@ -195,6 +315,7 @@ public class Main {
         values.put(v_d2,d2);
         values.put(v_r,r);
         values.put(timer, 0.0);
+        values.put(alphaR,alphaR_value);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, Double.NaN), gran, Tstep, Ttot, Tshift);
     }
 
@@ -217,6 +338,7 @@ public class Main {
         double old_d1 = state.get(v_d1);
         double old_d2 = state.get(v_d2);
         double old_r = state.get(v_r);
+        double old_alphaR = state.get(alphaR);
 
 
         double r1 = rg.nextDouble();
@@ -235,7 +357,7 @@ public class Main {
         double dE = old_Er*old_delta - old_E*old_eta + old_E*(alphaE*Math.pow(kR,h) - old_gammaE*Math.pow(old_R,h))/(Math.pow(kR,h)+Math.pow(old_R,h));
         double new_E = old_E + dE*delta_t;
         updates.add(new DataStateUpdate(E, new_E));
-        double dR = old_Rr*old_delta - old_R*old_eta + old_R*alphaR*Math.pow(old_E,h)/(Math.pow(kE,h)+Math.pow(old_E,h)) - old_R*old_gammaR;
+        double dR = old_Rr*old_delta - old_R*old_eta + old_R*old_alphaR*Math.pow(old_E,h)/(Math.pow(kE,h)+Math.pow(old_E,h)) - old_R*old_gammaR;
         double new_R = old_R + dR*delta_t;
         updates.add(new DataStateUpdate(R, new_R));
 
@@ -255,35 +377,35 @@ public class Main {
             updates.add(new DataStateUpdate(timer, 0.0));
 
             double r3 = rg.nextDouble();
-            double e_eta = 5*(r3-0.5)*old_eta/100.0;
+            double e_eta = 1*(r3-0.5)*old_eta/100.0;
             updates.add(new DataStateUpdate(v_eta,old_eta+e_eta));
 
             r3 = rg.nextDouble();
-            double e_delta = 5*(r3-0.5)*old_delta/100.0;
+            double e_delta = 1*(r3-0.5)*old_delta/100.0;
             updates.add(new DataStateUpdate(v_delta,old_delta+e_delta));
 
             r3 = rg.nextDouble();
-            double e_beta = 5*(r3-0.5)*old_beta/100.0;
+            double e_beta = 1*(r3-0.5)*old_beta/100.0;
             updates.add(new DataStateUpdate(v_beta,old_beta+e_beta));
 
             r3 = rg.nextDouble();
-            double e_gammaE = 5*(r3-0.5)*old_gammaE/100.0;
+            double e_gammaE = 1*(r3-0.5)*old_gammaE/100.0;
             updates.add(new DataStateUpdate(v_gammaE,old_gammaE+e_gammaE));
 
             r3 = rg.nextDouble();
-            double e_gammaR = 5*(r3-0.5)*old_gammaR/100.0;
+            double e_gammaR = 1*(r3-0.5)*old_gammaR/100.0;
             updates.add(new DataStateUpdate(v_gammaR,old_gammaR+e_gammaR));
 
             r3 = rg.nextDouble();
-            double e_d1 = 5*(r3-0.5)*old_d1/100.0;
+            double e_d1 = 1*(r3-0.5)*old_d1/100.0;
             updates.add(new DataStateUpdate(v_d1,old_d1+e_d1));
 
             r3 = rg.nextDouble();
-            double e_d2 = 5*(r3-0.5)*old_d2/100.0;
+            double e_d2 = 1*(r3-0.5)*old_d2/100.0;
             updates.add(new DataStateUpdate(v_d2,old_d2+e_d2));
 
             r3 = rg.nextDouble();
-            double e_r = 5*(r3-0.5)*old_r/100.0;
+            double e_r = 1*(r3-0.5)*old_r/100.0;
             updates.add(new DataStateUpdate(v_r,old_r+e_r));
         }
         else{
