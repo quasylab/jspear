@@ -63,13 +63,21 @@ public class TargetMonitor extends DefaultUDisTLMonitor {
         }
     }
 
-    private double computeAsSemantics(SampleSet<PerceivedSystemState> sample){
+    private double computeAsSemantics(SampleSet<PerceivedSystemState> sample) {
         DataStateFunction mu = formula.getDistribution();
-        SampleSet<PerceivedSystemState> muSample = sample.replica(sampleSize).applyDistribution(rg, mu, parallel);
         Optional<DataStateExpression> rho = formula.getRho();
         Penalty P = formula.getP();
         double q = formula.getThreshold();
-        return rho.map(dataStateExpression -> q - sample.distanceGeq(dataStateExpression, muSample))
-                .orElseGet(() -> q - sample.distanceGeq(P, muSample, semanticsEvaluationStep));
+
+        SampleSet<PerceivedSystemState> muSample;
+        if (formula.getSampledDistribution().size() == 0) {
+            muSample = sample.replica(sampleSize).applyDistribution(rg, mu, parallel);
+        } else {
+            // Turn system states into perceived system states
+            muSample = new SampleSet<>(
+                    formula.getSampledDistribution().stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
+        }
+        return rho.map(dataStateExpression -> q - sample.distanceGeq(dataStateExpression, muSample)
+        ).orElseGet(() -> q - sample.distanceGeq(P, muSample, semanticsEvaluationStep));
     }
 }

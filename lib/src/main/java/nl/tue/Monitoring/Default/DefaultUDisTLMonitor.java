@@ -53,12 +53,12 @@ public abstract class DefaultUDisTLMonitor implements UDisTLMonitor<OptionalDoub
      * next {@link SampleSet} in the evolution.</p>
      *
      * <p>Formally, a {@link DefaultUDisTLMonitor} object represents {@code m[φ]}, where {@code φ} is a DisTL or uDisTL formula.
-     * We assume that {@code param} represents a set of datastates drawn from a distribution {@code s}.
+     * We assume that {@code sample} represents a set of datastates drawn from a distribution {@code s}.
      * The call {@code monitor.evalNext(sample)} returns {@code OptionalDouble.empty()} if the method {@code monitor.evalNext}
-     * has been called less than {@code fes(φ)}. If {@code semanticsEvaluationStep} is different from 0, then
-     * {@code OptionalDouble.empty()} if the method {@code monitor.evalNext} has been called less than {@code semanticsEvaluationStep+fes(φ)}.</p>
+     * has been called less than {@code fes(φ)} times. If {@code semanticsEvaluationStep} is different from 0, then
+     * {@code OptionalDouble.empty()} is returned if the method {@code monitor.evalNext} has been called less than {@code semanticsEvaluationStep+fes(φ)}.</p>
      *
-     * <p>Then, for a newly-created {@link DefaultUDisTLMonitor} object {@code monitor}, the result of {@code monitor.evalNext(sample)} is equal
+     * <p>Otherwise, for a newly-created {@link DefaultUDisTLMonitor} object {@code monitor}, the result of {@code monitor.evalNext(sample)} is equal
      * to {@code m[φ](s)}. If the method {monitor.evalNext} has been called before with parameters {@code s0,s1...sn}, then
      * {@code monitor.evalNext(sample)} is equal to {@code m[φ](s0,s1...sn,s)}.</p>
      *

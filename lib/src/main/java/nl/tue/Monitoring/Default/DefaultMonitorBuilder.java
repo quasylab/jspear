@@ -75,7 +75,7 @@ public class DefaultMonitorBuilder implements MonitorBuildingVisitor<DefaultUDis
 
     @Override
     public DefaultUDisTLMonitor buildBrink(BrinkDisTLFormula formula, int formulaEvalTimestep) {
-        throw new UnsupportedOperationException("TODO");
+       return new BrinkMonitor(formula, formulaEvalTimestep, sampleSize, parallel);
     }
 
     @Override
