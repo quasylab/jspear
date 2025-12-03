@@ -61,7 +61,7 @@ public class UntilMonitor extends DefaultUDisTLMonitor {
         OptionalInt hrz = formula.getTimeHorizon();
 
         // The following three lines are a hack. The reason for it is related to the default unbounded until monitor implementation.
-        // Sometimes, if you nest unbounded untils, for ex. ☐→∞(☐→∞(☐→∞(...))), then each submonitor corresponding to
+        // Sometimes, if you nest unbounded until operators, then each submonitor corresponding to
         // the subformulae is constructed a DefaultUntilMonitor with an until formula with a very big parameter "To".
         // When computing the horizon, these big parameters get added and the int variable may overflow to negative.
         if (hrz.isPresent() && hrz.getAsInt() < 0){
