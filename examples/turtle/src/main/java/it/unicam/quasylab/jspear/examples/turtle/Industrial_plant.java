@@ -27,6 +27,7 @@ import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.distance.AtomicDistanceExpression;
 import it.unicam.quasylab.jspear.distance.DistanceExpression;
+import it.unicam.quasylab.jspear.distance.MaxDistanceExpression;
 import it.unicam.quasylab.jspear.distance.MaxIntervalDistanceExpression;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.perturbation.*;
@@ -46,34 +47,34 @@ public class Industrial_plant {
             new String[]{"p_speed", "s_speed", "p_distance", "accel", "timer_V", "braking_distance", "gap"
             };
 
-    public final static double ACCELERATION = 0.05;
-    public final static double BRAKE = 0.40;
-    public final static double NEUTRAL = 0.0;
-    public final static int TIMER = 1;
-    public final static double INIT_SPEED = 0.0;
-    public final static double MAX_SPEED = 3.0;
-    public final static double MAX_SPEED_OFFSET = 0.15;
-    public final static double INIT_X = 0.0;
-    public final static double INIT_Y = 0.0;
-    public final static double INIT_THETA = Math.PI/2;
-    public final static double FINAL_X = 35.0;
-    public final static double FINAL_Y = 30.0;
-    public final static double[] WPx = {1,13,7,23,20,32,FINAL_X};
-    public final static double[] WPy = {3,3,7,14,31,40,FINAL_Y};
+    public final static double ACCELERATION = 0.05; // acceleration, m/s^2
+    public final static double BRAKE = 0.40; // negative acceleration, m/s^2
+    public final static double NEUTRAL = 0.0; // neutral acceleration
+    public final static int TIMER = 1; // frequency of working cycle by controller
+    public final static double INIT_SPEED = 0.0; // initial speed of the robot
+    public final static double MAX_SPEED = 3.0; // maximal speed
+    public final static double MAX_SPEED_OFFSET = 0.15; // maximal perturbation on the speed
+    public final static double INIT_X = 0.0; // initial x position
+    public final static double INIT_Y = 0.0; // initial y position
+    public final static double INIT_THETA = Math.PI/2; // initial steering angle
+    public final static double FINAL_X = 35.0; // last waypoint, x coordinate
+    public final static double FINAL_Y = 30.0; // last waypoint, y coordinate
+    public final static double[] WPx = {1,13,7,23,20,32,FINAL_X}; // list of x coordinate of waypoints
+    public final static double[] WPy = {3,3,7,14,31,40,FINAL_Y}; // list of y coordinate of waypoints
     public final static double INIT_DISTANCE = Math.sqrt(Math.pow((WPx[0]-INIT_X),2) + Math.pow((WPy[0]-INIT_Y),2));
 
-    private static final int H = 350;
 
-    private static final int x = 0; // current position, first coordinate
-    private static final int y = 1; // current position, second coordinate
+
+    private static final int x = 0; // current position, x coordinate
+    private static final int y = 1; // current position, y coordinate
     private static final int theta = 2; // current direction
-    private static final int p_speed = 3; // physical speed
-    private static final int s_speed = 4; // sensed speed
-    private static final int p_distance = 5; // physical distance from the current target
+    private static final int p_speed = 3; // physical speed (m/s)
+    private static final int s_speed = 4; // sensed speed (m/s)
+    private static final int p_distance = 5; // auxiliary variable, physical distance from the current waypoint
     private static final int accel = 6; // acceleration
     private static final int timer_V = 7; // timer
-    private static final int gap = 8; // difference between p_distance and the space required to stop when braking
-    private static final int currentWP = 9; // current w point
+    private static final int gap = 8; // auxiliary variable, difference between p_distance and the space required to stop when braking
+    private static final int currentWP = 9; // current waypoint
 
     private static final int NUMBER_OF_VARIABLES = 10;
     private static final double SPEED_DIFFERENCE = 0.0001;
@@ -89,7 +90,7 @@ public class Industrial_plant {
             INITIAL CONFIGURATION
 
             In order to perform simulations/analysis/model checking for a particular system, we need to create its
-            initial configuration, which is an instance of <code>ControlledSystem>/code>
+            initial configuration, which is an instance of <code>ControlledSystem</code>
 
             */
 
@@ -107,7 +108,7 @@ public class Industrial_plant {
             Instances of <code>DataState</code> contains values for variables representing the quantities of the
             system.
             The initial state <code>state</code> is constructed by exploiting the static method
-            <code>getInitialState</code>, which will be defined later and assigns the initial value to all
+            <code>getInitialState</code>, which will be defined later and assigns the initial value to the 10
             variables defined above.
              */
             DataState state = getInitialState();
@@ -117,9 +118,10 @@ public class Industrial_plant {
             We define the <code>ControlledSystem</code> <code>system</code>, which will be the starting configuration from
             which the evolution sequence will be constructed.
             This configuration consists of 3 elements:
-            - the controller <code>robot</code> defined above,
+            - the controller <code>robot</code> defined above, which model the cyber component of the system;
             - a random function over data states, which implements interface <code>DataStateFunction</code> and maps a
-            random generator <code>rg</code> and a data state <code>ds</code> to a new data state,
+            random generator <code>rg</code> and a data state <code>ds</code> to a new data state. This function models
+            the physical component of the system;
             - the data state <code>state</state> defined above.
              */
 
@@ -127,30 +129,38 @@ public class Industrial_plant {
 
 
 
-/*
-            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to obtain the evolution
+            /*
+            Below we create an evolution sequence.
+            Variable <code>sizeNominalSequence</code> gives the number of runs that are used to simulate the evolution
             sequence.
             More in detail, an evolution sequence, modelled by class <code>EvolutionSequence</code>, is a sequence of
             sample sets of system configurations, where configurations are modelled by class <code>ControlledSystem</code>
             and sample sets by class <code>SampleSet</code>.
             In this context, <code>sizeNominalSequence</code> is the cardinality of those sample sets.
+            The evolution sequence is created as a sequence containing only one sample set of configurations, which
+            consists in <code>sizeNominalSequence</code> of configuration <code>system</code>.
+            The subsequent sample sets will be generated "on demand".
+
             */
             int sizeNominalSequence = 10;
 
             EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, sizeNominalSequence);
 
             /*
-            Below we define a feedback, namely an element of <code>Feedback</code>.
+            Below we define a feedback, namely an instance of <code>Feedback</code>.
             In this case, <code>feedbackSpeedAndDir</code> is a <code>PersistentFeedback</code>, namely at each
-            evolution step its body is applied, where the body is the <code>AtomicFeedback</code>
-            <code>feedbackSpeedAndDir</code>, which is drived by the evolution sequence <code>sequence</code> and applies
-            at each step the <code>FeedbackFunction</code> returned by static method <code>feedbackSpeedAndDirFunction</code>.
+            evolution step its body is applied, where the body is an atomic feedback, namely an instance of
+            <code>AtomicFeedback</code>. An atomic feedback consists in a delay, which is 0 in this case, an
+            evolution sequence, which is <code>sequence</code> in this case, and a feedback function, namely an instance
+            of <code>FeedbackFunction</code> that is returned by static method <code>feedbackSpeedAndDir</code> in
+            this case.
+            Essentially, <code>sequence</code> will play the role of the DT.
              */
             Feedback feedbackSpeedAndDir = new PersistentFeedback(new AtomicFeedback(0, sequence, Industrial_plant::feedbackSpeedAndDirFunction));
 
             /*
             Below we define a <code>FeedbackSystem</code> named <code>feedbackSystem</code>, which, essentially,
-            is a version of <code>system</code> equipped by feedback <code>feedbackSpeedAndDir</code>.
+            is a version of <code>system</code> equipped with feedback <code>feedbackSpeedAndDir</code>.
              */
             FeedbackSystem feedbackSystem = new FeedbackSystem(robot, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state, feedbackSpeedAndDir);
 
@@ -162,8 +172,8 @@ public class Industrial_plant {
 
 
             /*
-            Below we define a <code>Perturbation</code>.
-            In this case, <code>perturbationr</code> is a <code>PersistentPerturbation</code>, namely at each
+            Below we define a perturbation, namely an instance of <code>Perturbation</code>.
+            In this case, <code>perturbation</code> is a <code>PersistentPerturbation</code>, namely at each
             evolution step its body is applied, where the body is the <code>AtomicPerturbation</code>
             which perturbs the data states by applying the </code>DataStateFunction</code> returned by
             static method <code>slowerPerturbation</code>.
@@ -179,7 +189,7 @@ public class Industrial_plant {
 
             /*
             USING THE SIMULATOR
-             */
+            */
 
             ArrayList<String> L = new ArrayList<>();
             L.add("      x   ");
@@ -219,11 +229,12 @@ public class Industrial_plant {
 
             /*
             We start with generating three evolution sequences of length <code>N</code> of sample sets of cardinality
-            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in <code>size</code>
-            copies of <code>system</code>, <code>perturbedSystem</code> or <code>perturbedFeedbackSystem</code>.
+            <code>sizeNominalSequence</code> of configurations, with the first sample set consisting in
+            <code>sizeNominalSequence</code> copies of <code>system</code>, <code>perturbedSystem</code> or
+            <code>perturbedFeedbackSystem</code>, respectively.
             For each evolution sequence and step in [0,N-1], and for each variable, we print out
-            the average value that the variable assumes in the <code>size</code> configurations in the sample set
-            obtained at that step.
+            the average value that the variable assumes in the <code>sizeNominalSequence</code> configurations in the
+            sample set obtained at that step.
             The simulator, which is offered by method <code>sample</code> of <code>SystemState</code>,
             is called by method <code>printDataPar</code>.
             */
@@ -238,12 +249,12 @@ public class Industrial_plant {
 
 
             /*
-            Below we repeat the simulation, but instead of printing out the results we store in a .csv file
+            Below we repeat the simulation, but instead of printing out the results we store them in a .csv file
             the value obtained for <code>x</code> and <code>y</code>.
-             */
+            */
 
             double[][] plot_system = new double[N][2];
-            double[][] plot_perturbed_system = new double[N][2];
+            double[][] plot_perturbed_system = new double[100][2];
             double[][] plot_perturbed_feedback_system = new double[N][2];
 
 
@@ -255,8 +266,8 @@ public class Industrial_plant {
             Util.writeToCSV("./Fnew_plotxy.csv",plot_system);
 
 
-            double[][] pdata = SystemState.sample(rand, F, perturbation, system, N, 5);
-            for (int i = 0; i<N; i++){
+            double[][] pdata = SystemState.sample(rand, F, perturbation, system, 100, 5);
+            for (int i = 0; i<100; i++){
                 plot_perturbed_system[i][0] = pdata[i][0];
                 plot_perturbed_system[i][1] = pdata[i][1];
             }
@@ -279,46 +290,15 @@ public class Industrial_plant {
             1. a nominal sequence
             2. a perturbed sequence for the system without feedback
             3. a perturbed sequence for the system equipped with feedback.
-            Then, we quantify the differences between the evolutions sequences #1 and #2, which corresponds
+            Then, we quantify the step-by-step differences between the evolutions sequences #1 and #2, which corresponds
             to quantifying the behavioural distance between the nominal and the perturbed system without feedback,
             and between the evolutions sequences #1 and #3, which corresponds to quantifying the behavioural distance
             between the nominal and the perturbed system equipped with feedback.
-            The differences are expressed with respec to the points in the plane reached by the systems.
+            The differences are expressed with respect to the distance of the robot from the next waypoint.
              */
+/*
 
-
-            /*
-            In order to quantify the difference between two evolution sequences w.r.t. coordinates x and y, we need
-            to define the difference between two configurations w.r.t. them: we decide that the difference is the
-            euclidean distance between the two points, normalised wrt. the maximal distance between all pair of points that
-            can be reached by the systems.
-
-            Therefore, we start with estimating the points that can be reached by system.
-            To this purpose, we generate a nominal and a perturbed evolution sequence of length 2N and collect the
-            maximal values that are assumed by the variables in all configurations in all sample sets.
-            */
-
-
-
-
-
-
-            int size = 5;
-            System.out.println("");
-            System.out.println("Simulation of nominal system - Data maximal values:");
-            double[] dataMax = printMaxData(rand, L, F, system, N, size, 0,2*N);
-            System.out.println("");
-            System.out.println("Simulation of perturbed system - Data maximal values:");
-            System.out.println("");
-            double[] dataMax_p = printMaxDataPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
-
-            double normalisationX = Math.max(dataMax[x],dataMax_p[x])*1.1;
-
-            double normalisationY = Math.max(dataMax[y],dataMax_p[y])*1.1;
-
-            double normalisationF = Math.sqrt(Math.pow(normalisationX,2)+Math.pow(normalisationY ,2));
-
-            /*
+             /*
             The following instruction allows us to create the evolution sequence <code>perturbedSequence</code>, which is
             obtained from the evolution sequence <code>sequence</code> by applying a perturbation, where:
             - as above, the perturbation is  <code>perturbation</code>
@@ -333,22 +313,56 @@ public class Industrial_plant {
             EvolutionSequence perturbedSequence = sequence.apply(perturbation,0,scale);
             EvolutionSequence perturbedFeedbackSequence = feedbackSequence.apply(perturbation,0,scale);
 
+
+
+            /*
+            In order to quantify the difference between two evolution sequences, we need to define a notion of distance
+            between two configurations.
+
+
+            We start with simulating the nominal and the perturbed system and with computing the maximal Euclidean distance
+            between the position of the robot and the current waypoint that can be observed in all configurations generated
+            in those simulations.
+            The value obtained will be exploited for normalisation purposes.
+            */
+
+
+
+
+
+
+            int size = 5;
+            System.out.println("");
+            System.out.println("Simulation of nominal system - Data maximal values:");
+            double dataMax = printMaxDataWP(rand, L, F, system, N, size, 0,2*N);
+            System.out.println("");
+            System.out.println("Simulation of perturbed system - Data maximal values:");
+            System.out.println("");
+            double dataMax_p = printMaxDataWPPerturbed(rand, L, F, system, N, size, 0, 2*N, perturbation);
+            double normalisationF = Math.max(dataMax,dataMax_p);
+
+
+
             /*
             The following lines of code first defines an atomic distance between evolution sequences, named
-            <code>distP2P</code>. Then, this distances are evaluated, time-point by time-point, over
+            <code>distP2P</code>. Then, this distance is evaluated, step-by-step, over
             evolution sequence <code>sequence</code> and its perturbed version <code>perturbedSequence</code> defined above,
             and over <code>sequence</code> and its perturbed version with feedback <code>perturbedFeedbackSequence</code>.
-            Finally, the time-point to time-point values of the distances are stored in .csv files and printed out.
+            Finally, the step-by-step values of the distances are stored in .csv files and printed out.
+
             Technically, <code>distP2P</code> is an atomic distance in the sense that it is an instance of
             class <code>AtomicDistanceExpression</code>, which consists in a data state expression,
-            which maps a data state to a number, or rank, and a binary operator. As already discussed, in this case,
-            given two configurations, the data state expression allow us to get the normalised distance from the origin,
-            which is a value in [0,1], from both configuration, and the binary operator gives us their difference, which,
-            intuitively, is the difference between the two configurations with respect to their position.
+            which maps a data state to a number, or rank, and a binary operator.
+
+            In our case, the data state expression allow us to get the normalised distance between the robot and the
+            current waypoint, and the binary operator gives us their difference, which, intuitively, tells us how
+            closer to the current waypoint is one robot with respect to the other.
             This distance will be lifted to two sample sets of configurations, those obtained from the compared
-            sequences at the same step.
+            sequences at the same step. This lifting is done by method <code>compute</code> of <code>DistanceExpression</code>.
             */
-            AtomicDistanceExpression distP2P = new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow(ds.get(x),2)+Math.pow(ds.get(y),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
+
+
+            DistanceExpression distP2P =  new AtomicDistanceExpression(ds->(Math.sqrt(Math.pow((ds.get(x)-WPx[(int)ds.get(currentWP)]),2)+Math.pow((ds.get(y)-WPy[(int)ds.get(currentWP)]),2)))/normalisationF, (v1, v2) -> Math.abs(v2-v1));
 
             int leftBound = 0;
             int rightBound = 200;
@@ -381,26 +395,29 @@ public class Industrial_plant {
 
             }
 
+
+
             /*
             USING THE MODEL CHECKER
 
-            Later, we will write down a robustness formula that simply expresses whether the maximal of these distances is
-            below a given threshold.
-            First we define the distances <code>distanceZi</code>, as instances of <code>MaxIntervalDistanceExpression</code>.
-            Each <code>distanceZi</code> evaluates <code>atomicZi</code> in all time-points and returns the max value.
-            Then we define the distance expression <code>distanceMaxZ1Z2Z3</code>, which returns the maximal value
-            among those returned by three distances defined above.
-            Then, we define a robustness formula, in particular an atomic formula, namely an instance of
+            The distance <code>intP2PMax</code> defined below returns the maximal value given by the evaluation of
+            <code>distP2P</code> in an interval.
+            We define a robustness formula, in particular an atomic formula, namely an instance of
             <code>AtomicRobustnessFormula</code>.
             This formula will be evaluated on the evolution sequence <code>sequence</code> and expresses that the
-            distance, expressed by expression distance <code>distanceMaxZ1Z2Z3</code> between that evolution
-            sequence and the evolution sequence obtained from it by applying the perturbation returned by method
-            <code>itZ1TranslRate(x)</code>, is below a given threshold.
+            distance, expressed by expression distance <code>intP2PMax</code> between that evolution
+            sequence and the evolution sequence obtained from it by applying the perturbation <code>perturbation</code>
+            defined above, is below a given threshold.
+            For several thresholds, we print out and store in a .csv file the result.
+
 
              */
             int leftRBound=0;
             int rightRBound=200;
 
+            /*
+
+             */
 
             DistanceExpression intP2PMax = new MaxIntervalDistanceExpression(
                     distP2P,
@@ -431,6 +448,9 @@ public class Industrial_plant {
             Util.writeToCSV("./FevalR.csv",robEvaluationsWF);
 
 
+            /*
+            Below we re-employ the model checker for <code>feedbackSequence</code>.
+             */
 
             double[][] robEvaluations = new double[20][2];
             RobustnessFormula robustF;
@@ -438,7 +458,7 @@ public class Industrial_plant {
             double thresholdB = 1;
             for(int i = 0; i < 20 ; i++){
                 double threshold = thresholdB + i;
-                threshold = threshold / 1000;
+                threshold = threshold / 100;
                 robustF = new AtomicRobustnessFormula(
                         perturbation,
                         intP2PMax,
@@ -501,61 +521,14 @@ public class Industrial_plant {
     }
 
 
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
 
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
 
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, int steps, int size) {
 
-        double[][] data = SystemState.sample(rg, F, s1, steps, size);
-        double[][] datap = SystemState.sample(rg, F, s2, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>  ", i);
-            for (int j = 0; j < data[i].length-1; j++) {
-                System.out.printf("%f ", data[i][j]);
-                System.out.printf("%f ", datap[i][j]);
-            }
-            System.out.printf("%f ", data[i][datap[i].length -1]);
-            System.out.printf("%f\n", datap[i][datap[i].length -1]);
 
-        }
-    }
+
+
 
     private static void printDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s1, SystemState s2, SystemState s3, int steps, int size) {
 
@@ -576,119 +549,35 @@ public class Industrial_plant {
         }
     }
 
-    private static void printLDataPar(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        //System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, s, steps, size);
-        double[][] datap = SystemState.sample(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>  ", i);
-            for (int j = 0; j < data[i].length-1; j++) {
-                System.out.printf("%f ", data[i][j]);
-                System.out.printf("%f ", datap[i][j]);
-            }
-            System.out.printf("%f ", data[i][datap[i].length -1]);
-            System.out.printf("%f\n", datap[i][datap[i].length -1]);
 
-        }
-    }
 
-    private static void printLData_min(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_min(rg, F, new NonePerturbation(), s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static void printLData_max(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
 
-    private static double[] printMaxData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
 
-        /*
-        The following instruction creates an evolution sequence consisting in a sequence of <code>steps</code> sample
-        sets of cardinality <size>.
-        The first sample set contains <code>size</code> copies of configuration <code>s</code>.
-        The subsequent sample sets are derived by simulating the dynamics.
-        Finally, for each step from 1 to <code>steps</code> and for each variable, the maximal value taken by the
-        variable in the elements of the sample set is stored.
-         */
+
+    private static double printMaxDataWP(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound){
         double[][] data_max = SystemState.sample_max(rg, F, new NonePerturbation(), s, steps, size);
-        double[] max = new double[F.size()];
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
+        double[] data_euc = new double[steps];
+        double max = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i<data_euc.length;i++){
+            data_euc[i] = Math.sqrt( (Math.pow((data_max[i][0] - WPx[(int)data_max[i][7]]) , 2)) + (Math.pow((data_max[i][1] - WPy[(int)data_max[i][7]]),2)) );
+            if(data_euc[i] > max){
+                max = data_euc[i];
             }
         }
-        System.out.println(" ");
-        //System.out.println("Maximal values taken by variables by the non perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println("");
-        System.out.println("");
         return max;
     }
 
-    private static double[] printMaxDataPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation perturbation){
-
-        double[] max = new double[F.size()];
-
-        double[][] data_max = SystemState.sample_max(rg, F, perturbation, s, steps, size);
-        Arrays.fill(max, Double.NEGATIVE_INFINITY);
-        for (int i = 0; i < data_max.length; i++) {
-            //System.out.printf("%d>   ", i);
-            for (int j = 0; j < data_max[i].length -1 ; j++) {
-                //System.out.printf("%f   ", data_max[i][j]);
-                if (leftbound <= i & i <= rightbound) {
-                    if (max[j] < data_max[i][j]) {
-                        max[j] = data_max[i][j];
-                    }
-                }
-            }
-            //System.out.printf("%f\n", data_max[i][data_max[i].length -1]);
-            if (leftbound <= i & i <= rightbound) {
-                if (max[data_max[i].length -1] < data_max[i][data_max[i].length -1]) {
-                    max[data_max[i].length -1] = data_max[i][data_max[i].length -1];
-                }
+    private static double printMaxDataWPPerturbed(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size, int leftbound, int rightbound, Perturbation p){
+        double[][] data_max = SystemState.sample_max(rg, F, p, s, steps, size);
+        double[] data_euc = new double[steps];
+        double max = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i<data_euc.length;i++){
+            data_euc[i] = Math.sqrt( (Math.pow((data_max[i][0] - WPx[(int)data_max[i][7]]) , 2)) + (Math.pow((data_max[i][1] - WPy[(int)data_max[i][7]]),2)) );
+            if(data_euc[i] > max){
+                max = data_euc[i];
             }
         }
-        //System.out.println("");
-        //System.out.println("Maximal values taken by variables in steps by the perturbed system:");
-        System.out.println(label);
-        for(int j=0; j<max.length-1; j++){
-            System.out.printf("%f ", max[j]);
-        }
-        System.out.printf("%f\n", max[max.length-1]);
-        System.out.println("");
         return max;
     }
 
@@ -795,17 +684,13 @@ public class Industrial_plant {
         } else {
             new_p_speed = Math.min(MAX_SPEED, Math.max(0, state.get(p_speed) + state.get(accel)));
         }
-        //double token = rg.nextDouble();
+
         double new_s_speed = new_p_speed; // the sensed speed corresponds to the physical one in case of no perturbation
         double newX = state.get(x) + Math.cos(state.get(theta))*new_p_speed; // the position is updated according to
         double newY = state.get(y) + Math.sin(state.get(theta))*new_p_speed; // the physical speed
-        //if (token < 0.5){
-        //    new_s_speed = new_p_speed + rg.nextDouble()*0.5;
-        //} else {
-        //    new_s_speed = new_p_speed - rg.nextDouble()*0.5;
-        //}
+
         double new_p_distance = Math.sqrt(Math.pow(WPx[(int)state.get(currentWP)]-newX,2) + Math.pow(WPy[(int)state.get(currentWP)]-newY,2));
-        // the distance from the target is updated taking into account the new position
+
         updates.add(new DataStateUpdate(x,newX));
         updates.add(new DataStateUpdate(y,newY));
         updates.add(new DataStateUpdate(timer_V, new_timer_V));
@@ -847,9 +732,7 @@ public class Industrial_plant {
 
     // PERTURBATIONS
 
-    private static  Perturbation getIteratedSlowerPerturbation() {
-        return new AfterPerturbation(1, new IterativePerturbation(100, new AtomicPerturbation(0, Industrial_plant::slowerPerturbation)));
-    }
+
 
     private static DataState slowerPerturbation(RandomGenerator rg, DataState state) {
         List<DataStateUpdate> updates = new LinkedList<>();
