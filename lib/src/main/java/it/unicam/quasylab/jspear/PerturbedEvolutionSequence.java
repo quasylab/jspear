@@ -22,10 +22,12 @@
 
 package it.unicam.quasylab.jspear;
 
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import org.apache.commons.math3.random.RandomGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +62,13 @@ public class PerturbedEvolutionSequence extends EvolutionSequence {
         this.p = this.p.step();
         return doApply(super.generateNextStep());
     }
+
+    @Override
+    public synchronized SampleSet<SystemState> generateNextStepCond(DataStateBooleanExpression condition) {
+        this.p = this.p.step();
+        return doApply(super.generateNextStepCond(condition));
+    }
+
 
     /**
      * Applies this perturbation to a given sample set.

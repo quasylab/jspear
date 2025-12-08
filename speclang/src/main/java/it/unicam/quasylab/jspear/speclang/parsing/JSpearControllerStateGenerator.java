@@ -160,13 +160,3 @@ public class JSpearControllerStateGenerator extends JSpearSpecificationLanguageB
                 ctx.elseBranch.accept(this));
     }
 }
-
-/**
- * if (x<10) {
- *      step Pippo
- * } else {
- *     y = 27;
- * }
- * setp Pluto;
- *
- */

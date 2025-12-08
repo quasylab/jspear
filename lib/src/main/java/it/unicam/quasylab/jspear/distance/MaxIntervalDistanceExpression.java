@@ -90,4 +90,5 @@ public final class MaxIntervalDistanceExpression implements DistanceExpression {
         res[2] = resList.stream().parallel().mapToDouble(r -> r[2]).max().orElse(Double.NaN);
         return res;
     }
+
 }

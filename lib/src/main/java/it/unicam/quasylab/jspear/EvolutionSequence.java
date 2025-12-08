@@ -1,7 +1,7 @@
 /*
  * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2023.
+ *                Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,6 +25,7 @@ package it.unicam.quasylab.jspear;
 import it.unicam.quasylab.jspear.distance.DistanceExpression;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -165,6 +166,21 @@ public class EvolutionSequence {
     }
 
     /**
+     * This method is used to generate the evolution sequence up to certain conditions.
+     *
+     * @param conditions list of conditions to be checked.
+     */
+    public synchronized void generateUpToCond(ArrayList<DataStateBooleanExpression> conditions) {
+        while (!conditions.isEmpty()) {
+            int lastGeneratedStep = getLastGeneratedStep();
+            startSamplingsOfStep(lastGeneratedStep);
+            doAdd(generateNextStepCond(conditions.get(0)));
+            conditions.remove(0);
+            endSamplingsOfStep(lastGeneratedStep);
+        }
+    }
+
+    /**
      * Adds a given sampled set as the last generated sample in the sequence.
      *
      * @param sampling a given set of samples.
@@ -183,6 +199,10 @@ public class EvolutionSequence {
      */
     protected SampleSet<SystemState> generateNextStep() {
         return lastGenerated.apply(s -> s.sampleNext(rg));
+    }
+
+    public SampleSet<SystemState> generateNextStepCond(DataStateBooleanExpression condition) {
+        return lastGenerated.apply(s -> s.sampleNextCond(rg,condition));
     }
 
     /**

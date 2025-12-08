@@ -23,6 +23,7 @@
 package it.unicam.quasylab.jspear;
 
 import it.unicam.quasylab.jspear.ds.DataState;
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -55,6 +56,12 @@ public class PerturbedSystem implements SystemState {
     @Override
     public SystemState sampleNext(RandomGenerator rg) {
         SystemState next = perturbedSystem.sampleNext(rg);
+        return perturbation.step().apply(rg, next);
+    }
+
+    @Override
+    public SystemState sampleNextCond(RandomGenerator rg, DataStateBooleanExpression condition) {
+        SystemState next = perturbedSystem.sampleNextCond(rg,condition);
         return perturbation.step().apply(rg, next);
     }
 

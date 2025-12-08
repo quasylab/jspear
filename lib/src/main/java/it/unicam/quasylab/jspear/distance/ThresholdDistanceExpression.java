@@ -22,7 +22,6 @@
 
 package it.unicam.quasylab.jspear.distance;
 
-
 import it.unicam.quasylab.jspear.EvolutionSequence;
 import it.unicam.quasylab.jspear.ds.RelationOperator;
 import org.apache.commons.math3.random.RandomGenerator;

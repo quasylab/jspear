@@ -194,10 +194,12 @@ public class test_figure_3 {
 
             Util.writeToCSV("./phi_crash_speed_test_005x50.csv",val_crash_speed);
 
+            ETA_CRASH_SPEED = 0.1;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_bis).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_BIS+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {
@@ -213,8 +215,8 @@ public class test_figure_3 {
 
             for(int i = 0; i<10; i++) {
                 int step = i*30;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_bis).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_BIS+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {
@@ -230,8 +232,8 @@ public class test_figure_3 {
 
             for(int i = 0; i<10; i++) {
                 int step = i*50;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_bis).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_BIS+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {
@@ -245,10 +247,12 @@ public class test_figure_3 {
 
             Util.writeToCSV("./phi_crash_speed_test_01x50.csv",val_crash_speed);
 
+            ETA_CRASH_SPEED = 0.15;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_ter).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_TER+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {
@@ -264,8 +268,8 @@ public class test_figure_3 {
 
             for(int i = 0; i<10; i++) {
                 int step = i*30;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_ter).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_TER+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {
@@ -281,8 +285,8 @@ public class test_figure_3 {
 
             for(int i = 0; i<10; i++) {
                 int step = i*50;
-                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed_ter).eval(60, step, sequence);
-                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED_TER+": " + value);
+                TruthValues value = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_crash_speed).eval(60, step, sequence);
+                System.out.println("Phi_crash_speed evaluation at step "+step+"with threshold "+ETA_CRASH_SPEED+": " + value);
                 if (value == TruthValues.TRUE) {
                     val_crash_speed[i][0] = 1;
                 } else {

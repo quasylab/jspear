@@ -1,0 +1,12 @@
+plugins {
+    id 'jspear.java-application-conventions'
+}
+
+dependencies {
+    implementation project(':lib')
+}
+
+application {
+    // Define the main class for the application.
+    mainClass = 'it.unicam.quasylab.jspear.examples.envzompr.Main'
+}

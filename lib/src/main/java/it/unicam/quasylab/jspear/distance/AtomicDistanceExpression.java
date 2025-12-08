@@ -82,6 +82,4 @@ public final class AtomicDistanceExpression implements DistanceExpression {
         res[2] = partial[1];
         return res;
     }
-
-
 }

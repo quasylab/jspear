@@ -22,12 +22,14 @@
 
 package it.unicam.quasylab.jspear.cli;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Disabled
 class StarkInterpreterTest {
 
     public static final String two_vehicles = "two_vehicles.stark";

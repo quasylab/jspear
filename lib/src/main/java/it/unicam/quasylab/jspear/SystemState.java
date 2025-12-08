@@ -1,7 +1,7 @@
 /*
  * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2023.
+ *                Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,6 +25,7 @@ package it.unicam.quasylab.jspear;
 import it.unicam.quasylab.jspear.ds.DataState;
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
 import it.unicam.quasylab.jspear.perturbation.NonePerturbation;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -53,6 +54,15 @@ public interface SystemState {
      * @return one state sampled among the one reachable from this state in one step.
      */
     SystemState sampleNext(RandomGenerator rg);
+
+    /**
+     * Returns one state sampled among the ones reachable from this state that satisfy a set of conditions.
+     *
+     * @param rg random generator used sample random expression.
+     * @param cond conditions
+     * @return one state sampled among the one reachable from this state that satisfy a set of conditions.
+     */
+    SystemState sampleNextCond(RandomGenerator rg, DataStateBooleanExpression cond);
 
     /**
      * Returns the system state in which the current data state is replaced with the given one.

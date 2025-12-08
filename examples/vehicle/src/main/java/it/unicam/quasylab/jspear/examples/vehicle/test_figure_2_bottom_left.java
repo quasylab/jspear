@@ -165,10 +165,12 @@ public class test_figure_2_bottom_left {
 
             Util.writeToCSV("./phi_comb_test_02x10.csv",val_comb);
 
+            MAX_SPEED_OFFSET = 0.3;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value2 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_comb_bis).eval(60, step, sequence);
-                System.out.println("Phi_comb evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET_BIS+": " + value2);
+                TruthValues value2 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_comb).eval(60, step, sequence);
+                System.out.println("Phi_comb evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET+": " + value2);
                 if (value2 == TruthValues.TRUE) {
                     val_comb[i][0] = 1;
                 } else {
@@ -182,10 +184,12 @@ public class test_figure_2_bottom_left {
 
             Util.writeToCSV("./phi_comb_test_03x10.csv",val_comb);
 
+            MAX_SPEED_OFFSET = 0.4;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value2 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_comb_ter).eval(60, step, sequence);
-                System.out.println("Phi_comb evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET_TER+": " + value2);
+                TruthValues value2 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_comb).eval(60, step, sequence);
+                System.out.println("Phi_comb evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET+": " + value2);
                 if (value2 == TruthValues.TRUE) {
                     val_comb[i][0] = 1;
                 } else {

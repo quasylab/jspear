@@ -37,8 +37,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import java.io.IOException;
 import java.util.*;
 
-public class
-Main {
+public class Main {
 
     public final static String[] VARIABLES =
             new String[]{"p_speed_V1", "s_speed_V1", "p_distance_V1", "s_distance_V1", "accel_V1", "timer_V1",
@@ -118,7 +117,6 @@ Main {
 
             DistanceExpression crash_speed = new AtomicDistanceExpressionLeq(Main::rho_crash_speed);
 
-            /*
             double[][] testLeft_50 = new double[100][1];
             double[][] testRight_50 = new double[100][1];
             double[] testDistance = new double[100];
@@ -137,7 +135,7 @@ Main {
             Util.writeToCSV("./testBootR_04.csv",testRight_50);
 
 
-             */
+
             RobustnessFormula Phi_fast = new AlwaysRobustnessFormula(
                     new AtomicRobustnessFormula(getIteratedFasterPerturbation(),
                             crash_dist,
@@ -174,7 +172,6 @@ Main {
 
             // Tests on the three-valued evaluation of formulae
 
-
             double[][] val_slow = new double[10][1];
             double[][] val_crash = new double[10][1];
 
@@ -207,8 +204,6 @@ Main {
             Util.writeToCSV("./slow_novel_03.csv",val_slow);
             Util.writeToCSV("./comb_novel_03.csv",val_crash);
 
-
-            /*
             double[][] val_crash_speed = new double[10][1];
             for(int i = 0; i<10; i++) {
                 int step = i*50;
@@ -225,11 +220,7 @@ Main {
                 }
             }
 
-            Util.writeToCSV("./crash50_001.csv",val_crash_speed);
-
-
-             */
-
+            Util.writeToCSV("./crash50_0003.csv",val_crash_speed);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -263,72 +254,6 @@ Main {
         }
         else{
             return 0.0;
-        }
-    }
-
-    // UTILITY METHODS TO EXTRACT DATA FROM EVOLUTION SEQUENCES
-
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
-
-    private static void printData(RandomGenerator rg, String label, DataStateExpression f, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[] data = SystemState.sample(rg, f, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d> %f\n", i, data[i]);
-        }
-    }
-
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
-
-    private static void printLData(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-        System.out.printf("%d>   ", i);
-        for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-        }
-        System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
-
-    private static void printLData_min(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_min(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
-        }
-    }
-
-    private static void printLData_max(RandomGenerator rg, ArrayList<String> label, ArrayList<DataStateExpression> F, Perturbation p, SystemState s, int steps, int size) {
-        System.out.println(label);
-        double[][] data = SystemState.sample_max(rg, F, p, s, steps, size);
-        for (int i = 0; i < data.length; i++) {
-            System.out.printf("%d>   ", i);
-            for (int j = 0; j < data[i].length -1; j++) {
-                System.out.printf("%f   ", data[i][j]);
-            }
-            System.out.printf("%f\n", data[i][data[i].length -1]);
         }
     }
 

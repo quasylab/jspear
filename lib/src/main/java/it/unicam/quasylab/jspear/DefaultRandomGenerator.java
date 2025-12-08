@@ -30,6 +30,9 @@ import java.util.SplittableRandom;
 /**
  * We use this class to implement a computationally efficient random generator.
  */
+/**
+ * We use this class to implement a computationally efficient random generator.
+ */
 public class DefaultRandomGenerator extends AbstractRandomGenerator {
 
     private SplittableRandom random = new SplittableRandom();

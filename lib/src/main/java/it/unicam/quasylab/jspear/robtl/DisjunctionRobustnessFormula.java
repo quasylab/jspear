@@ -1,7 +1,7 @@
 /*
  * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2023.
+ *                Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -40,6 +40,7 @@ public final class DisjunctionRobustnessFormula implements RobustnessFormula {
         this.leftFormula = leftFormula;
         this.rightFormula = rightFormula;
     }
+
 
     @Override
     public <T> RobustnessFunction<T> eval(RobustnessFormulaVisitor<T> evaluator) {

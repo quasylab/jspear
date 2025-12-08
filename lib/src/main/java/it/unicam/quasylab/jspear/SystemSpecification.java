@@ -518,14 +518,4 @@ public class SystemSpecification {
         this.z = DEFAULT_Z;
     }
 
-
-    /**
-     * Sets the seed in the used Random Generator.
-     *
-     * @param seed the seed to use in the random generator.
-     */
-    public void setRandomSeed(long seed) {
-        this.rand.setSeed(seed);
-        this.sequence = null;
-    }
 }

@@ -25,6 +25,8 @@ package it.unicam.quasylab.jspear;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.EffectStep;
 import it.unicam.quasylab.jspear.ds.DataState;
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
+import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -65,6 +67,17 @@ public class ControlledSystem implements SystemState {
         DataState newState = environment.apply(rg, state.apply(step.effect()));
         newState.setStep(c_step+1);
         return new ControlledSystem(step.next(), environment, newState);
+    }
+
+    @Override
+    public SystemState sampleNextCond(RandomGenerator rg, DataStateBooleanExpression condition) {
+        SystemState result = this;
+        DataState ds = this.state;
+        while(!condition.eval(ds)) {
+            result = result.sampleNext(rg);
+            ds = result.getDataState();
+            }
+        return result;
     }
 
     @Override

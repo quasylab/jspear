@@ -13,8 +13,15 @@
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/cli" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/examples/Isocitrate" />
+            <option value="$PROJECT_DIR$/examples/Lotka" />
             <option value="$PROJECT_DIR$/examples/agriculturalDT" />
             <option value="$PROJECT_DIR$/examples/engine" />
+            <option value="$PROJECT_DIR$/examples/envzompr" />
+            <option value="$PROJECT_DIR$/examples/multipleSclerosis" />
+            <option value="$PROJECT_DIR$/examples/polistil" />
+            <option value="$PROJECT_DIR$/examples/repressilator" />
+            <option value="$PROJECT_DIR$/examples/tollbooth" />
             <option value="$PROJECT_DIR$/examples/turtle" />
             <option value="$PROJECT_DIR$/examples/vehicle" />
             <option value="$PROJECT_DIR$/lib" />

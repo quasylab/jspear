@@ -23,8 +23,11 @@
 package it.unicam.quasylab.jspear;
 
 import it.unicam.quasylab.jspear.ds.DataStateExpression;
+import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import org.apache.commons.math3.random.RandomGenerator;
+import it.unicam.quasylab.jspear.penalty.*;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.*;
@@ -177,6 +180,19 @@ public class SampleSet<T extends SystemState> {
         return distance(f, (v1,v2) -> Math.max(0.0, v2-v1), other);
     }
 
+    public synchronized double distanceLeq(Penalty rho, SampleSet<T> other, int step) {
+        if (other.size() % this.size() != 0) {
+            throw new IllegalArgumentException("Incompatible size of data sets!");
+        }
+        DataStateExpression f = rho.effectUpTo(step).get(step);
+        double[] thisData = this.evalPenaltyFunction(f);
+        double[] otherData = other.evalPenaltyFunction(f);
+        int k = otherData.length / thisData.length;
+        return IntStream.range(0, thisData.length).parallel()
+                .mapToDouble(i -> IntStream.range(0, k).mapToDouble(j -> Math.max(0,otherData[i * k + j] - thisData[i])).sum())
+                .sum() / otherData.length;
+    }
+
     /**
      * Utility method to evaluate the Wasserstein distance between two sampled distributions on reals,
      * based on an asymmetric ground distance.
@@ -200,6 +216,19 @@ public class SampleSet<T extends SystemState> {
      */
     public synchronized double distanceGeq(DataStateExpression f, SampleSet<T> other) {
         return distance(f, (v1,v2) -> Math.max(0, v1-v2), other);
+    }
+
+    public synchronized double distanceGeq(Penalty rho, SampleSet<T> other, int step) {
+        if (other.size() % this.size() != 0) {
+            throw new IllegalArgumentException("Incompatible size of data sets!");
+        }
+        DataStateExpression f = rho.effectUpTo(step).get(step);
+        double[] thisData = this.evalPenaltyFunction(f);
+        double[] otherData = other.evalPenaltyFunction(f);
+        int k = otherData.length / thisData.length;
+        return IntStream.range(0, thisData.length).parallel()
+                .mapToDouble(i -> IntStream.range(0, k).mapToDouble(j -> Math.max(0, thisData[i] - otherData[i * k + j])).sum())
+                .sum() / otherData.length;
     }
 
     /**
@@ -365,5 +394,9 @@ public class SampleSet<T extends SystemState> {
 
     public double mean(ToDoubleFunction<T> function){
         return this.stream().mapToDouble(function).average().orElse(0.0);
+    }
+
+    public SampleSet<SystemState> applyDistribution(RandomGenerator rg, DataStateFunction function){
+        return new SampleSet<>(this.stream().parallel().map(s -> s.apply(rg, function)).toList());
     }
 }

@@ -166,10 +166,12 @@ public class test_figure_2_top_left {
 
             Util.writeToCSV("./phi_slow_test_02x10.csv",val_slow);
 
+            MAX_SPEED_OFFSET = 0.3;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value1 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_slow_bis).eval(60, step, sequence);
-                System.out.println("Phi_slow evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET_BIS+": " + value1);
+                TruthValues value1 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_slow).eval(60, step, sequence);
+                System.out.println("Phi_slow evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET+": " + value1);
                 if (value1 == TruthValues.TRUE) {
                     val_slow[i][0] = 1;
                 } else {
@@ -183,10 +185,12 @@ public class test_figure_2_top_left {
 
             Util.writeToCSV("./phi_slow_test_03x10.csv",val_slow);
 
+            MAX_SPEED_OFFSET = 0.4;
+
             for(int i = 0; i<10; i++) {
                 int step = i*10;
-                TruthValues value1 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_slow_ter).eval(60, step, sequence);
-                System.out.println("Phi_slow evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET_TER+": " + value1);
+                TruthValues value1 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_slow).eval(60, step, sequence);
+                System.out.println("Phi_slow evaluation at step "+step+" with offset "+MAX_SPEED_OFFSET+": " + value1);
                 if (value1 == TruthValues.TRUE) {
                     val_slow[i][0] = 1;
                 } else {
