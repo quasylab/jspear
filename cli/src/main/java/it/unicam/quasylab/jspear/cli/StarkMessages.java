@@ -92,6 +92,10 @@ public class StarkMessages {
         return DONE_MESSAGE;
     }
 
+    public static String doneMessage(String message) {
+        return message;
+    }
+
     public static String printMessage() {
         return PRINT_MESSAGE;
     }

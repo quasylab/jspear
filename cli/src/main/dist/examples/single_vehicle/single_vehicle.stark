@@ -5,6 +5,8 @@ set z = 1.96
 set size = 100
 set scale = 10
 
+set seed = 7
+
 compute exp_crash after p_ItSlow_05 at 0 at 0
 print
 

@@ -32,7 +32,7 @@ To download STARK you have to clone the GitHub project:
 ```
 git clone https://github.com/quasylab/jspear.git
 
-git checkout working
+git checkout SI_coord_2023
 ```
 
 Run this command in the folder where you want to download the tool.

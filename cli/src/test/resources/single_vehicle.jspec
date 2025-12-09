@@ -19,9 +19,6 @@ param DANGER = 1;
 
 
 
-/*type IDSmsg = OK|DANGER;*/
-
-
 function new_s_speed (real speed, real acc, real token) {
   if (token < 0.5) {
       return min(MAX_SPEED, max(0, speed + acc + 0.3));

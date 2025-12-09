@@ -230,7 +230,7 @@ public class StarkInterpreter {
     private StarkCommandExecutionResult setSize(int size) {
         try {
             this.starkEnvironment.setSize(size);
-            return new StarkCommandExecutionResult(StarkMessages.doneMessage(), true);
+            return new StarkCommandExecutionResult(StarkMessages.doneMessage("Done, size correctly set!"), true);
         } catch (StarkCommandExecutionException e) {
             return new StarkCommandExecutionResult(e.getMessage(), e.getReasons(), false);
         }
@@ -238,13 +238,13 @@ public class StarkInterpreter {
 
     private StarkCommandExecutionResult setScale(int scale) {
         this.starkEnvironment.setScale(scale);
-        return new StarkCommandExecutionResult(StarkMessages.doneMessage(), true);
+        return new StarkCommandExecutionResult(StarkMessages.doneMessage("Done, scale correctly set!"), true);
     }
 
     private StarkCommandExecutionResult setM(int m) {
         try {
             this.starkEnvironment.setM(m);
-            return new StarkCommandExecutionResult(StarkMessages.doneMessage(), true);
+            return new StarkCommandExecutionResult(StarkMessages.doneMessage("Done, M correctly set!"), true);
         } catch (StarkCommandExecutionException e) {
             return new StarkCommandExecutionResult(e.getMessage(), e.getReasons(), false);
         }
@@ -253,7 +253,7 @@ public class StarkInterpreter {
     private StarkCommandExecutionResult setZ(double z) {
         try {
             this.starkEnvironment.setZ(z);
-            return new StarkCommandExecutionResult(StarkMessages.doneMessage(), true);
+            return new StarkCommandExecutionResult(StarkMessages.doneMessage("Done, z correctly set!"), true);
         } catch (StarkCommandExecutionException e) {
             return new StarkCommandExecutionResult(e.getMessage(), e.getReasons(), false);
         }
@@ -262,7 +262,7 @@ public class StarkInterpreter {
     private StarkCommandExecutionResult setRandomSeed(long seed) {
         try {
             this.starkEnvironment.setRandomSeed(seed);
-            return new StarkCommandExecutionResult(StarkMessages.doneMessage(), true);
+            return new StarkCommandExecutionResult(StarkMessages.doneMessage("Done, RandomSeed correctly set!"), true);
         } catch (StarkCommandExecutionException e) {
             return new StarkCommandExecutionResult(e.getMessage(), e.getReasons(), false);
         }

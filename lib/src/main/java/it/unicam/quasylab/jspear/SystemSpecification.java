@@ -395,6 +395,10 @@ public class SystemSpecification {
         this.z = z;
     }
 
+    public void setRand(long seed){
+        this.rand.setSeed(seed);
+    }
+
     /**
      * Returns the sample of the distribution reached by this sequence at a given time step.
      *
