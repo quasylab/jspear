@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -28,14 +28,14 @@ package it.unicam.quasylab.jspear;
 public interface SimulationMonitor {
 
     /**
-     * This method is invoked when the sampling of step <code>n</code> started.
+     * This method is invoked when the sampling of step <code>n</code> starts.
      *
      * @param step an integer identifying a time step.
      */
     void startSamplingsOfStep(int step);
 
     /**
-     * This method is invoked when the sampling of step <code>n</code> terminated.
+     * This method is invoked when the sampling of step <code>n</code> terminates.
      *
      * @param step an integer identifying a time step.
      */

@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -28,14 +28,21 @@ import org.apache.commons.math3.random.RandomGenerator;
 import java.util.List;
 
 /**
- * Represents a controller that does not execute any action.
- *
+ * Class NilController implements a controller that does not execute any action.
  */
 public class NilController implements Controller {
 
+    /**
+     * The controller has no effect on the data state
+     * and a transition to itself
+     *
+     * @param rg random generator
+     * @param state the current data state
+     * @return an empty list of effects and the controller itself.
+     */
     @Override
     public EffectStep<Controller> next(RandomGenerator rg, DataState state) {
-        return new EffectStep(List.of(), this);
+        return new EffectStep<>(List.of(), this);
     }
 
 }

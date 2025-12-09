@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -86,7 +86,6 @@ class ExpressionTypeInferenceTest {
         typeTests.put("sinh(1)", JSpearType.REAL_TYPE);
         typeTests.put("sqrt(1)", JSpearType.REAL_TYPE);
         typeTests.put("tan(1)", JSpearType.REAL_TYPE);
-        typeTests.put("[1,2,3]", JSpearType.ARRAY_TYPE);
         typeTests.put("atan2(1,2)", JSpearType.REAL_TYPE);
         typeTests.put("hypot(1,2)", JSpearType.REAL_TYPE);
         typeTests.put("max(1,2)", JSpearType.REAL_TYPE);
@@ -101,7 +100,6 @@ class ExpressionTypeInferenceTest {
         typeTests.put("R[1, 10]", new JSpearRandomType(JSpearType.REAL_TYPE));
         typeTests.put("(R<R)", new JSpearRandomType(JSpearType.BOOLEAN_TYPE));
         typeTests.put("(R<R?1:2)", new JSpearRandomType(JSpearType.INTEGER_TYPE));
-        typeTests.put("it", JSpearType.REAL_TYPE);
 
     }
 
@@ -137,11 +135,6 @@ class ExpressionTypeInferenceTest {
         assertEquals(JSpearType.BOOLEAN_TYPE, inferTypeOf(Map.of("x", JSpearType.BOOLEAN_TYPE), parseTree));
     }
 
-    @Test
-    void shouldInferArrayTypeFromVariable() {
-        ParseTree parseTree = getParseTree("x");
-        assertEquals(JSpearType.ARRAY_TYPE, inferTypeOf(Map.of("x", JSpearType.ARRAY_TYPE), parseTree));
-    }
 
     @Test
     void shouldInferRealType() {

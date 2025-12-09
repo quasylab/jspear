@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -21,6 +21,9 @@
  */
 
 package it.unicam.quasylab.jspear.speclang.types;
+
+import it.unicam.quasylab.jspear.ds.DataRange;
+import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
 
 /**
  * This type describes error values. This class is a singleton.
@@ -61,10 +64,6 @@ public final class JSpearErrorType implements JSpearType {
         return false;
     }
 
-    @Override
-    public boolean isAnArray() {
-        return false;
-    }
 
     @Override
     public boolean isError() {
@@ -74,6 +73,16 @@ public final class JSpearErrorType implements JSpearType {
     @Override
     public boolean canBeMergedWith(JSpearType other) {
         return true;
+    }
+
+    @Override
+    public JSpearValue valueOf(double v) {
+        return JSpearValue.ERROR_VALUE;
+    }
+
+    @Override
+    public DataRange getDefaultDataRange() {
+        return new DataRange(Double.NaN, Double.NaN);
     }
 
     @Override

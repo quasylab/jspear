@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -64,9 +64,9 @@ public class ControllerRegistry {
     }
 
     /**
-     * Returns a controller that refer to the one defined in this registry with the given name.
+     * Returns a controller that refers to the one defined in this registry with the given name.
      * @param name a name.
-     * @return a controller that refer to the one defined in this registry with the given name.
+     * @return a controller that refers to the one defined in this registry with the given name.
      */
     public Controller reference(String name) {
         return (rg, ds) -> get(name).next(rg, ds);

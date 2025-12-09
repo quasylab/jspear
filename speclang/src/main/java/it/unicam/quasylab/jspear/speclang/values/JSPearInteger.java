@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -41,9 +41,10 @@ public final class JSPearInteger implements JSpearValue {
     }
 
     @Override
-    public double[] toDoubleArray() {
-        return new double[] { this.value };
+    public double toDouble() {
+        return this.value;
     }
+
 
 
     public int value() {
@@ -57,9 +58,6 @@ public final class JSPearInteger implements JSpearValue {
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(this.value+ realValue.value());
         }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> this.value+d);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -69,9 +67,6 @@ public final class JSPearInteger implements JSpearValue {
         }
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(this.value* realValue.value());
-        }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> this.value*d);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -83,9 +78,6 @@ public final class JSPearInteger implements JSpearValue {
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(this.value- realValue.value());
         }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> this.value-d);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -95,9 +87,6 @@ public final class JSPearInteger implements JSpearValue {
         }
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(this.value/ realValue.value());
-        }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> this.value/d);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -109,9 +98,6 @@ public final class JSPearInteger implements JSpearValue {
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(this.value%realValue.value());
         }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> this.value%d);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -121,9 +107,6 @@ public final class JSPearInteger implements JSpearValue {
         }
         if (v instanceof JSpearReal realValue) {
             return new JSpearReal(op.applyAsDouble(this.value, realValue.value()));
-        }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(d -> op.applyAsDouble(this.value,d));
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -139,9 +122,6 @@ public final class JSPearInteger implements JSpearValue {
         if (other instanceof JSpearReal realValue) {
             return JSpearBoolean.of(this.value()<realValue.value());
         }
-        if (other instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return new JSpearArrayElementPredicate(d -> this.value()<elementFunction.apply(d));
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -151,9 +131,6 @@ public final class JSPearInteger implements JSpearValue {
         }
         if (other instanceof JSpearReal realValue) {
             return JSpearBoolean.of(this.value()<=realValue.value());
-        }
-        if (other instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return new JSpearArrayElementPredicate(d -> this.value()<=elementFunction.apply(d));
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -165,9 +142,6 @@ public final class JSPearInteger implements JSpearValue {
         if (other instanceof JSpearReal realValue) {
             return JSpearBoolean.of(this.value()==realValue.value());
         }
-        if (other instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return new JSpearArrayElementPredicate(d -> this.value()==elementFunction.apply(d));
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -178,9 +152,6 @@ public final class JSPearInteger implements JSpearValue {
         if (other instanceof JSpearReal realValue) {
             return JSpearBoolean.of(this.value()>=realValue.value());
         }
-        if (other instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return new JSpearArrayElementPredicate(d -> this.value()>=elementFunction.apply(d));
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -190,9 +161,6 @@ public final class JSPearInteger implements JSpearValue {
         }
         if (other instanceof JSpearReal realValue) {
             return JSpearBoolean.of(this.value()>realValue.value());
-        }
-        if (other instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return new JSpearArrayElementPredicate(d -> this.value()>elementFunction.apply(d));
         }
         return JSpearValue.ERROR_VALUE;
     }

@@ -1,0 +1,25 @@
+load "two_vehicles.jspec"
+
+set m = 50
+set z = 1.96
+set size = 1
+set scale = 2
+
+
+
+check threevalued phi_fast_03 from 0 to 100 every 10
+save in "phi_fast_03x10"
+
+check threevalued phi_comb_04 from 0 to 450 every 10
+save in "phi_comb_04x20"
+
+check boolean always_crash_speed_ter at 0
+print
+
+
+
+
+
+
+
+

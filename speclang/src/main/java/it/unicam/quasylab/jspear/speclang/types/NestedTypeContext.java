@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -22,11 +22,11 @@
 
 package it.unicam.quasylab.jspear.speclang.types;
 
-public class NestedTypeContext implements TypeContext {
-    private final TypeContext innerContext;
-    private final TypeContext outerContext;
+public class NestedTypeContext implements TypeEvaluationContext {
+    private final TypeEvaluationContext innerContext;
+    private final TypeEvaluationContext outerContext;
 
-    public NestedTypeContext(TypeContext innerContext, TypeContext outerContext) {
+    public NestedTypeContext(TypeEvaluationContext innerContext, TypeEvaluationContext outerContext) {
         this.innerContext = innerContext;
         this.outerContext = outerContext;
     }
@@ -37,11 +37,11 @@ public class NestedTypeContext implements TypeContext {
     }
 
     @Override
-    public boolean isReferenceable(String name) {
+    public boolean isAReference(String name) {
         if (this.innerContext.isDefined(name)) {
-            return this.innerContext.isReferenceable(name);
+            return this.innerContext.isAReference(name);
         } else {
-            return this.outerContext.isReferenceable(name);
+            return this.outerContext.isAReference(name);
         }
     }
 

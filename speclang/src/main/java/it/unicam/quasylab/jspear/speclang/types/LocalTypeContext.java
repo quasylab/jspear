@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,7 +25,7 @@ package it.unicam.quasylab.jspear.speclang.types;
 import java.util.Map;
 
 
-public class LocalTypeContext implements TypeContext {
+public class LocalTypeContext implements TypeEvaluationContext {
     private final Map<String, JSpearType> localDeclarations;
 
     public LocalTypeContext(Map<String, JSpearType> localDeclarations) {
@@ -38,7 +38,7 @@ public class LocalTypeContext implements TypeContext {
     }
 
     @Override
-    public boolean isReferenceable(String name) {
+    public boolean isAReference(String name) {
         return isDefined(name);
     }
 

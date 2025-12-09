@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -23,7 +23,6 @@
 package it.unicam.quasylab.jspear.controller;
 
 import it.unicam.quasylab.jspear.ds.DataState;
-import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.ds.DataStateUpdate;
 import org.apache.commons.math3.random.RandomGenerator;
 
@@ -31,28 +30,39 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 /**
- * Represents a controller that executes a given action on the data set and then evolves to
- * another one.
- *
+ * Class ActionController implements a controller that
+ * executes a given action on the data state
+ * and then evolves to another controller.
  */
 public class ActionController implements Controller {
 
     private final BiFunction<RandomGenerator, DataState, List<DataStateUpdate>> action;
-    private final Controller next;
+    private final Controller nextController;
 
     /**
-     * Creates the controller that execute the given action and then behaves like <code>next</code>.
+     * Generates a controller that
+     * executes the given <code>action</code>
+     * and then behaves like <code>nextController</code>.
      *
      * @param action effect on data state.
-     * @param next controller enabled after the action execution.
+     * @param nextController controller enabled after the execution of the action
      */
-    public ActionController(BiFunction<RandomGenerator, DataState, List<DataStateUpdate>> action, Controller next) {
+    public ActionController(BiFunction<RandomGenerator, DataState, List<DataStateUpdate>> action, Controller nextController) {
         this.action = action;
-        this.next = next;
+        this.nextController = nextController;
     }
 
+    /**
+     * The effect of the action is applied to the current data state,
+     * and the controller at the next step is modelled by <code>nextController</code>.
+     *
+     * @param rg random generator
+     * @param state the current data state
+     * @return the pair consisting of the effect of the action on <code>state</code>,
+     * and the controller behaviour at the next step <code>nextController</code>.
+     */
     @Override
     public EffectStep<Controller> next(RandomGenerator rg, DataState state) {
-        return new EffectStep<>(action.apply(rg, state), next);
+        return new EffectStep<>(action.apply(rg, state), nextController);
     }
 }

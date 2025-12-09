@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -20,17 +20,24 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear;import it.unicam.quasylab.jspear.SimulationMonitor;
+package it.unicam.quasylab.jspear;
 
+/**
+ * This class can be used to monitor simulations.
+ */
 public class ConsoleMonitor implements SimulationMonitor {
 
     private final String label;
     private long last;
 
+    /**
+     * Assigns a name to the simulation.
+     *
+     * @param label a string corresponding to the simulation name.
+     */
     public ConsoleMonitor(String label) {
         this.label = label;
     }
-
 
     @Override
     public void startSamplingsOfStep(int step) {

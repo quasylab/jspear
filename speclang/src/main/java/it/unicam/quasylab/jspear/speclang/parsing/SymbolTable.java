@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,7 +25,7 @@ package it.unicam.quasylab.jspear.speclang.parsing;
 import it.unicam.quasylab.jspear.speclang.JSpearSpecificationLanguageParser;
 import it.unicam.quasylab.jspear.speclang.types.JSpearCustomType;
 import it.unicam.quasylab.jspear.speclang.types.JSpearType;
-import it.unicam.quasylab.jspear.speclang.types.TypeContext;
+import it.unicam.quasylab.jspear.speclang.types.TypeEvaluationContext;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.HashMap;
@@ -34,22 +34,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class SymbolTable implements TypeContext {
+public class SymbolTable {
 
     private final Map<String, ParserRuleContext> symbols = new HashMap<>();
-    private final Map<String, JSpearSpecificationLanguageParser.FunctionDeclarationContext> functions = new HashMap<>();
+    private final Map<String, JSpearSpecificationLanguageParser.DeclarationFunctionContext> functions = new HashMap<>();
 
     private final Map<String, JSpearSpecificationLanguageParser.VariableDeclarationContext> variables = new HashMap<>();
 
-    private final Map<String, JSpearSpecificationLanguageParser.ConstantDeclarationContext> constants = new HashMap<>();
+    private final Map<String, JSpearSpecificationLanguageParser.DeclarationConstantContext> constants = new HashMap<>();
 
-    private final Map<String, JSpearSpecificationLanguageParser.ParameterDeclarationContext> parameters = new HashMap<>();
+    private final Map<String, JSpearSpecificationLanguageParser.DeclarationPenaltyContext> penalties = new HashMap<>();
 
-    private final Map<String, JSpearSpecificationLanguageParser.PenaltyDeclarationContext> penalties = new HashMap<>();
+    private final Map<String, JSpearSpecificationLanguageParser.DeclarationComponentContext> components = new HashMap<>();
 
-    private final Map<String, JSpearSpecificationLanguageParser.StateDeclarationContext> states = new HashMap<>();
-
-    private final Map<String, JSpearSpecificationLanguageParser.SystemDeclarationContext> systems = new HashMap<>();
 
     private final Map<String, JSpearType> typesOfRefereneableElements = new HashMap<>();
     private final Map<String, JSpearType[]> functionArguments = new HashMap<>();
@@ -62,7 +59,7 @@ public class SymbolTable implements TypeContext {
         return symbols.get(name);
     }
 
-    public void recordFunction(String name, JSpearType[] arguments, JSpearType returnType, JSpearSpecificationLanguageParser.FunctionDeclarationContext ctx) {
+    public void recordFunction(String name, JSpearType[] arguments, JSpearType returnType, JSpearSpecificationLanguageParser.DeclarationFunctionContext ctx) {
         if (symbols.containsKey(name)) {
             throw new IllegalArgumentException();
         }
@@ -72,20 +69,10 @@ public class SymbolTable implements TypeContext {
         this.functionReturnTypes.put(name, returnType);
     }
 
-    public JSpearSpecificationLanguageParser.FunctionDeclarationContext getFunctionDeclaration(String name) {
+    public JSpearSpecificationLanguageParser.DeclarationFunctionContext getFunctionDeclaration(String name) {
         return this.functions.get(name);
     }
 
-
-    @Override
-    public boolean isDefined(String name) {
-        return symbols.containsKey(name);
-    }
-
-    @Override
-    public boolean isReferenceable(String name) {
-        return isAVariable(name)||isAParameter(name)||isAConstant(name)||isTypeElement(name);
-    }
 
     private boolean isTypeElement(String name) {
         return this.elementsOfDeclaredTypes.contains(name);
@@ -95,49 +82,21 @@ public class SymbolTable implements TypeContext {
         return constants.containsKey(name);
     }
 
-    public boolean isAParameter(String name) {
-        return parameters.containsKey(name);
-    }
-
     public boolean isAVariable(String name) {
         return variables.containsKey(name);
     }
 
-    @Override
-    public JSpearType getTypeOf(String name) {
-        return this.typesOfRefereneableElements.get(name);
-    }
 
-    @Override
     public boolean isAFunction(String functionName) {
         return this.functions.containsKey(functionName);
     }
 
-    @Override
-    public JSpearType[] getArgumentsType(String functionName) {
-        return this.functionArguments.get(functionName);
-    }
-
-    @Override
-    public JSpearType getReturnType(String functionName) {
-        return this.functionReturnTypes.get(functionName);
-    }
-
-    public void recordConstant(String name, JSpearType type, JSpearSpecificationLanguageParser.ConstantDeclarationContext ctx) {
+    public void recordConstant(String name, JSpearType type, JSpearSpecificationLanguageParser.DeclarationConstantContext ctx) {
         if (symbols.containsKey(name)) {
             throw new IllegalArgumentException();
         }
         this.symbols.put(name, ctx);
         this.constants.put(name, ctx);
-        this.typesOfRefereneableElements.put(name, type);
-    }
-
-    public void recordParameter(String name, JSpearType type, JSpearSpecificationLanguageParser.ParameterDeclarationContext ctx) {
-        if (symbols.containsKey(name)) {
-            throw new IllegalArgumentException();
-        }
-        this.symbols.put(name, ctx);
-        this.parameters.put(name, ctx);
         this.typesOfRefereneableElements.put(name, type);
     }
 
@@ -150,7 +109,7 @@ public class SymbolTable implements TypeContext {
         this.typesOfRefereneableElements.put(name, type);
     }
 
-    public void recordPenaltyFunction(String name, JSpearSpecificationLanguageParser.PenaltyDeclarationContext ctx) {
+    public void recordPenaltyFunction(String name, JSpearSpecificationLanguageParser.DeclarationPenaltyContext ctx) {
         if (symbols.containsKey(name)) {
             throw new IllegalArgumentException();
         }
@@ -158,26 +117,20 @@ public class SymbolTable implements TypeContext {
         this.penalties.put(name, ctx);
     }
 
-    public void recordControllerState(String name, JSpearSpecificationLanguageParser.StateDeclarationContext ctx) {
+    public void recordComponent(String name, JSpearSpecificationLanguageParser.DeclarationComponentContext ctx) {
         if (symbols.containsKey(name)) {
             throw new IllegalArgumentException();
         }
         this.symbols.put(name, ctx);
-        this.states.put(name, ctx);
+        this.components.put(name, ctx);
     }
 
-    public boolean isAState(String name) {
-        return this.states.containsKey(name);
+    public boolean isDefined(String name) {
+        return this.symbols.containsKey(name);
     }
 
-    public void recordSystemDeclaration(String name, JSpearSpecificationLanguageParser.SystemDeclarationContext ctx) {
-        if (symbols.containsKey(name)) {
-            throw new IllegalArgumentException();
-        }
-        this.symbols.put(name, ctx);
-    }
 
-    public void recordCustomType(JSpearSpecificationLanguageParser.TypeDeclarationContext ctx) {
+    public void recordCustomType(JSpearSpecificationLanguageParser.DeclarationTypeContext ctx) {
         String customTypeName = ctx.name.getText();
         String[] customTypeElements = ctx.elements.stream().map(e -> e.name.getText()).toArray(String[]::new);
         if (isDefined(customTypeName)|| Stream.of(customTypeElements).anyMatch(this::isDefined)) {
@@ -200,4 +153,5 @@ public class SymbolTable implements TypeContext {
     public JSpearType getCustomType(String typeName) {
         return this.custumTypes.get(typeName);
     }
+
 }

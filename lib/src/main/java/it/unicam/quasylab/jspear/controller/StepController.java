@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -28,25 +28,54 @@ import org.apache.commons.math3.random.RandomGenerator;
 import java.util.LinkedList;
 import java.util.function.ToIntBiFunction;
 
+/**
+ * Class StepController implements a controller that
+ * idles for a given number of steps
+ * and then evolves to another controller
+ */
 public class StepController implements Controller {
 
     private final ToIntBiFunction<RandomGenerator, DataState> steps;
     private final Controller nextController;
 
+    /**
+     * In case the number of steps is not specified, it is assigned the default value 0
+     * @param nextController the controller after the idling period
+     */
     public StepController(Controller nextController) {
         this(0, nextController);
     }
 
+    /**
+     * In case the number of steps is passed as an integer
+     * it is transformed into a binary function to integers
+     * @param steps the duration of the idling period in time steps
+     * @param nextController the controller after the idling period
+     */
     public StepController(int steps, Controller nextController) {
         this((rg, ds) -> steps, nextController);
     }
 
-    public StepController(ToIntBiFunction<RandomGenerator,DataState> steps, Controller nextController) {
+    /**
+     * Generates a controller that idles for <code>steps</code> time steps
+     * and then behaves like <code>nextController</code>
+     * @param steps the duration of the idling period in time steps
+     * @param nextController the controller after the idling period
+     */
+    public StepController(ToIntBiFunction<RandomGenerator, DataState> steps, Controller nextController) {
         this.steps = steps;
         this.nextController = nextController;
     }
 
-
+    /**
+     * If the number of steps is 0, the effect and transition of <code>nextController</code> are immediately applied.
+     * Otherwise, the controller has no effect for <code>step</code> time steps,
+     * and then behaves like <code>nextController</code>.
+     *
+     * @param rg random generator
+     * @param state the current data state
+     * @return the effect and transition of <code>nextController</code> after a time-out of <code>steps</code> time steps.
+     */
     @Override
     public EffectStep<Controller> next(RandomGenerator rg, DataState state) {
         int numberOfSteps = steps.applyAsInt(rg, state);

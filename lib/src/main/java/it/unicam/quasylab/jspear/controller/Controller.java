@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -33,8 +33,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 /**
- * A controller is a process that, depending on the values in a data space performs an action. The latter consists
- * in an update of the data space and a new controller that should be used at the next step.
+ * A controller is a process that, depending on the values in a data space, performs an action.
+ * The latter consists in an update of the data space and a new controller that should be used at the next step.
  */
 @FunctionalInterface
 public interface Controller {
@@ -51,9 +51,7 @@ public interface Controller {
         return new ActionController(action, next);
     }
 
-
-    static Controller doAssignment(BiFunction<RandomGenerator, DataState, List<DataStateUpdate>> assignment,
-                                   Controller nextController) {
+    static Controller doAssignment(BiFunction<RandomGenerator, DataState, List<DataStateUpdate>> assignment, Controller nextController) {
         return new AssignmentController(assignment, nextController);
     }
 

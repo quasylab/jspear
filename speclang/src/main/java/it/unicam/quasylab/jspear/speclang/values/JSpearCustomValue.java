@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -44,9 +44,10 @@ public final class JSpearCustomValue implements JSpearValue {
     }
 
     @Override
-    public double[] toDoubleArray() {
-        return new double[] { elementIndex };
+    public double toDouble() {
+        return elementIndex;
     }
+
 
     @Override
     public boolean equals(Object o) {
@@ -59,5 +60,9 @@ public final class JSpearCustomValue implements JSpearValue {
     @Override
     public int hashCode() {
         return Objects.hash(type, elementIndex);
+    }
+
+    public String name() {
+        return this.type.getNameOf(this.elementIndex);
     }
 }

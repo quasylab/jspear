@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,12 +25,11 @@ package it.unicam.quasylab.jspear.speclang.values;
 import it.unicam.quasylab.jspear.speclang.types.JSpearType;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import java.util.Map;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
 
-public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearArrayElementSelectionFunction, JSpearBoolean, JSPearInteger, JSpearReal, JSpearArray, JSpearCustomValue, JSpearErrorValue  {
+public sealed interface JSpearValue permits JSpearBoolean, JSPearInteger, JSpearReal, JSpearCustomValue, JSpearErrorValue  {
 
     JSpearValue ERROR_VALUE = new JSpearErrorValue();
 
@@ -81,9 +80,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.sum(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.sum(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -93,9 +89,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         }
         if (v1 instanceof JSpearReal realValue) {
             return realValue.product(v2);
-        }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.product(v2);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -107,9 +100,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.subtraction(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.subtraction(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -119,9 +109,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         }
         if (v1 instanceof JSpearReal realValue) {
             return realValue.division(v2);
-        }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.division(v2);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -134,9 +121,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.modulo(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.modulo(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -146,9 +130,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         }
         if (v1 instanceof JSpearReal realValue) {
             return realValue.apply(op, v2);
-        }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(op, v2);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -160,18 +141,12 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v instanceof JSpearReal realValue) {
             return realValue.apply(op);
         }
-        if (v instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.apply(op);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
     static JSpearValue negate(JSpearValue v) {
         if (v instanceof JSpearBoolean booleanValue) {
             return booleanValue.negate();
-        }
-        if (v instanceof JSpearArrayElementPredicate predicateValue) {
-            return predicateValue.negate();
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -183,9 +158,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.isLessThan(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.isLessThan(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -196,9 +168,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.isLessOrEqualThan(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.isLessOrEqualThan(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -208,9 +177,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         }
         if (v1 instanceof JSpearReal realValue) {
             return realValue.isEqualTo(v2);
-        }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.isEqualTo(v2);
         }
         return JSpearValue.ERROR_VALUE;
     }
@@ -223,9 +189,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.isGreaterOrEqualThan(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.isGreaterOrEqualThan(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -236,9 +199,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearReal realValue) {
             return realValue.isGreaterThan(v2);
         }
-        if (v1 instanceof JSpearArrayElementSelectionFunction elementFunction) {
-            return elementFunction.isGreaterThan(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -247,9 +207,6 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearBoolean booleanValue) {
             return booleanValue.and(v2);
         }
-        if (v1 instanceof JSpearArrayElementPredicate predicateValue) {
-            return predicateValue.and(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
@@ -257,85 +214,9 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         if (v1 instanceof JSpearBoolean booleanValue) {
             return booleanValue.or(v2);
         }
-        if (v1 instanceof JSpearArrayElementPredicate predicateValue) {
-            return predicateValue.or(v2);
-        }
         return JSpearValue.ERROR_VALUE;
     }
 
-
-    static JSpearValue select(JSpearValue v, JSpearValue from, JSpearValue to) {
-        if (v instanceof JSpearArray arrayValue) {
-            return arrayValue.select(from, to);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue select(JSpearValue v, JSpearValue index) {
-        if (v instanceof JSpearArray arrayValue) {
-            return arrayValue.select(index);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-
-    static JSpearValue maxElement(JSpearValue v1, JSpearValue guard) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.maxElement(guard);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue maxElement(JSpearValue v1) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.maxElement();
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-
-    static JSpearValue minElement(JSpearValue v1, JSpearValue guard) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.minElement(guard);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue minElement(JSpearValue v1) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.minElement();
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-
-    static JSpearValue meanElement(JSpearValue v1, JSpearValue guard) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.meanElement(guard);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue meanElement(JSpearValue v1) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.meanElement();
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue count(JSpearValue v1, JSpearValue guard) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.count(guard);
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
-
-    static JSpearValue count(JSpearValue v1) {
-        if (v1 instanceof JSpearArray arrayValue) {
-            return arrayValue.count();
-        }
-        return JSpearValue.ERROR_VALUE;
-    }
 
      static JSpearValue sampleNormal(RandomGenerator rg, JSpearValue v1, JSpearValue v2) {
         return new JSpearReal(rg.nextDouble()*doubleOf(v1)+doubleOf(v2));
@@ -365,6 +246,5 @@ public sealed interface JSpearValue permits JSpearArrayElementPredicate, JSpearA
         }
     }
 
-
-    double[] toDoubleArray();
+    double toDouble();
 }

@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -22,6 +22,10 @@
 
 package it.unicam.quasylab.jspear.speclang.types;
 
+import it.unicam.quasylab.jspear.ds.DataRange;
+import it.unicam.quasylab.jspear.speclang.values.JSpearReal;
+import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
+
 /**
  * A class representing a real type.
  */
@@ -38,9 +42,15 @@ public final class JSpearRealType implements JSpearType {
 
     @Override
     public JSpearType merge(JSpearType other) {
-        if ((this == other)||(other==ANY_TYPE)||(other==INTEGER_TYPE)) return this;
+        if ((this == other)) return this;
         if (other.deterministicType()==REAL_TYPE) return other;
-        if (other.deterministicType()==INTEGER_TYPE) return new JSpearRandomType(this);
+        if (other.deterministicType()==INTEGER_TYPE) {
+            if (other.isRandom()) {
+                return new JSpearRandomType(this);
+            } else {
+                return this;
+            }
+        }
         return JSpearType.ERROR_TYPE;
     }
 
@@ -54,10 +64,6 @@ public final class JSpearRealType implements JSpearType {
         return true;
     }
 
-    @Override
-    public boolean isAnArray() {
-        return false;
-    }
 
     @Override
     public boolean isError() {
@@ -67,12 +73,22 @@ public final class JSpearRealType implements JSpearType {
     @Override
     public boolean canBeMergedWith(JSpearType other) {
         JSpearType deterministicOther = other.deterministicType();
-        return (this==deterministicOther)||(other == JSpearType.ANY_TYPE)||(deterministicOther==INTEGER_TYPE);
+        return (this==deterministicOther)||(deterministicOther==INTEGER_TYPE);
     }
 
     @Override
     public boolean isReal() {
         return true;
+    }
+
+    @Override
+    public JSpearValue valueOf(double v) {
+        return new JSpearReal(v);
+    }
+
+    @Override
+    public DataRange getDefaultDataRange() {
+        return new DataRange();
     }
 
     @Override

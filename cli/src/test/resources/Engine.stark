@@ -1,0 +1,22 @@
+load "Engine.jspec"
+
+set m = 50
+set z = 1.96
+set size = 100
+set scale = 10
+
+compute until_dist after fake_cooling at 0 at 0
+print
+
+check boolean phi at 0
+print
+
+check boolean psi at 0
+print
+
+
+check threevalued phi at 0
+print
+
+check threevalued psi at 0
+print

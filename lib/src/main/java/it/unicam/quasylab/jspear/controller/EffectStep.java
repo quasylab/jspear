@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -35,8 +35,16 @@ import java.util.stream.Stream;
  */
 public record EffectStep<T>(List<DataStateUpdate> effect, T next) {
 
+    public EffectStep(List<DataStateUpdate> effect) {
+        this(effect, null);
+    }
+
+    public EffectStep() {
+        this(List.of());
+    }
+
     /**
-     * Applies a given operator on controllers to this step.
+     * Applies a given operator on controller to this step.
      *
      * @param op operator to apply.
      * @return a new step where the next controller is obtained by this by applying the giving operator.
@@ -58,11 +66,39 @@ public record EffectStep<T>(List<DataStateUpdate> effect, T next) {
         return new EffectStep<>(newEffects, stepOperator.apply(this.next, other.next));
     }
 
+    /**
+     * Returns the concatenation of a customary list of updates with this step.
+     *
+     * @param updates the list of updates to be applied before this step.
+     * @return a step consisting of the concatenation of the given updates with the application of this step.
+     */
     public EffectStep<T> applyBefore(List<DataStateUpdate> updates) {
         if (updates.isEmpty()) {
             return this;
         } else {
             return new EffectStep<>(Stream.concat(updates.stream(), this.effect.stream()).toList(), next);
         }
+    }
+
+    /**
+     * Returns this step if it has a controller, otherwise returns a customary step whose list of updates is concatenated with that of this step.
+     *
+     * @param apply the step to which the updates of this step are concatenated.
+     * @return a step consisting of the concatenation of the updates of this step with the application of <code>apply</code>.
+     */
+    public EffectStep<T> applyAfter(EffectStep<T> apply) {
+        if (this.isCompleted()) return this;
+        LinkedList<DataStateUpdate> updates = new LinkedList<>(this.effect);
+        updates.addAll(apply.effect);
+        return new EffectStep<>(updates, apply.next);
+    }
+
+    /**
+     * Returns if the controller of this step is not null.
+     *
+     * @return a boolean answering the question if the controller of this step is null.
+     */
+    public boolean isCompleted() {
+        return (this.next != null);
     }
 }

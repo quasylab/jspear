@@ -1,0 +1,37 @@
+load "single_vehicle.jspec"
+
+set m = 50
+set z = 1.96
+set size = 100
+set scale = 10
+
+compute exp_crash after p_ItSlow_05 at 0 at 0
+print
+
+check boolean phi_slow_03 from 0 to 310 every 10
+save in "phi_slow_03_test_boolean"
+
+check threevalued phi_slow_03 from 0 to 310 every 10
+save in "phi_slow_03_test_3val"
+
+
+check boolean phi_slow_04 from 0 to 310 every 10
+save in "phi_slow_04_test_boolean"
+
+check threevalued phi_slow_04 from 0 to 310 every 10
+save in "phi_slow_04_test_3val"
+
+
+check boolean phi_slow_05 from 0 to 310 every 10
+save in "phi_slow_05_test_boolean"
+
+check threevalued phi_slow_05 from 0 to 310 every 10
+save in "phi_slow_05_test_3val"
+
+
+
+check threevalued always_slow_04 at 0
+print
+
+check threevalued always_slow_05 at 0
+print

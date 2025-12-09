@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -35,81 +35,56 @@ class JSpearTypeTest {
             {  customType, JSpearType.BOOLEAN_TYPE },
             {  customType, JSpearType.INTEGER_TYPE },
             {  customType, JSpearType.REAL_TYPE },
-            {  customType, JSpearType.ARRAY_TYPE },
             {  customType, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
             {  customType, new JSpearRandomType(JSpearType.INTEGER_TYPE) },
             {  customType, new JSpearRandomType(JSpearType.REAL_TYPE) },
-            {  customType, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
             {  JSpearType.INTEGER_TYPE, JSpearType.BOOLEAN_TYPE },
-            {  JSpearType.INTEGER_TYPE, JSpearType.ARRAY_TYPE },
             {  JSpearType.INTEGER_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
-            {  JSpearType.INTEGER_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
             {  JSpearType.REAL_TYPE, JSpearType.BOOLEAN_TYPE },
-            {  JSpearType.REAL_TYPE, JSpearType.ARRAY_TYPE },
             {  JSpearType.REAL_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
-            {  JSpearType.REAL_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
             {  JSpearType.BOOLEAN_TYPE, JSpearType.INTEGER_TYPE },
             {  JSpearType.BOOLEAN_TYPE, JSpearType.REAL_TYPE },
-            {  JSpearType.BOOLEAN_TYPE, JSpearType.ARRAY_TYPE },
             {  JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE) },
             {  JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.REAL_TYPE) },
-            {  JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
-            {  JSpearType.ARRAY_TYPE, JSpearType.INTEGER_TYPE },
-            {  JSpearType.ARRAY_TYPE, JSpearType.REAL_TYPE },
-            {  JSpearType.ARRAY_TYPE, JSpearType.BOOLEAN_TYPE },
-            {  JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE) },
-            {  JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.REAL_TYPE) },
-            {  JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
     };
 
     private final JSpearType[][] MEARGEABLE_TYPES = {
             //CUSTOM_TYPE
             {  customType, theSameCustomType, customType },
             {  customType, new JSpearRandomType(theSameCustomType), new JSpearRandomType(customType) },
-            {  customType, JSpearType.ANY_TYPE, customType },
             //INTEGER_TYPE
             { JSpearType.INTEGER_TYPE, JSpearType.INTEGER_TYPE , JSpearType.INTEGER_TYPE},
             { JSpearType.INTEGER_TYPE, JSpearType.REAL_TYPE , JSpearType.REAL_TYPE},
-            { JSpearType.INTEGER_TYPE, JSpearType.ANY_TYPE, JSpearType.INTEGER_TYPE},
             { JSpearType.INTEGER_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.INTEGER_TYPE) },
             { JSpearType.INTEGER_TYPE, new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             //REAL_TYPE
             { JSpearType.REAL_TYPE, JSpearType.INTEGER_TYPE , JSpearType.REAL_TYPE},
             { JSpearType.REAL_TYPE, JSpearType.REAL_TYPE , JSpearType.REAL_TYPE},
-            { JSpearType.REAL_TYPE, JSpearType.ANY_TYPE, JSpearType.REAL_TYPE},
             { JSpearType.REAL_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             { JSpearType.REAL_TYPE, new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             //BOOLEAN_TYPE
             { JSpearType.BOOLEAN_TYPE, JSpearType.BOOLEAN_TYPE , JSpearType.BOOLEAN_TYPE},
             { JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) , new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
             //ARRAY_TYPE
-            { JSpearType.ARRAY_TYPE, JSpearType.ARRAY_TYPE , JSpearType.ARRAY_TYPE},
-            { JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) , new JSpearRandomType(JSpearType.ARRAY_TYPE) },
             //RANDOM[INTEGER_TYPE]
             { new JSpearRandomType(JSpearType.INTEGER_TYPE), JSpearType.INTEGER_TYPE , new JSpearRandomType(JSpearType.INTEGER_TYPE)},
             { new JSpearRandomType(JSpearType.INTEGER_TYPE), JSpearType.REAL_TYPE , new JSpearRandomType(JSpearType.REAL_TYPE)},
-            { new JSpearRandomType(JSpearType.INTEGER_TYPE), JSpearType.ANY_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE)},
             { new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.INTEGER_TYPE) },
             { new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             //RANDOM[INTEGER_TYPE]
             { new JSpearRandomType(JSpearType.REAL_TYPE), JSpearType.INTEGER_TYPE , new JSpearRandomType(JSpearType.REAL_TYPE)},
             { new JSpearRandomType(JSpearType.REAL_TYPE), JSpearType.REAL_TYPE , new JSpearRandomType(JSpearType.REAL_TYPE)},
-            { new JSpearRandomType(JSpearType.REAL_TYPE), JSpearType.ANY_TYPE, new JSpearRandomType(JSpearType.REAL_TYPE)},
             { new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.INTEGER_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             { new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE), new JSpearRandomType(JSpearType.REAL_TYPE) },
             //RANDOM[BOOLEAN_TYPE]
             {  new JSpearRandomType(JSpearType.BOOLEAN_TYPE) , JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
             {  new JSpearRandomType(JSpearType.BOOLEAN_TYPE) , new JSpearRandomType(JSpearType.BOOLEAN_TYPE) , new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
             //RANDOM[ARRAY_TYPE]
-            {  new JSpearRandomType(JSpearType.ARRAY_TYPE) , JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
-            {  new JSpearRandomType(JSpearType.ARRAY_TYPE) , new JSpearRandomType(JSpearType.ARRAY_TYPE) , new JSpearRandomType(JSpearType.ARRAY_TYPE) },
     };
 
     private final JSpearType[][] COMPATIBLE_TYPES = {
             {JSpearType.BOOLEAN_TYPE, JSpearType.BOOLEAN_TYPE},
             {JSpearType.BOOLEAN_TYPE, new JSpearRandomType(JSpearType.BOOLEAN_TYPE) },
-            {JSpearType.ARRAY_TYPE, JSpearType.ARRAY_TYPE},
-            {JSpearType.ARRAY_TYPE, new JSpearRandomType(JSpearType.ARRAY_TYPE) },
             {JSpearType.INTEGER_TYPE, JSpearType.INTEGER_TYPE},
             {JSpearType.INTEGER_TYPE, new JSpearRandomType(JSpearType.INTEGER_TYPE) },
             {JSpearType.REAL_TYPE, JSpearType.INTEGER_TYPE},

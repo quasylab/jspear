@@ -14,4 +14,30 @@ include('examples')
 include('examples:engine')
 include('examples:vehicle')
 include('speclang')
+include('cli')
+include 'examples:agriculturalDT'
+findProject(':examples:agriculturalDT')?.name = 'agriculturalDT'
+include 'examples:turtle'
+findProject(':examples:turtle')?.name = 'turtle'
+include 'examples:Isocitrate'
+findProject(':examples:Isocitrate')?.name = 'Isocitrate'
+include 'examples:repressilator'
+findProject(':examples:repressilator')?.name = 'repressilator'
+include 'examples:tollbooth'
+findProject(':examples:tollbooth')?.name = 'tollbooth'
+include 'examples:envzompr'
+findProject(':examples:envzompr')?.name = 'envzompr'
+include 'examples:Lotka'
+findProject(':examples:Lotka')?.name = 'Lotka'
+include 'examples:polistil'
+findProject(':examples:polistil')?.name = 'polistil'
+include 'examples:multipleSclerosis'
+findProject(':examples:multipleSclerosis')?.name = 'multipleSclerosis'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
+include('examples:monitoring:basic')
+include 'examples:mutliScler'
+findProject(':examples:mutliScler')?.name = 'mutliScler'
 

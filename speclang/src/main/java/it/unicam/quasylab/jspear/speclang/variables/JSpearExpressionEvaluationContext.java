@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -24,8 +24,10 @@ package it.unicam.quasylab.jspear.speclang.variables;
 
 import it.unicam.quasylab.jspear.speclang.semantics.JSpearFunction;
 import it.unicam.quasylab.jspear.speclang.types.JSpearCustomType;
+import it.unicam.quasylab.jspear.speclang.values.JSpearCustomValue;
 import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,12 +37,13 @@ public class JSpearExpressionEvaluationContext {
 
     private final Map<String, JSpearFunction> functions;
 
-    private final Map<String, JSpearCustomType> types;
+    private final Map<String, JSpearCustomValue> customValues;
 
     public JSpearExpressionEvaluationContext(Map<String, JSpearValue> parameters) {
         values = new HashMap<>();
         functions = new HashMap<>();
-        types = new HashMap<>();
+        customValues = new HashMap<>();
+        values.putAll(parameters);
     }
 
 
@@ -49,11 +52,17 @@ public class JSpearExpressionEvaluationContext {
     }
 
     public boolean isDefined(String name) {
-        return values.containsKey(name);
+        return values.containsKey(name)||customValues.containsKey(name);
     }
 
     public JSpearValue get(String name) {
-        return this.values.getOrDefault(name, JSpearValue.ERROR_VALUE);
+        if (this.values.containsKey(name)) {
+            return this.values.get(name);
+        }
+        if (this.customValues.containsKey(name)) {
+            return this.values.get(name);
+        }
+        return JSpearValue.ERROR_VALUE;
     }
 
     public boolean isAFunction(String name) {
@@ -69,6 +78,7 @@ public class JSpearExpressionEvaluationContext {
     }
 
     public void recordType(String typeName, JSpearCustomType type) {
-        this.types.put(typeName, type);
+        JSpearCustomValue[] values = type.getValues();
+        Arrays.stream(values).sequential().forEach(v -> this.customValues.put(v.name(), v));
     }
 }

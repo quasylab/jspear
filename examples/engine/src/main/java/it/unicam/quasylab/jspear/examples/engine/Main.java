@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -26,7 +26,10 @@ import it.unicam.quasylab.jspear.*;
 import it.unicam.quasylab.jspear.controller.Controller;
 import it.unicam.quasylab.jspear.controller.ControllerRegistry;
 import it.unicam.quasylab.jspear.controller.ParallelController;
+import it.unicam.quasylab.jspear.distance.*;
 import it.unicam.quasylab.jspear.ds.*;
+import it.unicam.quasylab.jspear.perturbation.*;
+import it.unicam.quasylab.jspear.robtl.*;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.io.IOException;
@@ -61,220 +64,332 @@ public class Main {
     public static final int cool = 9;//variableRegistry.getVariable("cool");
     private static final int ch_speed = 10;//variableRegistry.getVariable("speed");
     private static final int ch_wrn = 11;//variableRegistry.getVariable("ch_wrn");
-
     private static final int ch_in = 12;//variableRegistry.getVariable("ch_in");
+    private static final int ch_out = 13;
+    private static final int fn = 14;
+    private static final int fp = 15;
+    private static final int counter = 16;//
 
-    private static final int ch_out = 13;//
-
-    private static final int NUMBER_OF_VARIABLES = 14;//
+    private static final int NUMBER_OF_VARIABLES = 17;//
     private static final double INITIAL_TEMP_VALUE = 95.0;
-    private static final double TEMP_OFFSET = -1.5;
     private static final int N = 100;
     private static final int TAU = 100;
     private static final int TAU2 = 250;
     private static final int TAU3 = 300;
     private static final int K = TAU+N+10;
     private static final int H = 1000;
+    private static final double TEMP_OFFSET_1 = -1.0;
+    private static final double TEMP_OFFSET_15 = -1.5;
+    private static final double TEMP_OFFSET_2 = -2.0;
+    private static final double COOL_OFFSET = 1.8;
     private static final double ETA1 = 0.0;
     private static final double ETA2 = 0.02;
     private static final double ETA3 = 0.05;
     private static final double ETA4 = 0.3;
 
+    private static final double ETA003 = 0.03;
+    private static final double ETA004 = 0.04;
+    private static final double ETA005 = 0.05;
+    private static final double ETA006 = 0.06;
+
 
     public static void main(String[] args) throws IOException {
         try {
+            RandomGenerator rand = new DefaultRandomGenerator();
+
             Controller controller = getController();
             DataState state = getInitialState(INITIAL_TEMP_VALUE);
             ControlledSystem system = new ControlledSystem(controller, (rg, ds) -> ds.apply(getEnvironmentUpdates(rg, ds)), state);
-            EvolutionSequence sequence = new EvolutionSequence(new ConsoleMonitor("Engine: "), new DefaultRandomGenerator(), rg -> system, 100);
-            EvolutionSequence sequence2_tau = sequence.apply(getPerturbation(),TAU, 100);
-            EvolutionSequence sequence2_tau2 = sequence.apply(getPerturbation(),TAU2, 100);
-            EvolutionSequence sequence2_tau3 = sequence.apply(getPerturbation(),TAU3, 100);
+            EvolutionSequence sequence = new EvolutionSequence(rand, rg -> system, 100);
 
-            DistanceExpression expr = new AtomicDistanceExpression(ds -> (ds.get(temp)/Math.abs(MAX_TEMP-MIN_TEMP)));
-            DistanceExpression expr2 = new AtomicDistanceExpression(ds -> (ds.get(ch_wrn)==HOT?1.0:0.0));
-            DistanceExpression expr3 = new AtomicDistanceExpression(ds -> ds.get(stress));
-            DistanceExpression MaxExpr2 = new MaxIntervalDistanceExpression(
-                    expr2,
+            DistanceExpression temp_atomic = new AtomicDistanceExpressionLeq(ds -> Math.abs((ds.get(temp)-ds.get(ch_temp))/Math.abs(MAX_TEMP-MIN_TEMP)));
+            DistanceExpression temp_eventually = new MinIntervalDistanceExpression(
+                    temp_atomic,
                     TAU,
-                    K
+                    TAU + N
             );
-            DistanceExpression MaxExpr3 = new MaxIntervalDistanceExpression(
-                    expr3,
+            DistanceExpression temp_always = new MaxIntervalDistanceExpression(
+                    temp_atomic,
                     TAU,
-                    K
+                    TAU + N
             );
 
-            //Test bootstrap method
-            for(int i=50; i<250; i++) {
-                double[] testBoost = sequence.get(i).bootstrapDistance(ds -> (ds.get(temp)/Math.abs(MAX_TEMP-MIN_TEMP)), sequence2_tau.get(i),100,1.96);
-                System.out.println("CI at step "+i+" = "+Arrays.toString(testBoost));
-            }
+            DistanceExpression warning_atomic = new AtomicDistanceExpressionLeq(ds -> (ds.get(ch_wrn)==HOT?1.0:0.0));
+            DistanceExpression warning_always = new MaxIntervalDistanceExpression(
+                    warning_atomic,
+                    TAU,
+                    TAU + N
+            );
 
-            //Test evaluation of RobTL formulae
-            RobustnessFormula PHI1 = getFormula1();
-            RobustnessFormula PHI2 = getFormula2();
-            RobustnessFormula PHI3 = getFormula3();
-            RobustnessFormula PHI4 = getFormula4();
-            RobustnessFormula PHI5 = getFormula5();
-            RobustnessFormula PHI = getFinalFormula();
+            DistanceExpression stress_atomic = new AtomicDistanceExpressionLeq(ds -> ds.get(stress));
+            DistanceExpression stress_always = new MaxIntervalDistanceExpression(
+                    stress_atomic,
+                    TAU,
+                    TAU + N
+            );
 
-            int test_step = 50;
-            System.out.println("Evaluation of phi1 at step "+test_step+": "+PHI1.eval(100, test_step, sequence));
-            System.out.println("Evaluation of phi2 at step "+test_step+": "+PHI2.eval(100, test_step, sequence));
-            System.out.println("Evaluation of phi3 at step "+test_step+": "+PHI3.eval(100, test_step, sequence));
-            System.out.println("Evaluation of phi4 at step "+test_step+": "+PHI4.eval(100, test_step, sequence));
-            System.out.println("Evaluation of phi5 at step "+test_step+": "+PHI5.eval(100, test_step, sequence));
-            System.out.println("Evaluation of phi at step 0: "+PHI.eval(100, 0, sequence));
-
-            //Test three-valued version of RobTL
-            int m = 50;
-            double z = 1.96;
-
-            DistanceExpression expr4 = new AtomicDistanceExpression(ds -> Math.abs((ds.get(temp)-ds.get(ch_temp))/Math.abs(MAX_TEMP-MIN_TEMP)));
-
-            ThreeValuedFormula PSI1 = new AtomicThreeValuedFormula(getPerturbation(),
-                    new MinIntervalDistanceExpression(
-                            expr4,
-                            TAU,
-                            TAU+N-1
-                    ),
+            RobustnessFormula Phi1_1_1_1 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_1),
+                    temp_eventually,
                     RelationOperator.GREATER_OR_EQUAL_THAN,
-                    ETA1,
-                    m,
-                    z
+                    ETA1
             );
-            ThreeValuedFormula PSI2 = new AtomicThreeValuedFormula(getPerturbation(),
-                    new MaxIntervalDistanceExpression(
-                            expr4,
-                            TAU,
-                            TAU+N-1
-                    ),
+            RobustnessFormula Phi1_1_2_1 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_1),
+                    temp_always,
                     RelationOperator.LESS_OR_EQUAL_THAN,
-                    ETA2,
-                    m,
-                    z
+                    ETA2
             );
-            ThreeValuedFormula PSI3 = new AtomicThreeValuedFormula(getPerturbation(),
-                    MaxExpr2,
+            RobustnessFormula Phi1_2_1_1 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_1),
+                    warning_always,
                     RelationOperator.LESS_OR_EQUAL_THAN,
-                    ETA3,
-                    m,
-                    z
+                    ETA3
             );
-            ThreeValuedFormula PSI4 = new AtomicThreeValuedFormula(getPerturbation(),
-                    MaxExpr3,
+            RobustnessFormula Phi1_2_2_1 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_1),
+                    stress_always,
                     RelationOperator.GREATER_THAN,
-                    ETA4,
-                    m,
-                    z
+                    ETA4
             );
-            ThreeValuedFormula PSI5 = new ImplicationThreeValuedFormula(
-                    new ConjunctionThreeValuedFormula(PSI1, PSI2),
-                    new ConjunctionThreeValuedFormula(PSI3, PSI4)
-            );
-            ThreeValuedFormula PSI = new EventuallyThreeValuedFormula(PSI5,
+            RobustnessFormula Phi1_1 = new EventuallyRobustnessFormula(
+                    new ImplicationRobustnessFormula(
+                            new ConjunctionRobustnessFormula(Phi1_1_1_1, Phi1_1_2_1),
+                            new ConjunctionRobustnessFormula(Phi1_2_1_1, Phi1_2_2_1)
+                    ),
                     0,
                     H
             );
 
-            int test_step_threeValued = 50;
+            RobustnessFormula Phi1_1_1_15 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    temp_eventually,
+                    RelationOperator.GREATER_OR_EQUAL_THAN,
+                    ETA1
+            );
+            RobustnessFormula Phi1_1_2_15 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    temp_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA2
+            );
+            RobustnessFormula Phi1_2_1_15 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA3
+            );
+            RobustnessFormula Phi1_2_2_15 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    stress_always,
+                    RelationOperator.GREATER_THAN,
+                    ETA4
+            );
+            RobustnessFormula Phi1_15 = new EventuallyRobustnessFormula(
+                    new ImplicationRobustnessFormula(
+                            new ConjunctionRobustnessFormula(Phi1_1_1_15, Phi1_1_2_15),
+                            new ConjunctionRobustnessFormula(Phi1_2_1_15, Phi1_2_2_15)
+                    ),
+                    0,
+                    H
+            );
 
-            System.out.println("Evaluation of psi1 at step "+test_step_threeValued+": "+PSI1.eval(100, test_step_threeValued, sequence));
-            System.out.println("Evaluation of psi2 at step "+test_step_threeValued+": "+PSI2.eval(100, test_step_threeValued, sequence));
-            System.out.println("Evaluation of psi3 at step "+test_step_threeValued+": "+PSI3.eval(100, test_step_threeValued, sequence));
-            System.out.println("Evaluation of psi4 at step "+test_step_threeValued+": "+PSI4.eval(100, test_step_threeValued, sequence));
-            System.out.println("Evaluation of psi5 at step "+test_step_threeValued+": "+PSI5.eval(100, test_step_threeValued, sequence));
-            System.out.println("Evaluation of psi at step 0: "+PSI.eval(100, 0, sequence));
+            RobustnessFormula Phi1_1_1_2 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_2),
+                    temp_eventually,
+                    RelationOperator.GREATER_OR_EQUAL_THAN,
+                    ETA1
+            );
+            RobustnessFormula Phi1_1_2_2 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_2),
+                    temp_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA2
+            );
+            RobustnessFormula Phi1_2_1_2 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_2),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA3
+            );
+            RobustnessFormula Phi1_2_2_2 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_2),
+                    stress_always,
+                    RelationOperator.GREATER_THAN,
+                    ETA4
+            );
+            RobustnessFormula Phi1_2 = new EventuallyRobustnessFormula(
+                    new ImplicationRobustnessFormula(
+                            new ConjunctionRobustnessFormula(Phi1_1_1_2, Phi1_1_2_2),
+                            new ConjunctionRobustnessFormula(Phi1_2_1_2, Phi1_2_2_2)
+                    ),
+                    0,
+                    H
+            );
 
-            //Collecting data for behavioural analysis
+            DistanceExpression until_distance = new UntilDistanceExpression(
+                    new ThresholdDistanceExpression(stress_atomic,RelationOperator.LESS_THAN,0.3),
+                    0,
+                    K,
+                    new ThresholdDistanceExpression(warning_atomic,RelationOperator.GREATER_THAN, 0.1)
+            );
 
-            Util.writeToCSV("./testTemperature.csv", Util.evalDistanceExpression(sequence, sequence2_tau, 90, 300, expr));
+            RobustnessFormula Phi2 = new AtomicRobustnessFormula(perturbation_cool(COOL_OFFSET),
+                    until_distance,
+                    RelationOperator.LESS_THAN,
+                    1.0
+            );
 
-            Util.writeToCSV("./testWarning_tau.csv", Util.evalDistanceExpression(sequence, sequence2_tau, 90, 210, expr2));
-            Util.writeToCSV("./testWarning_tau2.csv", Util.evalDistanceExpression(sequence, sequence2_tau2, 240,360, expr2));
-            Util.writeToCSV("./testWarning_tau3.csv", Util.evalDistanceExpression(sequence, sequence2_tau3, 290, 410, expr2));
+            DistanceExpression false_negative = new AtomicDistanceExpressionLeq(
+                    ds -> ds.get(fn)
+            );
 
-            Util.writeToCSV("./testStress.csv", Util.evalDistanceExpression(sequence, sequence2_tau, 90, 220, expr3));
+            RobustnessFormula Phi3 = new UntilRobustnessFormula(
+                    Phi2,
+                    0,
+                    K,
+                    new AtomicRobustnessFormula(perturbation_cool(COOL_OFFSET),
+                            false_negative,
+                            RelationOperator.LESS_OR_EQUAL_THAN,
+                            ETA3)
+            );
+
+            DistanceExpression temp_expr = new AtomicDistanceExpressionLeq(ds -> (ds.get(temp)/Math.abs(MAX_TEMP-MIN_TEMP)));
+
+            EvolutionSequence sequence_pert_temp_1 = sequence.apply(perturbation_temp(TEMP_OFFSET_1),0, 100);
+            EvolutionSequence sequence_pert_temp_15 = sequence.apply(perturbation_temp(TEMP_OFFSET_15),0, 100);
+            EvolutionSequence sequence_pert_temp_2 = sequence.apply(perturbation_temp(TEMP_OFFSET_2),0, 100);
+            EvolutionSequence sequence_pert_cool = sequence.apply(perturbation_cool(COOL_OFFSET),TAU2, 100);
+
+            System.out.println("Starting tests on temperature");
+            Util.writeToCSV("./testTemperature.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_1, 90, 300, temp_expr));
+            Util.writeToCSV("./testTemperature_l1.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_15, 90, 300, temp_expr));
+            Util.writeToCSV("./testTemperature_l2.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_2, 90, 300, temp_expr));
+            System.out.println("Tests on temperature completed");
+
+            System.out.println("Starting tests on stress");
+            Util.writeToCSV("./testStress.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_1, 90, 220, stress_atomic));
+            Util.writeToCSV("./testStress_l1.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_15, 90, 220, stress_atomic));
+            Util.writeToCSV("./testStress_l2.csv", Util.evalDistanceExpression(sequence, sequence_pert_temp_2, 90, 220, stress_atomic));
+            System.out.println("Tests on stress completed");
 
             int l = 50;
+
+            System.out.println("Starting tests on warning/stress");
+
             double[][] warn = new double[l][1];
             double[][] st = new double[l][1];
             for(int i=0; i<l; i++){
-                EvolutionSequence sequence3 = sequence.apply(getPerturbation(),TAU+i, 100);
-                warn[i][0] = MaxExpr2.compute(i,sequence,sequence3);
-                st[i][0] = MaxExpr3.compute(i,sequence,sequence3);
+                EvolutionSequence sequence3 = sequence.apply(perturbation_temp(TEMP_OFFSET_15),i, 100);
+                warn[i][0] = warning_always.compute(i,sequence,sequence3);
+                st[i][0] = stress_always.compute(i,sequence,sequence3);
             }
             Util.writeToCSV("./testIntervalWarn.csv",warn);
             Util.writeToCSV("./testIntervalSt.csv",st);
+
+            System.out.println("Tests on warning/stress ended");
+
+            // BOOTSTRAP
+            double[][] CI_left_50 = new double[l][1];
+            double[][] CI_right_50 = new double[l][1];
+            double[][] CI_left_100 = new double[l][1];
+            double[][] CI_right_100 = new double[l][1];
+
+            System.out.println("Starting tests on 50 bootstrap");
+
+            for(int i=0; i<l; i++) {
+                double[] testBoost_50 = warning_always.evalCI(rand,i,sequence,sequence_pert_temp_15,50,1.96);
+                CI_left_50[i][0] = testBoost_50[1];
+                CI_right_50[i][0] = testBoost_50[2];
+            }
+            System.out.println("Tests on 50 bootstrap ended");
+
+            System.out.println("Starting tests on 100 bootstrap");
+            for(int i=0; i<l; i++) {
+                double[] testBoost_100 = warning_always.evalCI(rand,i,sequence,sequence_pert_temp_15,100,1.96);
+                CI_left_100[i][0] = testBoost_100[1];
+                CI_right_100[i][0] = testBoost_100[2];
+            }
+            System.out.println("Tests on 100 bootstrap ended");
+
+            Util.writeToCSV("./testBootstrapL_50.csv",CI_left_50);
+            Util.writeToCSV("./testBootstrapR_50.csv",CI_right_50);
+            Util.writeToCSV("./testBootstrapL_100.csv",CI_left_100);
+            Util.writeToCSV("./testBootstrapR_100.csv",CI_right_100);
+
+            // FORMULAE
+            RobustnessFormula Phi_003 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA003
+            );
+            RobustnessFormula Phi_004 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA004
+            );
+            RobustnessFormula Phi_005 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA005
+            );
+            RobustnessFormula Phi_006 = new AtomicRobustnessFormula(perturbation_temp(TEMP_OFFSET_15),
+                    warning_always,
+                    RelationOperator.LESS_OR_EQUAL_THAN,
+                    ETA006
+            );
+
+            double[][] val_003 = new double[50][1];
+            double[][] val_004 = new double[50][1];
+            double[][] val_005 = new double[50][1];
+            double[][] val_006 = new double[50][1];
+
+            System.out.println("Starting tests on 3-valued");
+            for(int i = 0; i<50; i++) {
+                TruthValues value1 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_003).eval(60, i, sequence);
+                System.out.println("Phi_003 evaluation at step "+i+": " + value1);
+                if (value1 == TruthValues.TRUE) {
+                    val_003[i][0] = 1;
+                } else {
+                    if (value1 == TruthValues.UNKNOWN) {
+                        val_003[i][0] = 0;
+                    } else {
+                        val_003[i][0] = -1;
+                    }
+                }
+                TruthValues value2 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_004).eval(60, i, sequence);
+                System.out.println("Phi_004 evaluation at step "+i+": " + value2);
+                if (value2 == TruthValues.TRUE) {
+                    val_004[i][0] = 1;
+                } else {
+                    if (value2 == TruthValues.UNKNOWN) {
+                        val_004[i][0] = 0;
+                    } else {
+                        val_004[i][0] = -1;
+                    }
+                }
+                TruthValues value3 = new ThreeValuedSemanticsVisitor(rand, 50, 1.96).eval(Phi_005).eval(60, i, sequence);
+                System.out.println("Phi_005 evaluation at step " + i + ": " + value3);
+                if (value3 == TruthValues.TRUE) {
+                    val_005[i][0] = 1;
+                } else {
+                    if (value3 == TruthValues.UNKNOWN) {
+                        val_005[i][0] = 0;
+                    } else {
+                        val_005[i][0] = -1;
+                    }
+                }
+                TruthValues value4 = new ThreeValuedSemanticsVisitor(rand,50,1.96).eval(Phi_006).eval(60, i, sequence);
+                System.out.println("Phi_006 evaluation at step "+i+": " + value4);
+                if (value4 == TruthValues.TRUE) {
+                    val_006[i][0] = 1;
+                } else {
+                    if (value4 == TruthValues.UNKNOWN) {
+                        val_006[i][0] = 0;
+                    } else {
+                        val_006[i][0] = -1;
+                    }
+                }
+            }
+            System.out.println("Tests on 3-valued ended");
+
+            Util.writeToCSV("./new_testThreeValue1.csv",val_003);
+            Util.writeToCSV("./new_testThreeValue2.csv",val_004);
+            Util.writeToCSV("./additional_testThreeValue.csv",val_005);
+            Util.writeToCSV("./new_testThreeValue3.csv",val_006);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
    }
-
-    private static RobustnessFormula getFormula1() {
-        return new AtomicRobustnessFormula(getPerturbation(),
-                new MinIntervalDistanceExpression(
-                        new AtomicDistanceExpression(ds -> Math.abs(ds.get(temp)-ds.get(ch_temp))/Math.abs(MAX_TEMP-MIN_TEMP)),
-                        TAU,
-                        TAU+N-1
-                ),
-                RelationOperator.GREATER_OR_EQUAL_THAN,
-                ETA1
-        );
-    }
-
-    private static RobustnessFormula getFormula2() {
-        return new AtomicRobustnessFormula(getPerturbation(),
-                new MaxIntervalDistanceExpression(
-                        new AtomicDistanceExpression(ds -> Math.abs(ds.get(temp)-ds.get(ch_temp))/Math.abs(MAX_TEMP-MIN_TEMP)),
-                        TAU,
-                        TAU+N-1
-                ),
-                RelationOperator.LESS_OR_EQUAL_THAN,
-                ETA2
-        );
-    }
-
-    private static RobustnessFormula getFormula3() {
-        return new AtomicRobustnessFormula(getPerturbation(),
-                new MaxIntervalDistanceExpression(
-                        new AtomicDistanceExpression(ds -> (ds.get(ch_wrn)==HOT?1.0:0.0)),
-                        TAU,
-                        K
-                ),
-                RelationOperator.LESS_OR_EQUAL_THAN,
-                ETA3
-        );
-    }
-
-    private static RobustnessFormula getFormula4() {
-        return new AtomicRobustnessFormula(getPerturbation(),
-                new MaxIntervalDistanceExpression(
-                        new AtomicDistanceExpression(ds -> ds.get(stress)),
-                        TAU,
-                        K
-                ),
-                RelationOperator.GREATER_THAN,
-                ETA4
-        );
-    }
-
-    private static RobustnessFormula getFormula5() {
-        return new ImplicationRobustnessFormula(
-                new ConjunctionRobustnessFormula(getFormula1(), getFormula2()),
-                new ConjunctionRobustnessFormula(getFormula3(), getFormula4())
-        );
-    }
-
-    private static RobustnessFormula getFinalFormula() {
-        return new EventuallyRobustnessFormula(getFormula5(),
-                0,
-                H
-        );
-    }
-
 
     public static ControllerRegistry getControllerRegistry() {
         ControllerRegistry registry = new ControllerRegistry();
@@ -300,7 +415,7 @@ public class Main {
                         Controller.doAction(
                                 (rd, ds) -> List.of(new DataStateUpdate(ch_wrn, HOT), new DataStateUpdate(ch_speed, LOW), new DataStateUpdate(ch_out, FULL)),registry.reference("IDS")),
                         Controller.doAction(
-                                (rg, ds) -> List.of(new DataStateUpdate( ch_wrn, OK), new DataStateUpdate(ch_speed, HALF), new DataStateUpdate(ch_out, HALF)),registry.reference("IDS"))
+                                (rg, ds) -> List.of(new DataStateUpdate(ch_wrn, OK), new DataStateUpdate(ch_speed, HALF), new DataStateUpdate(ch_out, HALF)),registry.reference("IDS"))
                 )
         );
         return registry;
@@ -330,21 +445,42 @@ public class Main {
         updates.add(new DataStateUpdate(p5, vP4));
         updates.add(new DataStateUpdate(p6, vP5));
         if (isStressing(vP1, vP2, vP3, vP4, vP5, vP6)) {
-            updates.add(new DataStateUpdate(stress,Math.max(0,Math.min(1,vStress+STRESS_INCR))));
+            updates.add(new DataStateUpdate(stress,Math.max(0.0,Math.min(1,vStress+STRESS_INCR))));
         }
         double newTemp = nextTempValue(vTemp, getTemperatureVariation(rg, vCool, vSpeed));
         updates.add(new DataStateUpdate(temp, newTemp));
         updates.add(new DataStateUpdate(ch_temp, newTemp));
+        double new_fn = (state.get(counter)*state.get(fn) + Math.max(0.0,state.get(stress) - state.get(ch_wrn)))/(state.get(counter)+1);
+        double new_fp = (state.get(counter)*state.get(fp) + Math.max(0.0,state.get(ch_wrn) - state.get(stress)))/(state.get(counter)+1);
+        updates.add(new DataStateUpdate(fn, new_fn));
+        updates.add(new DataStateUpdate(fp, new_fp));
+        updates.add(new DataStateUpdate(counter, state.get(counter)+1));
         return updates;
     }
 
-    private static Perturbation getPerturbation() {
-        return new IterativePerturbation(N, new AtomicPerturbation(0, Main::perturbationFunction));
+    private static Perturbation perturbation_temp(double offset) {
+        //return new IterativePerturbation(N, new AtomicPerturbation(0, Main::perturbationFunction));
+        return new AfterPerturbation(100,
+                new IterativePerturbation(N, new AtomicPerturbation(0, (rg,ds)->f_temp(rg,ds,offset))));
     }
 
-    private static DataState perturbationFunction(RandomGenerator rg, DataState state) {
+    private static DataState f_temp(RandomGenerator rg, DataState state, double offset) {
         double vTemp = state.get(temp);
-        return state.apply(List.of(new DataStateUpdate(ch_temp, vTemp+ rg.nextDouble()*TEMP_OFFSET)));
+        return state.apply(List.of(new DataStateUpdate(ch_temp, vTemp+ rg.nextDouble()*offset)));
+    }
+
+    private static Perturbation perturbation_cool(double offset) {
+        //return new IterativePerturbation(N, new AtomicPerturbation(0, Main::perturbationFunction));
+        return new IterativePerturbation(N, new AtomicPerturbation(0, (rg,ds)->f_cool(rg,ds,offset)));
+    }
+
+    private static DataState f_cool(RandomGenerator rg, DataState state, double offset) {
+        double vTemp = state.get(temp);
+        if (vTemp >= 99.8 - offset) {
+            return state;
+        } else {
+            return state.apply(List.of(new DataStateUpdate(cool, OFF)));
+        }
     }
 
     private static double nextTempValue(double vTemp, double v) {
@@ -381,6 +517,9 @@ public class Main {
         values.put(p4, vTemp);
         values.put(p5, vTemp);
         values.put(p6, vTemp);
+        values.put(fn, 0.0);
+        values.put(fp, 0.0);
+        values.put(counter, 0.0);
         return new DataState(NUMBER_OF_VARIABLES, i -> values.getOrDefault(i, 0.0));
     }
 }

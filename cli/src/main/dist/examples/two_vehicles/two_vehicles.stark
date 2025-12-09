@@ -1,0 +1,88 @@
+load "Vehicle.jspec"
+
+set m = 50
+set z = 1.96
+set size = 1
+set scale = 60
+
+check threevalued phi_slow_02 from 0 to 100 every 10
+save in "phi_slow_test_02x10"
+
+check threevalued phi_slow_02 from 0 to 300 every 30
+save in "phi_slow_test_02x30"
+
+check threevalued phi_slow_02 from 0 to 500 every 50
+save in "phi_slow_test_02x50"
+
+check threevalued phi_slow_03 from 0 to 100 every 10
+save in "phi_slow_test_03x10"
+
+check threevalued phi_slow_03 from 0 to 300 every 30
+save in "phi_slow_test_03x30"
+
+check threevalued phi_slow_03 from 0 to 500 every 50
+save in "phi_slow_test_03x50"
+
+check threevalued phi_slow_04 from 0 to 100 every 10
+save in "phi_slow_test_04x10"
+
+check threevalued phi_slow_04 from 0 to 300 every 30
+save in "phi_slow_test_04x30"
+
+check threevalued phi_slow_04 from 0 to 500 every 50
+save in "phi_slow_test_04x50"
+
+check threevalued phi_comb_02 from 0 to 100 every 10
+save in "phi_comb_test_02x10"
+
+check threevalued phi_comb_02 from 0 to 300 every 30
+save in "phi_comb_test_02x30"
+
+check threevalued phi_comb_02 from 0 to 500 every 50
+save in "phi_comb_test_02x50"
+
+check threevalued phi_comb_03 from 0 to 100 every 10
+save in "phi_comb_test_03x10"
+
+check threevalued phi_comb_03 from 0 to 300 every 30
+save in "phi_comb_test_03x30"
+
+check threevalued phi_comb_03 from 0 to 500 every 50
+save in "phi_comb_test_03x50"
+
+check threevalued phi_comb_04 from 0 to 100 every 10
+save in "phi_comb_test_04x10"
+
+check threevalued phi_comb_04 from 0 to 300 every 30
+save in "phi_comb_test_04x30"
+
+check threevalued phi_comb_04 from 0 to 500 every 50
+save in "phi_comb_test_04x50"
+
+check threevalued phi_crash_speed from 0 to 100 every 10
+save in "phi_crash_speed_test_005x10"
+
+check threevalued phi_crash_speed from 0 to 300 every 30
+save in "phi_crash_speed_test_005x30"
+
+check threevalued phi_crash_speed from 0 to 500 every 50
+save in "phi_crash_speed_test_005x50"
+
+check threevalued phi_crash_speed_bis from 0 to 100 every 10
+save in "phi_crash_speed_test_01x10"
+
+check threevalued phi_crash_speed_bis from 0 to 300 every 30
+save in "phi_crash_speed_test_01x30"
+
+check threevalued phi_crash_speed_bis from 0 to 500 every 50
+save in "phi_crash_speed_test_01x50"
+
+check threevalued phi_crash_speed_ter from 0 to 100 every 10
+save in "phi_crash_speed_test_015x10"
+
+check threevalued phi_crash_speed_ter from 0 to 300 every 30
+save in "phi_crash_speed_test_015x30"
+
+check threevalued phi_crash_speed_ter from 0 to 500 every 50
+save in "phi_crash_speed_test_015x50"
+

@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *                Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -32,7 +32,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
  * This visitor is used to infer types of expressions.
  */
 public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisitor<JSpearType> {
-    private final TypeContext context;
+    private final TypeEvaluationContext context;
     private final ParseErrorCollector errors;
     private final boolean randomExpressionAllowed;
 
@@ -42,14 +42,22 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
      * @param context
      * @param errors
      */
-    public ExpressionTypeInference(TypeContext context, ParseErrorCollector errors, boolean randomExpressionAllowed) {
+    public  ExpressionTypeInference(TypeEvaluationContext context, ParseErrorCollector errors, boolean randomExpressionAllowed) {
         this.context = context;
         this.errors = errors;
         this.randomExpressionAllowed = randomExpressionAllowed;
     }
 
-    public ExpressionTypeInference(TypeContext context, ParseErrorCollector errors) {
+    public ExpressionTypeInference(TypeEvaluationContext context, ParseErrorCollector errors) {
         this(context, errors, false);
+    }
+
+    public static JSpearType infer(TypeEvaluationContext context, ParseErrorCollector errors, JSpearSpecificationLanguageParser.ExpressionContext value) {
+        return value.accept(new ExpressionTypeInference(context, errors, true));
+    }
+
+    public static JSpearType infer(TypeEvaluationContext context, ParseErrorCollector errors, boolean randomExpressionAllowed, JSpearSpecificationLanguageParser.ExpressionContext value) {
+        return value.accept(new ExpressionTypeInference(context, errors, randomExpressionAllowed));
     }
 
 
@@ -99,18 +107,6 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
         return combineToRealType(ctx.left, ctx.right);
     }
 
-    @Override
-    public JSpearType visitArrayExpression(JSpearSpecificationLanguageParser.ArrayExpressionContext ctx) {
-        boolean isRandom = false;
-        for (JSpearSpecificationLanguageParser.ExpressionContext element: ctx.elements) {
-            isRandom |= checkNumerical(element).isRandom();
-        }
-        if (isRandom) {
-            return new JSpearRandomType(JSpearType.ARRAY_TYPE);
-        } else {
-            return JSpearType.ARRAY_TYPE;
-        }
-    }
 
     @Override
     public JSpearType visitReferenceExpression(JSpearSpecificationLanguageParser.ReferenceExpressionContext ctx) {
@@ -119,25 +115,11 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
             errors.record(ParseUtil.unknownSymbol(ctx.name));
             return JSpearType.ERROR_TYPE;
         }
-        if (!context.isReferenceable(name)) {
+        if (!context.isAReference(name)) {
             errors.record(ParseUtil.illegalUseOfName(ctx.name));
             return JSpearType.ERROR_TYPE;
         }
-        JSpearType type = context.getTypeOf(name);
-        if (!type.isAnArray()&&(ctx.first != null)) {
-            errors.record(ParseUtil.illegalUseOfArraySyntax(ctx.name));
-            return JSpearType.ERROR_TYPE;
-        }
-        if ((ctx.first !=null)&&(!checkType(JSpearType.INTEGER_TYPE, ctx.first))) {
-            return JSpearType.ERROR_TYPE;
-        }
-        if ((ctx.last !=null)&&(!checkType(JSpearType.INTEGER_TYPE, ctx.last))) {
-            return JSpearType.ERROR_TYPE;
-        }
-        if (type.isAnArray()&&(ctx.first != null)&&(ctx.last==null)) {
-            return JSpearType.REAL_TYPE;
-        }
-        return type;
+        return context.getTypeOf(name);
     }
 
     @Override
@@ -181,10 +163,11 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
             errors.record(ParseUtil.typeError(thenType, elseType, ctx.elseBranch.start));
             return JSpearType.ERROR_TYPE;
         }
-        if (guardType.isRandom()) {
-            return new JSpearRandomType(JSpearType.merge(thenType, elseType));
+        JSpearType result = JSpearType.merge(thenType, elseType);
+        if (!result.isError()&&guardType.isRandom()) {
+            return new JSpearRandomType(result);
         } else {
-            return JSpearType.merge(thenType, elseType);
+            return result;
         }
     }
 
@@ -268,15 +251,22 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
             this.errors.record(ParseUtil.illegalUseOfRandomExpression(ctx.start));
             return JSpearType.ERROR_TYPE;
         }
-        JSpearType type = JSpearType.ANY_TYPE;
+        JSpearType type = null;
         for (JSpearSpecificationLanguageParser.ExpressionContext v: ctx.values) {
             JSpearType current = v.accept(this);
-            if (type.canBeMergedWith(current)) {
-                type = JSpearType.merge(type, current);
+            if (type == null) {
+                type = current;
             } else {
-                this.errors.record(ParseUtil.typeError(type, current, v.start));
-                return JSpearType.ERROR_TYPE;
+                if (type.canBeMergedWith(current)) {
+                    type = JSpearType.merge(type, current);
+                } else {
+                    this.errors.record(ParseUtil.typeError(type, current, v.start));
+                    return JSpearType.ERROR_TYPE;
+                }
             }
+        }
+        if (type == null) {
+            return JSpearType.ERROR_TYPE;
         }
         return new JSpearRandomType( type );
     }
@@ -298,73 +288,6 @@ public class ExpressionTypeInference extends JSpearSpecificationLanguageBaseVisi
         }
     }
 
-    @Override
-    public JSpearType visitMaxArrayElementExpression(JSpearSpecificationLanguageParser.MaxArrayElementExpressionContext ctx) {
-        String targetName = ctx.target.getText();
-        if (!context.isReferenceable(targetName)) {
-            errors.record(ParseUtil.illegalUseOfName(ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        JSpearType type = context.getTypeOf(targetName);
-        if (!type.isAnArray()) {
-            errors.record(ParseUtil.typeError(JSpearType.ARRAY_TYPE, type, ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        if ((ctx.guard==null)||checkType(JSpearType.BOOLEAN_TYPE, ctx.guard)) {
-            return JSpearType.REAL_TYPE;
-        } else {
-            return JSpearType.ERROR_TYPE;
-        }
-    }
-
-    @Override
-    public JSpearType visitLambdaParameterExpression(JSpearSpecificationLanguageParser.LambdaParameterExpressionContext ctx) {
-        return JSpearType.REAL_TYPE; //TODO: Handle nested context...
-    }
-
-    @Override
-    public JSpearType visitMeanArrayElementExpression(JSpearSpecificationLanguageParser.MeanArrayElementExpressionContext ctx) {
-        return super.visitMeanArrayElementExpression(ctx);
-    }
 
 
-
-    @Override
-    public JSpearType visitCountArrayElementExpression(JSpearSpecificationLanguageParser.CountArrayElementExpressionContext ctx) {
-        String targetName = ctx.target.getText();
-        if (!context.isReferenceable(targetName)) {
-            errors.record(ParseUtil.illegalUseOfName(ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        JSpearType type = context.getTypeOf(targetName);
-        if (!type.isAnArray()) {
-            errors.record(ParseUtil.typeError(JSpearType.ARRAY_TYPE, type, ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        if ((ctx.guard==null)||checkType(JSpearType.BOOLEAN_TYPE, ctx.guard)) {
-            return JSpearType.INTEGER_TYPE;
-        } else {
-            return JSpearType.ERROR_TYPE;
-        }
-    }
-
-
-    @Override
-    public JSpearType visitMinArrayElementExpression(JSpearSpecificationLanguageParser.MinArrayElementExpressionContext ctx) {
-        String targetName = ctx.target.getText();
-        if (!context.isReferenceable(targetName)) {
-            errors.record(ParseUtil.illegalUseOfName(ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        JSpearType type = context.getTypeOf(targetName);
-        if (!type.isAnArray()) {
-            errors.record(ParseUtil.typeError(JSpearType.ARRAY_TYPE, type, ctx.target));
-            return JSpearType.ERROR_TYPE;
-        }
-        if ((ctx.guard==null)||checkType(JSpearType.BOOLEAN_TYPE, ctx.guard)) {
-            return JSpearType.REAL_TYPE;
-        } else {
-            return JSpearType.ERROR_TYPE;
-        }
-    }
 }

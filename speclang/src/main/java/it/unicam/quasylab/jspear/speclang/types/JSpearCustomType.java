@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -22,6 +22,7 @@
 
 package it.unicam.quasylab.jspear.speclang.types;
 
+import it.unicam.quasylab.jspear.ds.DataRange;
 import it.unicam.quasylab.jspear.speclang.values.JSpearCustomValue;
 import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
 
@@ -66,9 +67,6 @@ public final class JSpearCustomType implements JSpearType {
 
     @Override
     public JSpearType merge(JSpearType other) {
-        if ((other == ANY_TYPE)||this.equals(other)) {
-            return this;
-        }
         if (other.deterministicType().equals(this)) {
             return other;
         }
@@ -85,10 +83,6 @@ public final class JSpearCustomType implements JSpearType {
         return false;
     }
 
-    @Override
-    public boolean isAnArray() {
-        return false;
-    }
 
     @Override
     public boolean isError() {
@@ -97,7 +91,7 @@ public final class JSpearCustomType implements JSpearType {
 
     @Override
     public boolean canBeMergedWith(JSpearType other) {
-        return (other == ANY_TYPE)||this.equals(other.deterministicType());
+        return this.equals(other.deterministicType());
     }
 
     @Override
@@ -119,11 +113,29 @@ public final class JSpearCustomType implements JSpearType {
     }
 
     @Override
+    public JSpearValue valueOf(double v) {
+        return new JSpearCustomValue(this, (int) v);
+    }
+
+    @Override
+    public DataRange getDefaultDataRange() {
+        return new DataRange(0, this.typeElements.length);
+    }
+
+    @Override
     public String toString() {
         return customTypeName;
     }
 
     public JSpearValue getValueOf(String name) {
         return new JSpearCustomValue(this, getCode(name));
+    }
+
+    public JSpearCustomValue[] getValues( ) {
+        return IntStream.range(0, this.typeElements.length).mapToObj(i -> new JSpearCustomValue(this, i)).toArray(JSpearCustomValue[]::new);
+    }
+
+    public String getNameOf(int elementIndex) {
+        return this.typeElements[elementIndex];
     }
 }

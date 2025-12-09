@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -22,12 +22,15 @@
 
 package it.unicam.quasylab.jspear.speclang.types;
 
-import it.unicam.quasylab.jspear.speclang.values.JSpearArrayElementPredicate;
+import it.unicam.quasylab.jspear.ds.DataRange;
+import it.unicam.quasylab.jspear.speclang.parsing.ParseErrorCollector;
+import it.unicam.quasylab.jspear.speclang.parsing.ParseUtil;
+import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
 
 /**
  * This interface is used to model data types occurring in a JSpear specification.
  */
-public sealed interface JSpearType permits JSpearAnyType, JSpearArrayElementPredicateType, JSpearArrayElementSelectionFunctionType, JSpearArrayType, JSpearBooleanType, JSpearCustomType, JSpearErrorType, JSpearIntegerType, JSpearRandomType, JSpearRealType {
+public sealed interface JSpearType permits JSpearBooleanType, JSpearCustomType, JSpearErrorType, JSpearIntegerType, JSpearRandomType, JSpearRealType {
 
 
     /**
@@ -50,29 +53,16 @@ public sealed interface JSpearType permits JSpearAnyType, JSpearArrayElementPred
      */
     JSpearType REAL_TYPE = JSpearRealType.getInstance();
 
-    /**
-     * Type assigned to arrays expressions.
-     */
-    JSpearType ARRAY_TYPE = JSpearArrayType.getInstance();
-
-    /**
-     *
-     */
-    JSpearType ARRAY_ELEMENT_PREDICATE = JSpearArrayElementPredicateType.getInstance();
 
 
     /**
      * Type assigned to array expressions.
      */
-    JSpearType ANY_TYPE = JSpearAnyType.getInstance();
-    String ANY_TYPE_STRING = "any";
     String INTEGER_TYPE_STRING = "int";
     String REAL_TYPE_STRING = "real";
     String BOOLEAN_TYPE_STRING = "bool";
-    String ARRAY_TYPE_STRING = "array";
     String ERROR_TYPE_STRING = "error";
     String RANDOM_TYPE_STRING = "random";
-    JSpearType ARRAY_ELEMENT_SELECTION_FUNCTION = JSpearArrayElementSelectionFunctionType.getInstance();
 
     /**
      * Returns the type obtained by merging <code>this</code> type with the <code>other</code>. An error type
@@ -110,14 +100,6 @@ public sealed interface JSpearType permits JSpearAnyType, JSpearArrayElementPred
      * @return true if <code>this</code> type represents numerical values.
      */
     boolean isNumerical();
-
-    /**
-     * Returns true if <code>this</code> type represents an array.
-     *
-     * @return true if <code>this</code> type represents an array.
-     */
-    boolean isAnArray();
-
 
     /**
      * Returns true if <code>this</code> type represents an error.
@@ -177,8 +159,23 @@ public sealed interface JSpearType permits JSpearAnyType, JSpearArrayElementPred
      */
     default boolean isRandom() { return false; }
 
+    /**
+     * Returns the deterministic version of this type.
+     *
+     * @return the deterministic version of this type.
+     */
     default JSpearType deterministicType() {
         return this;
     }
+
+    /**
+     * Returns the value represented by the given parameter.
+     *
+     * @param v double representation of a value
+     * @return the value represented by the given parameter.
+     */
+    JSpearValue valueOf(double v);
+
+    DataRange getDefaultDataRange();
 
 }

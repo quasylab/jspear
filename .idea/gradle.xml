@@ -4,9 +4,6 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
-        <option name="delegatedBuild" value="true" />
-        <option name="testRunner" value="GRADLE" />
-        <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="/usr/local/Cellar/gradle/7.5.1_1/libexec" />
         <option name="gradleJvm" value="corretto-17" />
@@ -14,8 +11,21 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/cli" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/examples/Isocitrate" />
+            <option value="$PROJECT_DIR$/examples/Lotka" />
+            <option value="$PROJECT_DIR$/examples/agriculturalDT" />
             <option value="$PROJECT_DIR$/examples/engine" />
+            <option value="$PROJECT_DIR$/examples/envzompr" />
+            <option value="$PROJECT_DIR$/examples/monitoring" />
+            <option value="$PROJECT_DIR$/examples/monitoring/basic" />
+            <option value="$PROJECT_DIR$/examples/mutliScler" />
+            <option value="$PROJECT_DIR$/examples/multipleSclerosis" />
+            <option value="$PROJECT_DIR$/examples/polistil" />
+            <option value="$PROJECT_DIR$/examples/repressilator" />
+            <option value="$PROJECT_DIR$/examples/tollbooth" />
+            <option value="$PROJECT_DIR$/examples/turtle" />
             <option value="$PROJECT_DIR$/examples/vehicle" />
             <option value="$PROJECT_DIR$/lib" />
             <option value="$PROJECT_DIR$/speclang" />

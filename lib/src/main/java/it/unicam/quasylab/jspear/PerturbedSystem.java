@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -23,14 +23,26 @@
 package it.unicam.quasylab.jspear;
 
 import it.unicam.quasylab.jspear.ds.DataState;
+import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
+import it.unicam.quasylab.jspear.perturbation.Perturbation;
 import org.apache.commons.math3.random.RandomGenerator;
 
+/**
+ * Represent a system in the evolution sequence model
+ * in which the evolution is affected by a given perturbation.
+ */
 public class PerturbedSystem implements SystemState {
 
     private final SystemState perturbedSystem;
     private final Perturbation perturbation;
-    private DataState perturbedDataState;
 
+    /**
+     * Generates a perturbed system, starting from a given system,
+     * given a perturbation.
+     *
+     * @param perturbedSystem a system
+     * @param perturbation a perturbation.
+     */
     public PerturbedSystem(SystemState perturbedSystem, Perturbation perturbation) {
         this.perturbedSystem = perturbedSystem;
         this.perturbation = perturbation;
@@ -44,6 +56,12 @@ public class PerturbedSystem implements SystemState {
     @Override
     public SystemState sampleNext(RandomGenerator rg) {
         SystemState next = perturbedSystem.sampleNext(rg);
+        return perturbation.step().apply(rg, next);
+    }
+
+    @Override
+    public SystemState sampleNextCond(RandomGenerator rg, DataStateBooleanExpression condition) {
+        SystemState next = perturbedSystem.sampleNextCond(rg,condition);
         return perturbation.step().apply(rg, next);
     }
 

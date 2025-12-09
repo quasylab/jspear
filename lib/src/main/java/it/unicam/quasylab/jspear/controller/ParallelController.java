@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -26,8 +26,8 @@ import it.unicam.quasylab.jspear.ds.DataState;
 import org.apache.commons.math3.random.RandomGenerator;
 
 /**
- * Represents a controller consisting of two controllers running in parallel. At each step both the
- * effects and the transitions are applyed.
+ * Class ParallelController implements a controller consisting of two controllers running synchronously in parallel.
+ * At each step the effects and transitions of both are applied.
  */
 public class ParallelController implements Controller {
 
@@ -35,7 +35,7 @@ public class ParallelController implements Controller {
     private final Controller rightController;
 
     /**
-     * Creates a new controller consisting by the parallel composition of the two given controllers.
+     * Creates a new controller consisting of the parallel composition of the two given controllers.
      *
      * @param leftController a controller.
      * @param rightController a controller.
@@ -45,6 +45,16 @@ public class ParallelController implements Controller {
         this.rightController = rightController;
     }
 
+    /**
+     * Defines the effect of a ParallelController:
+     * the effects of both controllers are applied to the current data state
+     * and the controller at the next step is given by the parallel composition of the next step controllers
+     *
+     * @param rg random generator
+     * @param state the current data state
+     * @return the concatenation of the effects of <code>leftController</code> and <code>rightController</code> on <code>state</code>
+     * and the parallel composition of the respective behaviours at the next step.
+     */
     @Override
     public EffectStep<Controller> next(RandomGenerator rg, DataState state) {
         return this.leftController.next(rg, state).parallel(ParallelController::new, this.rightController.next(rg, state));

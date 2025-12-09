@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -21,6 +21,9 @@
  */
 
 package it.unicam.quasylab.jspear.speclang.types;
+
+import it.unicam.quasylab.jspear.ds.DataRange;
+import it.unicam.quasylab.jspear.speclang.values.JSpearValue;
 
 import java.util.Objects;
 
@@ -72,10 +75,6 @@ public final class JSpearRandomType implements JSpearType {
         return this.contentType.isNumerical();
     }
 
-    @Override
-    public boolean isAnArray() {
-        return this.contentType.isAnArray();
-    }
 
     @Override
     public boolean isError() {
@@ -133,6 +132,16 @@ public final class JSpearRandomType implements JSpearType {
     @Override
     public JSpearType deterministicType() {
         return this.contentType;
+    }
+
+    @Override
+    public JSpearValue valueOf(double v) {
+        return this.contentType.valueOf(v);
+    }
+
+    @Override
+    public DataRange getDefaultDataRange() {
+        return this.contentType.getDefaultDataRange();
     }
 
     @Override

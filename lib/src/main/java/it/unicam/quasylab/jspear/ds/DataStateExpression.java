@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -38,12 +38,18 @@ public interface DataStateExpression extends ToDoubleFunction<DataState> {
         return eval(state);
     }
 
+    /**
+     * Returns the evaluation of this data state expression over a given data state.
+     *
+     * @param state a data state
+     * @return the evaluation of this expression over <code>state</code>
+     */
     double eval(DataState state);
 
     /**
      * Returns a composed expression that applies the given operator to this expression.
      *
-     * @param op double unary opertor.
+     * @param op double unary operator.
      * @return a composed expression that applies the given operator to this expression.
      */
     default DataStateExpression apply(DoubleUnaryOperator op) {
@@ -53,6 +59,7 @@ public interface DataStateExpression extends ToDoubleFunction<DataState> {
     /**
      * Returns a composed expression that applies the given operator to this expression and to the
      * one passed as parameter.
+     *
      * @param op binary double operator.
      * @param other another expression.
      * @return a composed expression that applies the given operator to this expression and to the
@@ -63,10 +70,10 @@ public interface DataStateExpression extends ToDoubleFunction<DataState> {
     }
 
     /**
-     * Returns a composed expression that sums this expression to the one passed a sparameter.
+     * Returns a composed expression that sums this expression to the one passed a parameter.
      *
      * @param expr an expression.
-     * @return a composed expression that sums this expression to the one passed a sparameter.
+     * @return a composed expression that sums this expression to the one passed a parameter.
      */
     default DataStateExpression sum(DataStateExpression expr) {
         return this.apply(Double::sum, expr);
@@ -102,9 +109,9 @@ public interface DataStateExpression extends ToDoubleFunction<DataState> {
         return this.apply((d1, d2) -> d1/d2, expr);
     }
 
-
     /**
      * Returns a composed expression that divides this expression by the given double value.
+     *
      * @param x a double value.
      * @return a composed expression that divides this expression by the given double value.
      */

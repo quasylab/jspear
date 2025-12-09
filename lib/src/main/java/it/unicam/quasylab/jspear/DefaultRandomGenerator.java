@@ -1,7 +1,7 @@
 /*
- * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
+ * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
  *
- *              Copyright (C) 2020.
+ *              Copyright (C) 2023.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -25,14 +25,21 @@ package it.unicam.quasylab.jspear;
 import org.apache.commons.math3.random.AbstractRandomGenerator;
 
 import java.util.Random;
+import java.util.SplittableRandom;
 
+/**
+ * We use this class to implement a computationally efficient random generator.
+ */
+/**
+ * We use this class to implement a computationally efficient random generator.
+ */
 public class DefaultRandomGenerator extends AbstractRandomGenerator {
 
-    private Random random = new Random();
+    private SplittableRandom random = new SplittableRandom();
 
     @Override
     public void setSeed(long seed) {
-        this.random = new Random(seed);
+        this.random = new SplittableRandom(seed);
     }
 
     @Override
