@@ -193,7 +193,7 @@ public class StarkEnvironment {
 
     public void setRandomSeed(long seed) throws StarkCommandExecutionException {
         checkSpecification();
-        this.specification.setRandomSeed(seed);
+        this.specification.setRand(seed);
     }
 
     public String[] getPerturbations() throws StarkCommandExecutionException {

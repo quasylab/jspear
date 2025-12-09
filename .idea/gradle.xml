@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/cli" />
             <option value="$PROJECT_DIR$/examples" />
+            <option value="$PROJECT_DIR$/examples/ABZ2025" />
             <option value="$PROJECT_DIR$/examples/Isocitrate" />
             <option value="$PROJECT_DIR$/examples/Lotka" />
             <option value="$PROJECT_DIR$/examples/agriculturalDT" />
@@ -20,8 +21,8 @@
             <option value="$PROJECT_DIR$/examples/envzompr" />
             <option value="$PROJECT_DIR$/examples/monitoring" />
             <option value="$PROJECT_DIR$/examples/monitoring/basic" />
-            <option value="$PROJECT_DIR$/examples/mutliScler" />
             <option value="$PROJECT_DIR$/examples/multipleSclerosis" />
+            <option value="$PROJECT_DIR$/examples/mutliScler" />
             <option value="$PROJECT_DIR$/examples/polistil" />
             <option value="$PROJECT_DIR$/examples/repressilator" />
             <option value="$PROJECT_DIR$/examples/tollbooth" />
