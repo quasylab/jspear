@@ -22,34 +22,53 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public final class ConjunctionDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula leftFormula;
-    private final DisTLFormula rightFormula;
+    private final UDisTLFormula leftFormula;
+    private final UDisTLFormula rightFormula;
 
-    public ConjunctionDisTLFormula(DisTLFormula leftFormula, DisTLFormula rightFormula) {
+    public ConjunctionDisTLFormula(UDisTLFormula leftFormula, UDisTLFormula rightFormula) {
         this.leftFormula = leftFormula;
         this.rightFormula = rightFormula;
     }
 
-    @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return Math.min(leftFormula.eval(sampleSize, step, sequence, parallel),rightFormula.eval(sampleSize, step, sequence, parallel));
-    }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalConjunction(this);
     }
 
-    public DisTLFormula getLeftFormula() {
+    public UDisTLFormula getLeftFormula() {
         return leftFormula;
     }
 
-    public DisTLFormula getRightFormula() {
+    public UDisTLFormula getRightFormula() {
         return rightFormula;
     }
 
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildConjunction(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return Math.max(leftFormula.getFES(), rightFormula.getFES());
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        OptionalInt l = leftFormula.getTimeHorizon();
+        OptionalInt r = rightFormula.getTimeHorizon();
+        if(l.isEmpty() || r.isEmpty()){
+            return OptionalInt.empty();
+        } else {
+            return OptionalInt.of(Math.max(l.getAsInt(), r.getAsInt()));
+        }
+    }
 }

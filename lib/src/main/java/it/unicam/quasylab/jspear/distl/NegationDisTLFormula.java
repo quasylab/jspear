@@ -22,29 +22,40 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
+
+import java.util.OptionalInt;
 
 public final class NegationDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula argument;
+    private final UDisTLFormula argument;
 
-    public NegationDisTLFormula(DisTLFormula argument) {
+    public NegationDisTLFormula(UDisTLFormula argument) {
         this.argument = argument;
     }
 
-
-
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return - argument.eval(sampleSize, step, sequence, parallel);
-    }
-
-    @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalNegation(this);
     }
 
-    public DisTLFormula getArgument() {
+    public UDisTLFormula getArgument() {
         return argument;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildNegation(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return argument.getFES();
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return argument.getTimeHorizon();
     }
 }

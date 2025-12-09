@@ -20,28 +20,22 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.distl;
+package nl.tue.Monitoring;
 
-import it.unicam.quasylab.jspear.robtl.*;
-import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import it.unicam.quasylab.jspear.SampleSet;
 
-public sealed interface DisTLFormula extends UDisTLFormula permits
-        AlwaysDisTLFormula,
-        BrinkDisTLFormula,
-        ConjunctionDisTLFormula,
-        DisjunctionDisTLFormula,
-        EventuallyDisTLFormula,
-        FalseDisTLFormula,
-        ImplicationDisTLFormula,
-        NegationDisTLFormula,
-        TargetDisTLFormula,
-        TrueDisTLFormula,
-        UntilDisTLFormula  {
-
-    <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator);
-
-    static DisTLFunction<Double> getDoubleEvaluationFunction(DisTLFormula formula) {
-        return formula.eval(new DoubleSemanticsVisitor());
-    }
-
+public interface UDisTLMonitor<T> {
+    /**
+     * Evaluates the monitored UDisTL formula on the given sample set.
+     *
+     * <p>This method receives a {@link SampleSet} of perceived system states
+     * corresponding to the next step of the evolution, and returns the
+     * monitoring output associated with that step. The returned value represents
+     * the evaluation, verdict, or satisfaction information of the UDisTL formula
+     * monitored by this object.</p>
+     *
+     * @param sample the sample set of perceived system states at the next step.
+     * @return the monitoring output for the given sample set.
+     */
+    T evalNext(SampleSet<PerceivedSystemState> sample);
 }

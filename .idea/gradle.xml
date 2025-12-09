@@ -18,6 +18,9 @@
             <option value="$PROJECT_DIR$/examples/agriculturalDT" />
             <option value="$PROJECT_DIR$/examples/engine" />
             <option value="$PROJECT_DIR$/examples/envzompr" />
+            <option value="$PROJECT_DIR$/examples/monitoring" />
+            <option value="$PROJECT_DIR$/examples/monitoring/basic" />
+            <option value="$PROJECT_DIR$/examples/mutliScler" />
             <option value="$PROJECT_DIR$/examples/multipleSclerosis" />
             <option value="$PROJECT_DIR$/examples/polistil" />
             <option value="$PROJECT_DIR$/examples/repressilator" />

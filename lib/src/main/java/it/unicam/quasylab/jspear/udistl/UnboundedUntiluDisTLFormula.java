@@ -20,39 +20,35 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.distl;
+package it.unicam.quasylab.jspear.udistl;
 
-import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import it.unicam.quasylab.jspear.distl.DisTLFormulaVisitor;
+import it.unicam.quasylab.jspear.distl.DisTLFunction;
 import nl.tue.Monitoring.MonitorBuildingVisitor;
 
 import java.util.OptionalInt;
 
-public final class DisjunctionDisTLFormula implements DisTLFormula {
+public class UnboundedUntiluDisTLFormula implements UDisTLFormula {
 
-    private final UDisTLFormula leftFormula;
     private final UDisTLFormula rightFormula;
+    private final UDisTLFormula leftFormula;
 
-    public DisjunctionDisTLFormula(UDisTLFormula leftFormula, UDisTLFormula rightFormula) {
+    public UnboundedUntiluDisTLFormula(UDisTLFormula leftFormula, UDisTLFormula rightFormula) {
         this.leftFormula = leftFormula;
         this.rightFormula = rightFormula;
-    }
-
-    @Override
-    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
-        return evaluator.evalDisjunction(this);
-    }
-
-    public UDisTLFormula getLeftFormula() {
-        return leftFormula;
     }
 
     public UDisTLFormula getRightFormula() {
         return rightFormula;
     }
 
+    public UDisTLFormula getLeftFormula() {
+        return leftFormula;
+    }
+
     @Override
     public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
-        return visitor.buildDisjunction(this, semanticsEvaluationTimestep);
+        return visitor.buildUnboundedUntil(this, semanticsEvaluationTimestep);
     }
 
     @Override
@@ -62,12 +58,12 @@ public final class DisjunctionDisTLFormula implements DisTLFormula {
 
     @Override
     public OptionalInt getTimeHorizon() {
-        OptionalInt l = leftFormula.getTimeHorizon();
-        OptionalInt r = rightFormula.getTimeHorizon();
-        if(l.isEmpty() || r.isEmpty()){
-            return OptionalInt.empty();
-        } else {
-            return OptionalInt.of(Math.max(l.getAsInt(), r.getAsInt()));
-        }
+        return OptionalInt.empty();
     }
+
+    @Override
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
+        throw new UnsupportedOperationException("Semantic evaluation of unbounded until is not formally defined");
+    }
+
 }

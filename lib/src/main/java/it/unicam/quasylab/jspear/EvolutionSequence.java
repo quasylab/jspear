@@ -27,6 +27,7 @@ import it.unicam.quasylab.jspear.ds.DataStateExpression;
 import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import it.unicam.quasylab.jspear.ds.DataStateBooleanExpression;
 import it.unicam.quasylab.jspear.perturbation.Perturbation;
+import nl.tue.Monitoring.PerceivedSystemState;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import java.util.ArrayList;
@@ -283,6 +284,23 @@ public class EvolutionSequence {
         return expr.compute(from, to, this, this.apply(perturbation, step, size));
     }
 
+    /**
+     * Returns the sample set at the given step where each system state has been
+     * transformed into a perceived system state.
+     * <p>This method converts each {@link SystemState} in the sample set at step
+     * <code>i</code> into a {@link PerceivedSystemState} by extracting its
+     * underlying data state.
+     * This removes agent and environment references of the system states, and
+     * makes them suitable for monitoring: SampleSet<{@link PerceivedSystemState}> objects are
+     * the input of monitors </p>
+     *
+     * @param i step index.
+     * @return a sample set of perceived system states at the given step.
+     * @throws IndexOutOfBoundsException if <code>i < 0</code>
+     */
 
+    public SampleSet<PerceivedSystemState> getAsPerceivedSystemStates(int i){
+        return new SampleSet<>(get(i).stream().map((st) -> new PerceivedSystemState(st.getDataState())).toList());
+    }
 
 }

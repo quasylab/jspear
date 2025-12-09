@@ -22,57 +22,78 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.*;
+import it.unicam.quasylab.jspear.SampleSet;
+import it.unicam.quasylab.jspear.SystemState;
 import it.unicam.quasylab.jspear.ds.*;
 import it.unicam.quasylab.jspear.penalty.*;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 
 public final class TargetDisTLFormula implements DisTLFormula {
 
     private final DataStateFunction mu;
 
-    private final Optional<DataStateExpression> rho;
+    private SampleSet<SystemState> dist;
 
-    private final Penalty P;
+    private Optional<DataStateExpression> rho;
+
+    private Penalty P;
 
     private final double q;
 
     public TargetDisTLFormula(DataStateFunction distribution, DataStateExpression penalty, double threshold) {
         this.mu = distribution;
-        this.rho = Optional.of(penalty);
-        this.q = threshold;
+        this.dist = new SampleSet<>();
+        this.rho = Optional.ofNullable(penalty);
         this.P = new NonePenalty();
+        this.q = threshold;
     }
 
     public TargetDisTLFormula(DataStateFunction distribution, Penalty penalty, double threshold) {
-        this.mu = distribution;
+        this.mu =distribution;
+        this.dist = new SampleSet<>();
         this.rho = Optional.empty();
-        this.q = threshold;
         this.P = penalty;
+        this.q = threshold;
     }
 
-    @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        SampleSet<SystemState> state = sequence.get(step);
-        SampleSet<SystemState> state2 = state.replica(sampleSize).applyDistribution(new DefaultRandomGenerator(),this.mu);
-        double distance;
-        if (this.rho.isPresent()) {
-            distance = state.distanceGeq(this.rho.get(), state2);
-        } else {
-            distance = state.distanceGeq(this.P,state2,step);
-        }
-        return this.q - distance;
+    public TargetDisTLFormula(SampleSet<SystemState> distribution, DataStateExpression penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.ofNullable(penalty);
+        this.P = new NonePenalty();
+        this.q = threshold;
     }
 
+    public TargetDisTLFormula(SampleSet<SystemState> distribution, Penalty penalty, double threshold) {
+        this.mu = (rg, ds) -> ds;
+        this.dist = distribution;
+        this.rho = Optional.empty();
+        this.P = penalty;
+        this.q = threshold;
+    }
+
+    private TargetDisTLFormula(DataStateFunction distribution, double threshold) {
+        this.mu = distribution;
+        this.q = threshold;
+    }
+
+
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalTarget(this);
     }
 
     public DataStateFunction getDistribution() {
         return this.mu;
+    }
+
+    public SampleSet<SystemState> getSampledDistribution(){
+        return this.dist;
     }
 
     public Optional<DataStateExpression> getRho() {
@@ -84,4 +105,19 @@ public final class TargetDisTLFormula implements DisTLFormula {
     }
 
     public double getThreshold() { return this.q; }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildTarget(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return 1;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        return OptionalInt.of(1);
+    }
 }

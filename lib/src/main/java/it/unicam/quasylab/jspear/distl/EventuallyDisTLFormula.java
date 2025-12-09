@@ -22,39 +22,30 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
-import java.util.stream.IntStream;
+import java.util.OptionalInt;
 
 public final class EventuallyDisTLFormula implements DisTLFormula {
 
-    private final DisTLFormula arg;
+    private final UDisTLFormula arg;
     private final int from;
     private final int to;
 
 
-    public EventuallyDisTLFormula(DisTLFormula arg, int from, int to) {
+    public EventuallyDisTLFormula(UDisTLFormula arg, int from, int to) {
         this.arg = arg;
         this.from = from;
         this.to = to;
     }
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        if (parallel) {
-            return IntStream.of(from, to).parallel().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, true)).max().orElse(Double.NaN);
-        } else {
-            return IntStream.of(from, to).sequential().mapToDouble(i -> arg.eval(sampleSize, step+i, sequence, false)).max().orElse(Double.NaN);
-
-        }
-    }
-
-    @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
+    public <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator) {
         return evaluator.evalEventually(this);
     }
 
-    public DisTLFormula getArgument() {
+    public UDisTLFormula getArgument() {
         return this.arg;
     }
 
@@ -64,5 +55,25 @@ public final class EventuallyDisTLFormula implements DisTLFormula {
 
     public int getTo() {
         return to;
+    }
+
+    @Override
+    public <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep) {
+        return visitor.buildEventually(this, semanticsEvaluationTimestep);
+    }
+
+    @Override
+    public int getFES() {
+        return arg.getFES() + from;
+    }
+
+    @Override
+    public OptionalInt getTimeHorizon() {
+        OptionalInt argTimeHorizon = arg.getTimeHorizon();
+        if(argTimeHorizon.isEmpty()){
+            return OptionalInt.empty();
+        } else {
+            return OptionalInt.of(to + argTimeHorizon.getAsInt());
+        }
     }
 }

@@ -20,28 +20,20 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.distl;
+package it.unicam.quasylab.jspear.udistl;
 
-import it.unicam.quasylab.jspear.robtl.*;
-import it.unicam.quasylab.jspear.udistl.UDisTLFormula;
+import it.unicam.quasylab.jspear.distl.DisTLFormulaVisitor;
+import it.unicam.quasylab.jspear.distl.DisTLFunction;
+import nl.tue.Monitoring.MonitorBuildingVisitor;
 
-public sealed interface DisTLFormula extends UDisTLFormula permits
-        AlwaysDisTLFormula,
-        BrinkDisTLFormula,
-        ConjunctionDisTLFormula,
-        DisjunctionDisTLFormula,
-        EventuallyDisTLFormula,
-        FalseDisTLFormula,
-        ImplicationDisTLFormula,
-        NegationDisTLFormula,
-        TargetDisTLFormula,
-        TrueDisTLFormula,
-        UntilDisTLFormula  {
+import java.util.OptionalInt;
+
+public interface UDisTLFormula {
+    <T> T build(MonitorBuildingVisitor<T> visitor, int semanticsEvaluationTimestep);
+
+    int getFES();
+
+    OptionalInt getTimeHorizon();
 
     <T> DisTLFunction<T> eval(DisTLFormulaVisitor<T> evaluator);
-
-    static DisTLFunction<Double> getDoubleEvaluationFunction(DisTLFormula formula) {
-        return formula.eval(new DoubleSemanticsVisitor());
-    }
-
 }

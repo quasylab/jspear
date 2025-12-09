@@ -27,7 +27,6 @@ import it.unicam.quasylab.jspear.ds.DataStateFunction;
 import org.apache.commons.math3.random.RandomGenerator;
 import it.unicam.quasylab.jspear.penalty.*;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.*;
@@ -54,7 +53,7 @@ public class SampleSet<T extends SystemState> {
      *
      * @param states system states in the sample.
      */
-    private SampleSet(List<T> states) {
+    public SampleSet(List<T> states) {
         this.states = states;
     }
 
@@ -392,8 +391,12 @@ public class SampleSet<T extends SystemState> {
         );
     }
 
-    public SampleSet<SystemState> applyDistribution(RandomGenerator rg, DataStateFunction function) {
-        return new SampleSet<>(this.stream().parallel().map(s -> s.apply(rg, function)).toList());
+    public SampleSet<T> applyDistribution(RandomGenerator rg, DataStateFunction function, boolean parallel){
+        if(parallel){
+            return new SampleSet<>(this.stream().parallel().map(s -> (T) s.apply(rg, function)).toList());
+        } else {
+            return new SampleSet<>(this.stream().map(s -> (T) s.apply(rg, function)).toList());
+        }
     }
 
     public double mean(ToDoubleFunction<T> function){
