@@ -392,6 +392,10 @@ public class SampleSet<T extends SystemState> {
         );
     }
 
+    public SampleSet<SystemState> applyDistribution(RandomGenerator rg, DataStateFunction function) {
+        return new SampleSet<>(this.stream().parallel().map(s -> s.apply(rg, function)).toList());
+    }
+
     public double mean(ToDoubleFunction<T> function){
         return this.stream().mapToDouble(function).average().orElse(0.0);
     }

@@ -33,4 +33,8 @@ include 'examples:polistil'
 findProject(':examples:polistil')?.name = 'polistil'
 include 'examples:multipleSclerosis'
 findProject(':examples:multipleSclerosis')?.name = 'multipleSclerosis'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
+include 'examples:ABZ2025'
+findProject(':examples:ABZ2025')?.name = 'ABZ2025'
 

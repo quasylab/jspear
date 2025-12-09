@@ -22,8 +22,6 @@
 
 package it.unicam.quasylab.jspear.distl;
 
-import it.unicam.quasylab.jspear.distl.*;
-
 public interface DisTLFormulaVisitor<T> {
 
     DisTLFunction<T> eval(DisTLFormula formula);

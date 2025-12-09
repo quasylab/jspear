@@ -97,7 +97,7 @@ component Vehicle1 {
     int crashed_V1 = 0;
   }
   controller {
-    state Ctrl_V1 {
+    aiState Ctrl_V1 {
       if (s_speed_V1 > 0) {
         if (safety_gap_V1 > 0) {
           accel_V1' = ACCELERATION;
@@ -116,21 +116,21 @@ component Vehicle1 {
         step Stop_V1;
       }
     }
-    state Accelerate_V1 {
+    aiState Accelerate_V1 {
       if (timer_V1 > 0) {
         step Accelerate_V1;
       } else {
         exec Ctrl_V1;
       }
     }
-    state Decelerate_V1 {
+    aiState Decelerate_V1 {
       if (timer_V1 > 0) {
         step Decelerate_V1;
       } else {
         exec Ctrl_V1;
       }
     }
-    state Stop_V1 {
+    aiState Stop_V1 {
       if (timer_V1 > 0) {
         step Stop_V1;
       } else {
@@ -145,7 +145,7 @@ component Vehicle1 {
         }
       }
     }
-    state IDS_V1 {
+    aiState IDS_V1 {
       if (IDS_guard(p_distance_V1 <= 2*TIMER_INIT*SAFETY_DISTANCE, accel_V1 == ACCELERATION, accel_V1 == NEUTRAL, p_speed_V1 > 0.0)) {
         warning_V1' = DANGER;
         step IDS_V1;
@@ -169,7 +169,7 @@ component Vehicle2 {
     int crashed_V2 = 0;
   }
   controller {
-    state Ctrl_V2 {
+    aiState Ctrl_V2 {
       if (s_speed_V2 > 0) {
         if (controller_guard(safety_gap_V2 > 0,safety_gap_V1_V2 > 0,brake_light_V1 == 0,s_distance_V1_V2 > 300)) {
           accel_V2' = ACCELERATION;
@@ -188,21 +188,21 @@ component Vehicle2 {
         step Stop_V2;
       }
     }
-    state Accelerate_V2 {
+    aiState Accelerate_V2 {
       if (timer_V2 > 0) {
         step Accelerate_V2;
       } else {
         exec Ctrl_V2;
       }
     }
-    state Decelerate_V2 {
+    aiState Decelerate_V2 {
       if (timer_V2 > 0) {
         step Decelerate_V2;
       } else {
         exec Ctrl_V2;
       }
     }
-    state Stop_V2 {
+    aiState Stop_V2 {
       if (timer_V2 > 0) {
         step Stop_V2;
       } else {
@@ -217,7 +217,7 @@ component Vehicle2 {
         }
       }
     }
-    state IDS_V2 {
+    aiState IDS_V2 {
       if (IDS_guard(p_distance_V2 <= 2*TIMER_INIT*SAFETY_DISTANCE, accel_V2 == ACCELERATION, accel_V2 == NEUTRAL, p_speed_V2 > 0.0)) {
         warning_V2' = DANGER;
         step IDS_V2;

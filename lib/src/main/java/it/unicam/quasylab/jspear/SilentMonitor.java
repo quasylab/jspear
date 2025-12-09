@@ -1,7 +1,7 @@
 /*
- * STARK: Software Tool for the Analysis of Robustness in the unKnown environment
+ * JSpear: a SimPle Environment for statistical estimation of Adaptation and Reliability.
  *
- *                Copyright (C) 2023.
+ *              Copyright (C) 2020.
  *
  * See the NOTICE file distributed with this work for additional information
  * regarding copyright ownership.
@@ -20,20 +20,29 @@
  * limitations under the License.
  */
 
-package it.unicam.quasylab.jspear.distl;
+package it.unicam.quasylab.jspear;
 
-import it.unicam.quasylab.jspear.EvolutionSequence;
+/// This class can be used to mute the simulation monitor. This monitor will print one line at the start of the simulation and then will not log anything else.
+public class SilentMonitor implements SimulationMonitor {
 
-public final class TrueDisTLFormula implements DisTLFormula {
+
+    public SilentMonitor(String label) {
+        System.out.println(label+": Monitor is silent");
+    }
+
 
     @Override
-    public double eval(int sampleSize, int step, EvolutionSequence sequence, boolean parallel) {
-        return 1.0;
+    public void startSamplingsOfStep(int step) {
+
     }
 
     @Override
-    public <Double> DisTLFunction<Double> eval(DisTLFormulaVisitor<Double> evaluator) {
-        return evaluator.evalTrue();
+    public void endSamplingsOfStep(int step) {
+
     }
 
+    @Override
+    public boolean hasBeenCancelled() {
+        return false;
+    }
 }

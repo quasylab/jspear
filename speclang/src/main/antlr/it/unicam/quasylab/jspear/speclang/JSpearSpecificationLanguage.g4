@@ -70,7 +70,7 @@ declarationComponent:
     '}'
 ;
 
-controllerStateDeclaration: 'state' name=ID body=controllerBlockBehaviour;
+controllerStateDeclaration: 'aiState' name=ID body=controllerBlockBehaviour;
 
 //controllerStateBody:
 //    controllerBlockBehaviour
