@@ -1,6 +1,7 @@
 # NEW REPOSITORY FOR STARK
 
-STARK has now a new home: please check it out at https://github.com/the-stark-tool/STARK
+STARK has now a new home: please check it out at https://github.com/the-stark-tool/STARK .
+
 This repository will be discontinued.
 
 
