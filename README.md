@@ -1,3 +1,10 @@
+# NEW REPOSITORY FOR STARK
+
+STARK has now a new home: please check it out at https://github.com/the-stark-tool/STARK
+This repository will be discontinued.
+
+
+
 # STARK
 
 We present a *Software Tool for the Analysis of Robustness in the unKnown environment* (STARK), our JAVA tool that constitutes the core of our framework for the specification and analysis of properties of distances between the behaviours of systems operating in the presence of uncertainties.
